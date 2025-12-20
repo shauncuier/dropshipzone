@@ -64,11 +64,8 @@ error.log
 dist/
 build/
 
-# Development files
-.editorconfig
-.gitattributes
+# Development files (keep .editorconfig, .gitattributes, .github/ for open-source)
 .travis.yml
-.github/
 Gruntfile.js
 Gulpfile.js
 webpack.config.js

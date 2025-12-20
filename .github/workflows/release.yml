@@ -1,0 +1,28 @@
+name: Generate Release Zip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release Zip
+        run: |
+          mkdir -p dist/dropshipzone
+          rsync -av --progress . dist/dropshipzone --exclude dist --exclude .git --exclude .github --exclude .gitignore --exclude .gitattributes
+          cd dist
+          zip -r dropshipzone.zip dropshipzone
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/dropshipzone.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
