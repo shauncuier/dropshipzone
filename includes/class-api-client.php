@@ -154,16 +154,36 @@ class API_Client {
      * @return bool|WP_Error True if valid, error otherwise
      */
     public function ensure_valid_token() {
+        // Reload token from database in case it was updated elsewhere
+        $this->load_token();
+        
         if ($this->is_token_valid()) {
+            $this->logger->debug('Token is valid', [
+                'expires_in' => $this->token_expiry - time(),
+            ]);
             return true;
         }
 
+        // Token expired or missing, need to refresh
+        $this->logger->info('Token expired or missing, refreshing...', [
+            'had_token' => !empty($this->token),
+            'expiry_was' => $this->token_expiry > 0 ? date('Y-m-d H:i:s', $this->token_expiry) : 'never set',
+        ]);
+        
         // Try to refresh token
         $result = $this->authenticate();
         
         if (is_wp_error($result)) {
+            $this->logger->error('Token refresh failed', [
+                'error' => $result->get_error_message(),
+            ]);
             return $result;
         }
+
+        $this->logger->info('Token refreshed successfully', [
+            'expires_at' => date('Y-m-d H:i:s', $this->token_expiry),
+            'expires_in' => $this->token_expiry - time(),
+        ]);
 
         return true;
     }
@@ -181,14 +201,23 @@ class API_Client {
             return $token_check;
         }
 
-        // Default parameters
+        // Default parameters - don't include enabled when searching by SKU
         $defaults = [
             'page_no' => 1,
             'limit' => 200, // Max allowed
-            'enabled' => true,
         ];
+        
+        // Only add enabled filter if not searching by SKUs
+        if (empty($params['skus'])) {
+            $defaults['enabled'] = true;
+        }
 
         $params = wp_parse_args($params, $defaults);
+        
+        // Log the API request details
+        $this->logger->debug('Making products API request', [
+            'params' => $params,
+        ]);
 
         // Make request
         $response = $this->make_request('GET', '/v2/products', $params, true);
@@ -201,10 +230,11 @@ class API_Client {
             return $response;
         }
 
-        // Log success
+        // Log success with more details
         $this->logger->debug('Products fetched successfully', [
             'page' => $params['page_no'],
             'total' => isset($response['total']) ? $response['total'] : 0,
+            'result_count' => isset($response['result']) ? count($response['result']) : 0,
         ]);
 
         return $response;
@@ -235,16 +265,41 @@ class API_Client {
      */
     public function get_products_by_skus($skus) {
         if (empty($skus)) {
-            return [];
+            return ['result' => []];
         }
 
         // API allows max 100 SKUs
         $skus = array_slice($skus, 0, 100);
+        $skus_string = implode(',', $skus);
         
-        return $this->get_products([
-            'skus' => implode(',', $skus),
+        $this->logger->debug('Fetching products by SKUs', [
+            'sku_count' => count($skus),
+            'sample_skus' => array_slice($skus, 0, 5),
+        ]);
+        
+        $response = $this->get_products([
+            'skus' => $skus_string,
             'limit' => 200,
         ]);
+        
+        // Log the response for debugging
+        if (!is_wp_error($response)) {
+            $result_count = isset($response['result']) ? count($response['result']) : 0;
+            $this->logger->debug('API response for SKUs', [
+                'requested' => count($skus),
+                'returned' => $result_count,
+                'total_in_api' => isset($response['total']) ? $response['total'] : 0,
+            ]);
+            
+            // If no results, log the first few SKUs that weren't found
+            if ($result_count === 0) {
+                $this->logger->warning('No products found in API for requested SKUs', [
+                    'skus_requested' => array_slice($skus, 0, 10),
+                ]);
+            }
+        }
+        
+        return $response;
     }
 
     /**
@@ -361,6 +416,12 @@ class API_Client {
         } else {
             $args['body'] = wp_json_encode($data);
         }
+        
+        // Log the actual API URL for debugging
+        $this->logger->debug('API request', [
+            'method' => $method,
+            'url' => $url,
+        ]);
 
         // Make request
         $response = wp_remote_request($url, $args);
@@ -389,14 +450,21 @@ class API_Client {
 
         // Handle different response codes
         if ($response_code === 401) {
-            // Token expired
+            // Token expired during request
             if ($use_auth && $retry < $this->max_retries) {
-                $this->logger->info('Token expired, refreshing...');
+                $this->logger->info('Token expired during request (401), refreshing...', [
+                    'endpoint' => $endpoint,
+                    'retry' => $retry + 1,
+                ]);
                 $auth_result = $this->authenticate();
                 if (!is_wp_error($auth_result)) {
+                    $this->logger->info('Token refreshed, retrying request...');
                     sleep(1); // Small delay after re-auth
                     return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
                 }
+                $this->logger->error('Token refresh failed during retry', [
+                    'error' => $auth_result->get_error_message(),
+                ]);
             }
             return new \WP_Error('unauthorized', __('Authentication failed. Please check your credentials.', 'dropshipzone-sync'));
         }
