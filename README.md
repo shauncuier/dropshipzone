@@ -2,7 +2,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-![WordPress Plugin Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.0--dev-blue.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)
 ![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-purple.svg)
 ![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF.svg)
