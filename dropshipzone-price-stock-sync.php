@@ -148,8 +148,30 @@ final class Dropshipzone_Sync {
         $this->cron = new Cron($this->price_sync, $this->stock_sync, $this->logger);
         $this->product_mapper = new Product_Mapper($this->logger);
         
+        // Ensure mapping table exists (for upgrades from older versions)
+        $this->maybe_create_mapping_table();
+        
         if (is_admin()) {
             $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper);
+        }
+    }
+
+    /**
+     * Create mapping table if it doesn't exist
+     */
+    private function maybe_create_mapping_table() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'dsz_product_mapping';
+        
+        // Check if table exists
+        $table_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
+            DB_NAME,
+            $table_name
+        ));
+        
+        if (!$table_exists) {
+            Product_Mapper::create_table();
         }
     }
 
