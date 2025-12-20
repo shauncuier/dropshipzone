@@ -206,7 +206,17 @@ class Cron {
         $api_products = [];
         $sku_chunks = array_chunk($skus, 100); // API allows max 100 SKUs per request
         
-        foreach ($sku_chunks as $chunk) {
+        $this->logger->info('WooCommerce SKUs to sync', [
+            'total_skus' => count($skus),
+            'sample_skus' => array_slice($skus, 0, 10), // Log first 10 for debugging
+        ]);
+        
+        foreach ($sku_chunks as $chunk_index => $chunk) {
+            $this->logger->debug('Fetching SKU chunk from Dropshipzone', [
+                'chunk' => $chunk_index + 1,
+                'skus_in_chunk' => count($chunk),
+            ]);
+            
             $response = $plugin->api_client->get_products_by_skus($chunk);
             
             if (is_wp_error($response)) {
@@ -216,6 +226,13 @@ class Cron {
                 ]);
                 continue;
             }
+
+            // Debug: Log API response structure
+            $this->logger->debug('Dropshipzone API response', [
+                'has_result' => isset($response['result']),
+                'result_count' => isset($response['result']) ? count($response['result']) : 0,
+                'response_keys' => is_array($response) ? array_keys($response) : 'not_array',
+            ]);
 
             if (!empty($response['result'])) {
                 $api_products = array_merge($api_products, $response['result']);
@@ -233,11 +250,22 @@ class Cron {
         $this->logger->info('Dropshipzone products fetched', [
             'requested' => count($skus),
             'found' => count($api_products_by_sku),
+            'found_skus' => array_slice(array_keys($api_products_by_sku), 0, 10), // Sample found SKUs
         ]);
 
         // Sync prices and stock for matched products
         $price_results = $this->price_sync->sync_batch($api_products);
         $stock_results = $this->stock_sync->sync_batch($api_products);
+        
+        // Debug: Log sync results
+        $this->logger->info('Sync batch results', [
+            'price_updated' => $price_results['updated'],
+            'price_skipped' => $price_results['skipped'],
+            'price_not_found' => $price_results['not_found'],
+            'price_errors' => $price_results['errors'],
+            'stock_updated' => $stock_results['updated'],
+            'stock_skipped' => $stock_results['skipped'],
+        ]);
 
         // Log SKUs not found in Dropshipzone
         $not_found_skus = array_diff($skus, array_keys($api_products_by_sku));
@@ -247,6 +275,7 @@ class Cron {
                 'skus' => array_slice($not_found_skus, 0, 20), // Log first 20
             ]);
         }
+
 
         // Update settings
         $settings = get_option('dsz_sync_settings', []);
