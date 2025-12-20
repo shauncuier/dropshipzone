@@ -29,12 +29,12 @@
     --dsz-gray-100: #f3f4f6;
     --dsz-gray-200: #e5e7eb;
     --dsz-gray-300: #d1d5db;
-    --dsz-gray-400: #9ca3af;
-    --dsz-gray-500: #6b7280;
-    --dsz-gray-600: #4b5563;
-    --dsz-gray-700: #374151;
-    --dsz-gray-800: #1f2937;
-    --dsz-gray-900: #111827;
+    --dsz-gray-400: #6b7280;
+    --dsz-gray-500: #4b5563;
+    --dsz-gray-600: #374151;
+    --dsz-gray-700: #1f2937;
+    --dsz-gray-800: #111827;
+    --dsz-gray-900: #030712;
 
     /* Glassmorphism */
     --dsz-glass-bg: rgba(255, 255, 255, 0.7);
@@ -703,6 +703,69 @@
 }
 
 /* ========================================
+   Status Grid - Enhanced Matrix Display
+   ======================================== */
+.dsz-sync-status {
+    background: var(--dsz-glass-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--dsz-border-radius);
+    border: 1px solid var(--dsz-glass-border);
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.dsz-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.dsz-status-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--dsz-border-radius-sm);
+    border: 1px solid var(--dsz-gray-200);
+    transition: all var(--dsz-transition);
+}
+
+.dsz-status-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: var(--dsz-shadow-sm);
+}
+
+.dsz-status-label {
+    font-size: 12px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.dsz-status-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dsz-gray-800);
+    line-height: 1.4;
+}
+
+.dsz-status-value.dsz-status-active {
+    color: var(--dsz-primary);
+    animation: pulse 2s infinite;
+}
+
+.dsz-status-value.dsz-status-error {
+    color: var(--dsz-error);
+}
+
+.dsz-status-value.dsz-status-success {
+    color: var(--dsz-success);
+}
+
+
+/* ========================================
    Progress Bar - Enhanced Animation
    ======================================== */
 .dsz-progress-wrapper {
@@ -1122,6 +1185,7 @@
 .dsz-stat strong {
     display: block;
     font-size: 36px;
+    line-height: 1.2;
     background: linear-gradient(135deg, var(--dsz-success) 0%, #059669 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1292,6 +1356,19 @@
     border-radius: var(--dsz-border-radius-sm);
     padding: 10px 14px;
     transition: all var(--dsz-transition);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 44px;
+}
+
+.form-table input[type="number"] {
+    min-width: 100px;
+}
+
+.form-table select {
+    min-width: 200px;
+    padding-right: 32px;
+    background-position: right 10px center;
 }
 
 .form-table input:focus,
@@ -1302,9 +1379,48 @@
 }
 
 .form-table .description {
-    color: var(--dsz-gray-500);
+    color: #475569;
+    /* Darker slate gray for better readability */
     font-style: normal;
     margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Improved text visibility throughout */
+.dsz-card-meta {
+    font-size: 13px;
+    color: #475569;
+    margin: 8px 0 0;
+}
+
+.dsz-status-label {
+    font-size: 12px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.dsz-subtitle {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 15px;
+}
+
+/* Secondary button improvements */
+.button-secondary,
+.button.button-secondary {
+    background: #fff !important;
+    border: 2px solid var(--dsz-gray-300) !important;
+    color: #1f2937 !important;
+    font-weight: 500;
+}
+
+.button-secondary:hover,
+.button.button-secondary:hover {
+    border-color: var(--dsz-primary) !important;
+    color: var(--dsz-primary) !important;
+    background: rgba(102, 126, 234, 0.05) !important;
 }
 
 /* ========================================
@@ -1528,7 +1644,18 @@ select:focus-visible {
 }
 
 /* Responsive Navigation */
-@media screen and (max-width: 1200px) {
+@media screen and (max-width: 1400px) {
+    .dsz-nav-label {
+        font-size: 12px;
+    }
+
+    .dsz-nav-item {
+        padding: 10px 14px;
+        gap: 6px;
+    }
+}
+
+@media screen and (max-width: 1100px) {
     .dsz-nav-label {
         display: none;
     }
@@ -1541,6 +1668,11 @@ select:focus-visible {
         font-size: 20px;
         width: 20px;
         height: 20px;
+    }
+
+    /* Add tooltip for icons-only nav */
+    .dsz-nav-item[title] {
+        position: relative;
     }
 }
 

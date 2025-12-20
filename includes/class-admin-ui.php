@@ -269,7 +269,8 @@ class Admin_UI {
                 $url = admin_url('admin.php?page=' . $page_slug);
             ?>
                 <a href="<?php echo esc_url($url); ?>" 
-                   class="dsz-nav-item <?php echo $is_active ? 'dsz-nav-active' : ''; ?>">
+                   class="dsz-nav-item <?php echo $is_active ? 'dsz-nav-active' : ''; ?>"
+                   title="<?php echo esc_attr($item['label']); ?>">
                     <span class="dashicons <?php echo esc_attr($item['icon']); ?>"></span>
                     <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
                 </a>
@@ -713,6 +714,21 @@ class Admin_UI {
                                 </span>
                             </div>
                             <div class="dsz-status-item">
+                                <span class="dsz-status-label"><?php _e('Sync Frequency:', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-status-value">
+                                    <?php 
+                                    $freq_labels = [
+                                        'hourly' => __('Every Hour', 'dropshipzone-sync'),
+                                        'every_six_hours' => __('Every 6 Hours', 'dropshipzone-sync'),
+                                        'twicedaily' => __('Twice Daily', 'dropshipzone-sync'),
+                                        'daily' => __('Daily', 'dropshipzone-sync'),
+                                        'disabled' => __('Disabled', 'dropshipzone-sync'),
+                                    ];
+                                    echo isset($freq_labels[$sync_status['frequency']]) ? $freq_labels[$sync_status['frequency']] : ucfirst($sync_status['frequency']);
+                                    ?>
+                                </span>
+                            </div>
+                            <div class="dsz-status-item">
                                 <span class="dsz-status-label"><?php _e('Last Sync:', 'dropshipzone-sync'); ?></span>
                                 <span class="dsz-status-value"><?php echo $sync_status['last_sync'] ? dsz_format_datetime($sync_status['last_sync']) : __('Never', 'dropshipzone-sync'); ?></span>
                             </div>
@@ -723,6 +739,20 @@ class Admin_UI {
                             <div class="dsz-status-item">
                                 <span class="dsz-status-label"><?php _e('Products Updated (Last Run):', 'dropshipzone-sync'); ?></span>
                                 <span class="dsz-status-value"><?php echo intval($sync_status['last_products_updated']); ?></span>
+                            </div>
+                            <div class="dsz-status-item">
+                                <span class="dsz-status-label"><?php _e('Errors (Last Run):', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-status-value <?php echo intval($sync_status['last_errors_count']) > 0 ? 'dsz-status-error' : 'dsz-status-success'; ?>">
+                                    <?php echo intval($sync_status['last_errors_count']); ?>
+                                </span>
+                            </div>
+                            <div class="dsz-status-item">
+                                <span class="dsz-status-label"><?php _e('Batch Size:', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-status-value"><?php echo intval($sync_status['batch_size']); ?> <?php _e('products', 'dropshipzone-sync'); ?></span>
+                            </div>
+                            <div class="dsz-status-item">
+                                <span class="dsz-status-label"><?php _e('Total Mapped:', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-status-value"><?php echo intval($this->product_mapper->get_count()); ?> <?php _e('products', 'dropshipzone-sync'); ?></span>
                             </div>
                         </div>
 
