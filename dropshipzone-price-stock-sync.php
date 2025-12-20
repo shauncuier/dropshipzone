@@ -4,8 +4,8 @@
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
  * Version: 1.0.0
- * Author: Dropshipzone
- * Author URI: https://dropshipzone.com.au
+ * Author: 3s-Soft
+ * Author URI: https://3s-soft.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: dropshipzone-sync

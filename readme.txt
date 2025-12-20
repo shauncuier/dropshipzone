@@ -1,5 +1,5 @@
 === Dropshipzone Price & Stock Sync ===
-Contributors: dropshipzone
+Contributors: 3s-Soft, dropshipzone
 Tags: woocommerce, dropshipzone, price sync, stock sync, dropshipping
 Requires at least: 6.0
 Tested up to: 6.9

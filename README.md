@@ -165,6 +165,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 ## 🙏 Credits
 
+- Developed by [3s-Soft](https://3s-soft.com)
 - Built for [Dropshipzone](https://dropshipzone.com.au)
 - Uses WordPress Plugin API
 - WooCommerce integration
