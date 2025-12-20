@@ -50,15 +50,23 @@ class Admin_UI {
     private $product_mapper;
 
     /**
+     * Product Importer instance
+     * 
+     * @var Product_Importer
+     */
+    private $product_importer;
+
+    /**
      * Constructor
      */
-    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null) {
+    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null) {
         $this->api_client = $api_client;
         $this->price_sync = $price_sync;
         $this->stock_sync = $stock_sync;
         $this->cron = $cron;
         $this->logger = $logger;
         $this->product_mapper = $product_mapper;
+        $this->product_importer = $product_importer;
 
         // Admin hooks
         add_action('admin_menu', [$this, 'register_menu']);
@@ -80,6 +88,10 @@ class Admin_UI {
         add_action('wp_ajax_dsz_map_product', [$this, 'ajax_map_product']);
         add_action('wp_ajax_dsz_unmap_product', [$this, 'ajax_unmap_product']);
         add_action('wp_ajax_dsz_auto_map', [$this, 'ajax_auto_map']);
+        
+        // Import AJAX handlers
+        add_action('wp_ajax_dsz_search_api_products', [$this, 'ajax_search_api_products']);
+        add_action('wp_ajax_dsz_import_product', [$this, 'ajax_import_product']);
     }
 
     /**
@@ -166,6 +178,16 @@ class Admin_UI {
             'dsz-sync-mapping',
             [$this, 'render_mapping']
         );
+
+        // Product Import
+        add_submenu_page(
+            'dsz-sync',
+            __('Product Import', 'dropshipzone-sync'),
+            __('Product Import', 'dropshipzone-sync'),
+            'manage_woocommerce',
+            'dsz-sync-import',
+            [$this, 'render_import']
+        );
     }
 
     /**
@@ -251,6 +273,10 @@ class Admin_UI {
             'dsz-sync-mapping' => [
                 'label' => __('Product Mapping', 'dropshipzone-sync'),
                 'icon' => 'dashicons-admin-links'
+            ],
+            'dsz-sync-import' => [
+                'label' => __('Product Import', 'dropshipzone-sync'),
+                'icon' => 'dashicons-plus'
             ],
         ];
         ?>
@@ -1386,6 +1412,115 @@ class Admin_UI {
             ),
             'mapped' => $results['mapped'],
             'skipped' => $results['skipped'],
+        ]);
+    }
+
+    /**
+     * Render Product Import page
+     */
+    public function render_import() {
+        if (!dsz_current_user_can_manage()) {
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+        }
+        ?>
+        <div class="wrap dsz-wrap">
+            <?php $this->render_header(__('Product Import', 'dropshipzone-sync'), __('Search and import new products from Dropshipzone', 'dropshipzone-sync')); ?>
+
+            <div class="dsz-content">
+                <div class="dsz-form-section">
+                    <div class="dsz-import-search-bar">
+                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Search Dropshipzone products...', 'dropshipzone-sync'); ?>" />
+                        <button type="button" id="dsz-import-search-btn" class="button button-primary">
+                            <span class="dashicons dashicons-search"></span>
+                            <?php _e('Search API', 'dropshipzone-sync'); ?>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="dsz-import-results" class="dsz-import-results-container">
+                    <div class="dsz-import-empty">
+                        <span class="dashicons dashicons-search"></span>
+                        <p><?php _e('Enter a keyword or SKU to search products from Dropshipzone.', 'dropshipzone-sync'); ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Modal (Optional, but simple message is enough for now) -->
+        <div id="dsz-import-modal" class="dsz-modal hidden">
+            <div class="dsz-modal-content">
+                <span class="dsz-modal-close">&times;</span>
+                <div id="dsz-import-modal-body"></div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX: Search API products
+     */
+    public function ajax_search_api_products() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        
+        if (strlen($search) < 2) {
+            wp_send_json_error(['message' => __('Search term is too short.', 'dropshipzone-sync')]);
+        }
+
+        // Search Dropshipzone API
+        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 20]);
+        
+        // If no results by SKU, try keyword search (if API supports it - assuming it does based on common patterns)
+        if (is_wp_error($response) || empty($response['result'])) {
+            // Fetch products without SKU filter (API usually has a keyword or title param, but let's check API data or just use query arg)
+            $response = $this->api_client->get_products(['title' => $search, 'limit' => 20]);
+        }
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()]);
+        }
+
+        $products = isset($response['result']) ? $response['result'] : [];
+        
+        // Pre-check if products are already mapped/imported
+        foreach ($products as &$product) {
+            $product['is_imported'] = !empty(wc_get_product_id_by_sku($product['sku']));
+        }
+
+        wp_send_json_success(['products' => $products]);
+    }
+
+    /**
+     * AJAX: Import product
+     */
+    public function ajax_import_product() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
+        
+        if (!$sku) {
+            wp_send_json_error(['message' => __('SKU is required', 'dropshipzone-sync')]);
+        }
+
+        $result = $this->product_importer->import_product($sku);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success([
+            'message' => __('Product imported successfully!', 'dropshipzone-sync'),
+            'product_id' => $result,
+            'edit_url' => get_edit_post_link($result, 'url')
         ]);
     }
 }

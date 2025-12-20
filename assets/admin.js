@@ -21,6 +21,7 @@
             this.checkSyncStatus();
             this.initAnimations();
             this.initRippleEffect();
+            this.initProductImport();
         },
 
         /**
@@ -47,7 +48,7 @@
         initRippleEffect: function () {
             $(document).on('click', '.button, .dsz-card', function (e) {
                 var $this = $(this);
-                
+
                 // Skip if already has ripple or is a link that should navigate
                 if ($this.find('.dsz-ripple').length) {
                     return;
@@ -167,6 +168,17 @@
 
             // Markup type toggle
             $('input[name="markup_type"]').on('change', this.toggleMarkupSymbol.bind(this));
+
+            // Product Import search
+            $('#dsz-import-search-btn').on('click', this.searchApiProducts.bind(this));
+            $('#dsz-import-search').on('keypress', function (e) {
+                if (e.which === 13) {
+                    DSZAdmin.searchApiProducts();
+                }
+            });
+
+            // Product Import action
+            $(document).on('click', '.dsz-import-btn', this.importProduct.bind(this));
         },
 
         /**
@@ -197,7 +209,7 @@
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message +
                                 ' <strong>(' + response.data.products + ' products available)</strong>');
-                        
+
                         // Add celebration effect
                         DSZAdmin.celebrateSuccess($btn);
                     } else {
@@ -205,7 +217,7 @@
                             .removeClass('hidden dsz-message-success')
                             .addClass('dsz-message-error')
                             .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
-                        
+
                         DSZAdmin.shakeElement($btn);
                     }
                 },
@@ -214,7 +226,7 @@
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
                         .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
-                    
+
                     DSZAdmin.shakeElement($btn);
                 },
                 complete: function () {
@@ -250,7 +262,7 @@
         createConfetti: function () {
             var colors = ['#667eea', '#764ba2', '#10b981', '#f59e0b', '#ef4444'];
             var container = $('<div class="dsz-confetti-container"></div>');
-            
+
             $('body').append(container);
 
             for (var i = 0; i < 30; i++) {
@@ -338,7 +350,7 @@
                             .removeClass('hidden dsz-message-error')
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
-                        
+
                         DSZAdmin.celebrateSuccess($btn);
                     } else {
                         $message
@@ -406,7 +418,7 @@
                             .removeClass('hidden dsz-message-error')
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
-                        
+
                         // Subtle success animation
                         $message.css('animation', 'fadeInUp 0.3s ease');
                     } else {
@@ -539,15 +551,15 @@
             var progress = data.progress || 0;
             var $fill = $('#dsz-progress-fill');
             var $text = $('#dsz-progress-text');
-            
+
             // Smooth progress animation
             $fill.css({
                 'width': progress + '%',
                 'transition': 'width 0.5s ease'
             });
-            
+
             $text.text(data.message || 'Processing... ' + progress + '%');
-            
+
             // Update status text with pulse
             $('#sync-status-text')
                 .text(dsz_admin.strings.syncing)
@@ -745,7 +757,7 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        
+
                         // Show success message instead of alert
                         DSZAdmin.showNotification('success', response.data.message || 'Export successful!');
                     }
@@ -968,7 +980,7 @@
                             'opacity': 0,
                             'transition': 'all 0.3s ease'
                         });
-                        
+
                         setTimeout(function () {
                             $btn.closest('tr').remove();
                         }, 300);
@@ -1039,7 +1051,7 @@
                 $('#dsz-wc-product-id').val($item.data('id'));
                 $('#dsz-wc-results').addClass('hidden');
                 self.updateMappingButton();
-                
+
                 // Highlight selected
                 $('#dsz-wc-search').css('border-color', '#10b981');
                 setTimeout(function () {
@@ -1060,9 +1072,9 @@
             var wcProductId = $('#dsz-wc-product-id').val();
             var dszSku = $('#dsz-dsz-sku').val();
             var $btn = $('#dsz-create-mapping');
-            
+
             $btn.prop('disabled', !wcProductId || !dszSku);
-            
+
             // Add visual feedback
             if (wcProductId && dszSku) {
                 $btn.css({
@@ -1090,6 +1102,133 @@
             $('#dsz-create-mapping').on('click', this.createMapping.bind(this));
             $(document).on('click', '.dsz-unmap-btn', this.unmapProduct.bind(this));
             this.searchWCProducts();
+        },
+        /**
+         * Initialize Product Import
+         */
+        initProductImport: function () {
+            // Placeholder for any v2 specific init logic
+        },
+
+        /**
+         * Search products from API
+         */
+        searchApiProducts: function () {
+            var $btn = $('#dsz-import-search-btn');
+            var $results = $('#dsz-import-results');
+            var search = $('#dsz-import-search').val();
+
+            if (search.length < 2) {
+                return;
+            }
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+            $results.html(`
+                <div class="dsz-import-loading">
+                    <span class="dsz-spinner"></span>
+                    <p>${dsz_admin.strings.syncing}</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_search_api_products',
+                    nonce: dsz_admin.nonce,
+                    search: search
+                },
+                success: function (response) {
+                    if (response.success && response.data.products.length > 0) {
+                        DSZAdmin.renderImportResults(response.data.products);
+                    } else {
+                        $results.html(`
+                            <div class="dsz-import-empty">
+                                <span class="dashicons dashicons-search"></span>
+                                <p>${response.data.message || 'No products found matching your search.'}</p>
+                            </div>
+                        `);
+                    }
+                },
+                error: function () {
+                    $results.html('<div class="dsz-message dsz-message-error">' + dsz_admin.strings.error + '</div>');
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Render API search results
+         */
+        renderImportResults: function (products) {
+            var html = '<div class="dsz-import-grid">';
+
+            products.forEach(function (product) {
+                var btnText = product.is_imported ? 'Imported' : 'Import Product';
+                var btnClass = product.is_imported ? 'button-secondary' : 'button-primary dsz-import-btn';
+                var btnDisabled = product.is_imported ? 'disabled' : '';
+
+                html += `
+                    <div class="dsz-import-item" data-sku="${product.sku}">
+                        <div class="dsz-import-item-image">
+                            ${product.image_url ? `<img src="${product.image_url}" alt="${escapeHtml(product.title)}">` : '<span class="dashicons dashicons-format-image"></span>'}
+                        </div>
+                        <div class="dsz-import-item-info">
+                            <h4>${escapeHtml(product.title)}</h4>
+                            <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code></p>
+                            <p class="dsz-import-item-price">$${parseFloat(product.price).toFixed(2)} <small>(Supplier Cost)</small></p>
+                            <button type="button" class="button ${btnClass}" ${btnDisabled} data-sku="${escapeHtml(product.sku)}">
+                                ${product.is_imported ? '<span class="dashicons dashicons-yes-alt"></span> ' : '<span class="dashicons dashicons-plus"></span> '}
+                                ${btnText}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            $('#dsz-import-results').html(html);
+        },
+
+        /**
+         * Import product via AJAX
+         */
+        importProduct: function (e) {
+            var $btn = $(e.currentTarget);
+            var sku = $btn.data('sku');
+            var $item = $btn.closest('.dsz-import-item');
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_import_product',
+                    nonce: dsz_admin.nonce,
+                    sku: sku
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $btn.removeClass('button-primary dsz-import-btn dsz-loading')
+                            .addClass('button-secondary')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> Imported')
+                            .prop('disabled', true);
+
+                        DSZAdmin.celebrateSuccess($item);
+                        DSZAdmin.showNotification('success', response.data.message);
+                    } else {
+                        DSZAdmin.showNotification('error', response.data.message);
+                        $btn.removeClass('dsz-loading').prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
         }
     };
 
@@ -1104,6 +1243,7 @@
     $(document).ready(function () {
         DSZAdmin.init();
         DSZAdmin.initMappingPage();
+        DSZAdmin.initProductImport(); // Initialize the new import feature
 
         // Add fadeOut keyframe if not exists
         if (!$('#dsz-fadeout-style').length) {
