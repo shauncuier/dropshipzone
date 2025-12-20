@@ -156,6 +156,7 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) 
 
 - **Documentation**: [Wiki](https://github.com/shauncuier/dropshipzone/wiki)
 - **Issues**: [GitHub Issues](https://github.com/shauncuier/dropshipzone/issues)
+- **WordPress Forum**: [Support Threads](https://wordpress.org/support/plugin/dropshipzone-price-stock-sync/)
 - **Email**: support@dropshipzone.com.au
 
 ## 📝 Changelog
