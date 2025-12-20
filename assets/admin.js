@@ -497,6 +497,163 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
+                        alert(response.data.message);
+                    }
+                },
+                error: function () {
+                    alert(dsz_admin.strings.error);
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Auto-map products
+         */
+        autoMap: function (e) {
+            e.preventDefault();
+
+            var $btn = $('#dsz-auto-map');
+            var $message = $('#dsz-automap-message');
+
+            if (!confirm('This will auto-map all WooCommerce products to Dropshipzone SKUs using their current SKU. Continue?')) {
+                return;
+            }
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+            $message.addClass('hidden');
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_auto_map',
+                    nonce: dsz_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $message
+                            .removeClass('hidden dsz-message-error')
+                            .addClass('dsz-message-success')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+
+                        // Reload page to show new mappings
+                        setTimeout(function () {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        $message
+                            .removeClass('hidden dsz-message-success')
+                            .addClass('dsz-message-error')
+                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                    }
+                },
+                error: function () {
+                    $message
+                        .removeClass('hidden dsz-message-success')
+                        .addClass('dsz-message-error')
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Create mapping
+         */
+        createMapping: function (e) {
+            e.preventDefault();
+
+            var $btn = $('#dsz-create-mapping');
+            var $message = $('#dsz-mapping-message');
+            var wcProductId = $('#dsz-wc-product-id').val();
+            var dszSku = $('#dsz-dsz-sku').val();
+
+            if (!wcProductId || !dszSku) {
+                $message
+                    .removeClass('hidden dsz-message-success')
+                    .addClass('dsz-message-error')
+                    .html('<span class="dashicons dashicons-warning"></span> Please select a WooCommerce product and enter a Dropshipzone SKU.');
+                return;
+            }
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_map_product',
+                    nonce: dsz_admin.nonce,
+                    wc_product_id: wcProductId,
+                    dsz_sku: dszSku
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $message
+                            .removeClass('hidden dsz-message-error')
+                            .addClass('dsz-message-success')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+
+                        // Clear fields and reload
+                        $('#dsz-wc-search').val('');
+                        $('#dsz-wc-product-id').val('');
+                        $('#dsz-dsz-sku').val('');
+
+                        setTimeout(function () {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        $message
+                            .removeClass('hidden dsz-message-success')
+                            .addClass('dsz-message-error')
+                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                    }
+                },
+                error: function () {
+                    $message
+                        .removeClass('hidden dsz-message-success')
+                        .addClass('dsz-message-error')
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Unmap product
+         */
+        unmapProduct: function (e) {
+            e.preventDefault();
+
+            var $btn = $(e.target).closest('.dsz-unmap-btn');
+            var wcProductId = $btn.data('wc-id');
+
+            if (!confirm('Remove this mapping?')) {
+                return;
+            }
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_unmap_product',
+                    nonce: dsz_admin.nonce,
+                    wc_product_id: wcProductId
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $btn.closest('tr').fadeOut(300, function () {
+                            $(this).remove();
+                        });
                     } else {
                         alert(response.data.message);
                     }
@@ -508,12 +665,106 @@
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
+        },
+
+        /**
+         * Search WooCommerce products
+         */
+        searchWCProducts: function () {
+            var self = this;
+            var searchTimeout;
+
+            $('#dsz-wc-search').on('input', function () {
+                var $input = $(this);
+                var search = $input.val();
+                var $results = $('#dsz-wc-results');
+
+                clearTimeout(searchTimeout);
+
+                if (search.length < 2) {
+                    $results.addClass('hidden').empty();
+                    return;
+                }
+
+                searchTimeout = setTimeout(function () {
+                    $.ajax({
+                        url: dsz_admin.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'dsz_search_wc_products',
+                            nonce: dsz_admin.nonce,
+                            search: search
+                        },
+                        success: function (response) {
+                            if (response.success && response.data.products.length > 0) {
+                                var html = '';
+                                response.data.products.forEach(function (product) {
+                                    var mapped = product.is_mapped ? ' (mapped)' : '';
+                                    var sku = product.sku ? ' [' + product.sku + ']' : '';
+                                    html += '<div class="dsz-search-item" data-id="' + product.ID + '" data-name="' + escapeHtml(product.post_title) + '">';
+                                    html += escapeHtml(product.post_title) + sku + mapped;
+                                    html += '</div>';
+                                });
+                                $results.html(html).removeClass('hidden');
+                            } else {
+                                $results.addClass('hidden').empty();
+                            }
+                        }
+                    });
+                }, 300);
+            });
+
+            // Handle selection
+            $(document).on('click', '#dsz-wc-results .dsz-search-item', function () {
+                var $item = $(this);
+                $('#dsz-wc-search').val($item.data('name'));
+                $('#dsz-wc-product-id').val($item.data('id'));
+                $('#dsz-wc-results').addClass('hidden');
+                self.updateMappingButton();
+            });
+
+            // Handle SKU input
+            $('#dsz-dsz-sku').on('input', function () {
+                self.updateMappingButton();
+            });
+        },
+
+        /**
+         * Update create mapping button state
+         */
+        updateMappingButton: function () {
+            var wcProductId = $('#dsz-wc-product-id').val();
+            var dszSku = $('#dsz-dsz-sku').val();
+            $('#dsz-create-mapping').prop('disabled', !wcProductId || !dszSku);
+        },
+
+        /**
+         * Initialize mapping page
+         */
+        initMappingPage: function () {
+            if ($('#dsz-auto-map').length === 0) {
+                return;
+            }
+
+            // Bind events
+            $('#dsz-auto-map').on('click', this.autoMap.bind(this));
+            $('#dsz-create-mapping').on('click', this.createMapping.bind(this));
+            $(document).on('click', '.dsz-unmap-btn', this.unmapProduct.bind(this));
+            this.searchWCProducts();
         }
     };
+
+    // Helper function to escape HTML
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
 
     // Initialize on DOM ready
     $(document).ready(function () {
         DSZAdmin.init();
+        DSZAdmin.initMappingPage();
     });
 
 })(jQuery);

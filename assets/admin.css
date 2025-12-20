@@ -340,18 +340,21 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.3) 50%,
-        transparent 100%
-    );
+    background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent 100%);
     animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 .dsz-progress-text {
@@ -649,5 +652,142 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ========================================
+   Product Mapping
+   ======================================== */
+.dsz-mapping-stats {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.dsz-stat {
+    background: var(--dsz-gray-100);
+    padding: 20px 30px;
+    border-radius: var(--dsz-border-radius);
+    text-align: center;
+    border: 1px solid var(--dsz-gray-200);
+}
+
+.dsz-stat strong {
+    display: block;
+    font-size: 32px;
+    color: var(--dsz-success);
+    margin-bottom: 5px;
+}
+
+.dsz-stat span {
+    font-size: 13px;
+    color: var(--dsz-gray-600);
+}
+
+.dsz-stat-warning strong {
+    color: var(--dsz-warning);
+}
+
+.dsz-mapping-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.dsz-mapping-add {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.dsz-mapping-field {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+}
+
+.dsz-mapping-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.dsz-mapping-field input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+}
+
+.dsz-mapping-arrow {
+    font-size: 24px;
+    color: var(--dsz-gray-600);
+    padding-bottom: 10px;
+}
+
+.dsz-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--dsz-gray-200);
+    border-radius: var(--dsz-border-radius);
+    box-shadow: var(--dsz-shadow-hover);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.dsz-search-results.hidden {
+    display: none;
+}
+
+.dsz-search-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--dsz-gray-200);
+    font-size: 13px;
+}
+
+.dsz-search-item:last-child {
+    border-bottom: none;
+}
+
+.dsz-search-item:hover {
+    background: var(--dsz-gray-100);
+}
+
+.dsz-mapping-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.dsz-mapping-search input[type="text"] {
+    width: 300px;
+    max-width: 100%;
+}
+
+.column-actions {
+    width: 120px;
+    text-align: center;
+}
+
+.dsz-unmap-btn {
+    color: var(--dsz-error) !important;
+}
+
+.dsz-unmap-btn:hover {
+    background: #f8d7da !important;
+    border-color: var(--dsz-error) !important;
+}
+
+.dsz-unmap-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
 }

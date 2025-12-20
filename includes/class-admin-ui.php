@@ -45,14 +45,20 @@ class Admin_UI {
     private $logger;
 
     /**
+     * Product Mapper instance
+     */
+    private $product_mapper;
+
+    /**
      * Constructor
      */
-    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger) {
+    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null) {
         $this->api_client = $api_client;
         $this->price_sync = $price_sync;
         $this->stock_sync = $stock_sync;
         $this->cron = $cron;
         $this->logger = $logger;
+        $this->product_mapper = $product_mapper;
 
         // Admin hooks
         add_action('admin_menu', [$this, 'register_menu']);
@@ -67,6 +73,13 @@ class Admin_UI {
         add_action('wp_ajax_dsz_continue_sync', [$this, 'ajax_continue_sync']);
         add_action('wp_ajax_dsz_clear_logs', [$this, 'ajax_clear_logs']);
         add_action('wp_ajax_dsz_export_logs', [$this, 'ajax_export_logs']);
+        
+        // Mapping AJAX handlers
+        add_action('wp_ajax_dsz_search_wc_products', [$this, 'ajax_search_wc_products']);
+        add_action('wp_ajax_dsz_search_dsz_products', [$this, 'ajax_search_dsz_products']);
+        add_action('wp_ajax_dsz_map_product', [$this, 'ajax_map_product']);
+        add_action('wp_ajax_dsz_unmap_product', [$this, 'ajax_unmap_product']);
+        add_action('wp_ajax_dsz_auto_map', [$this, 'ajax_auto_map']);
     }
 
     /**
@@ -142,6 +155,16 @@ class Admin_UI {
             'manage_woocommerce',
             'dsz-sync-logs',
             [$this, 'render_logs']
+        );
+
+        // Product Mapping
+        add_submenu_page(
+            'dsz-sync',
+            __('Product Mapping', 'dropshipzone-sync'),
+            __('Product Mapping', 'dropshipzone-sync'),
+            'manage_woocommerce',
+            'dsz-sync-mapping',
+            [$this, 'render_mapping']
         );
     }
 
@@ -1010,6 +1033,284 @@ class Admin_UI {
         wp_send_json_success([
             'csv' => base64_encode($csv),
             'filename' => 'dsz-sync-logs-' . date('Y-m-d') . '.csv',
+        ]);
+    }
+
+    /**
+     * Render Product Mapping page
+     */
+    public function render_mapping() {
+        if (!dsz_current_user_can_manage()) {
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+        }
+
+        if (!$this->product_mapper) {
+            echo '<div class="notice notice-error"><p>' . __('Product Mapper not initialized.', 'dropshipzone-sync') . '</p></div>';
+            return;
+        }
+
+        $search = isset($_GET['search']) ? sanitize_text_field($_GET['search']) : '';
+        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $per_page = 30;
+
+        $mappings = $this->product_mapper->get_mappings([
+            'search' => $search,
+            'limit' => $per_page,
+            'offset' => ($page - 1) * $per_page,
+        ]);
+
+        $total = $this->product_mapper->get_count(['search' => $search]);
+        $total_pages = ceil($total / $per_page);
+        $unmapped_count = $this->product_mapper->get_unmapped_count();
+        ?>
+        <div class="wrap dsz-wrap">
+            <?php $this->render_header(__('Product Mapping', 'dropshipzone-sync'), __('Map your WooCommerce products to Dropshipzone SKUs', 'dropshipzone-sync')); ?>
+
+            <div class="dsz-content">
+                <!-- Mapping Stats -->
+                <div class="dsz-form-section">
+                    <div class="dsz-mapping-stats">
+                        <div class="dsz-stat">
+                            <strong><?php echo intval($total); ?></strong>
+                            <span><?php _e('Mapped Products', 'dropshipzone-sync'); ?></span>
+                        </div>
+                        <div class="dsz-stat dsz-stat-warning">
+                            <strong><?php echo intval($unmapped_count); ?></strong>
+                            <span><?php _e('Unmapped Products', 'dropshipzone-sync'); ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="dsz-form-section">
+                    <h2><?php _e('Quick Actions', 'dropshipzone-sync'); ?></h2>
+                    <div class="dsz-mapping-actions">
+                        <button type="button" id="dsz-auto-map" class="button button-primary">
+                            <span class="dashicons dashicons-admin-links"></span>
+                            <?php _e('Auto-Map by SKU', 'dropshipzone-sync'); ?>
+                        </button>
+                        <p class="description"><?php _e('Automatically creates mappings for WooCommerce products that have SKUs matching their product SKU.', 'dropshipzone-sync'); ?></p>
+                    </div>
+                    <div id="dsz-automap-message" class="dsz-message hidden"></div>
+                </div>
+
+                <!-- Search and Add New -->
+                <div class="dsz-form-section">
+                    <h2><?php _e('Add New Mapping', 'dropshipzone-sync'); ?></h2>
+                    <div class="dsz-mapping-add">
+                        <div class="dsz-mapping-field">
+                            <label><?php _e('WooCommerce Product:', 'dropshipzone-sync'); ?></label>
+                            <input type="text" id="dsz-wc-search" placeholder="<?php _e('Search by name or SKU...', 'dropshipzone-sync'); ?>" />
+                            <div id="dsz-wc-results" class="dsz-search-results hidden"></div>
+                            <input type="hidden" id="dsz-wc-product-id" value="" />
+                        </div>
+                        <div class="dsz-mapping-arrow">→</div>
+                        <div class="dsz-mapping-field">
+                            <label><?php _e('Dropshipzone SKU:', 'dropshipzone-sync'); ?></label>
+                            <input type="text" id="dsz-dsz-sku" placeholder="<?php _e('Enter DSZ SKU or search...', 'dropshipzone-sync'); ?>" />
+                            <div id="dsz-dsz-results" class="dsz-search-results hidden"></div>
+                        </div>
+                        <button type="button" id="dsz-create-mapping" class="button button-primary" disabled>
+                            <?php _e('Create Mapping', 'dropshipzone-sync'); ?>
+                        </button>
+                    </div>
+                    <div id="dsz-mapping-message" class="dsz-message hidden"></div>
+                </div>
+
+                <!-- Existing Mappings -->
+                <div class="dsz-form-section">
+                    <h2><?php _e('Existing Mappings', 'dropshipzone-sync'); ?></h2>
+                    
+                    <!-- Search -->
+                    <form method="get" class="dsz-mapping-search">
+                        <input type="hidden" name="page" value="dsz-sync-mapping" />
+                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php _e('Search mappings...', 'dropshipzone-sync'); ?>" />
+                        <button type="submit" class="button"><?php _e('Search', 'dropshipzone-sync'); ?></button>
+                        <?php if ($search): ?>
+                            <a href="<?php echo admin_url('admin.php?page=dsz-sync-mapping'); ?>" class="button"><?php _e('Clear', 'dropshipzone-sync'); ?></a>
+                        <?php endif; ?>
+                    </form>
+
+                    <!-- Mappings Table -->
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th><?php _e('WooCommerce Product', 'dropshipzone-sync'); ?></th>
+                                <th><?php _e('Dropshipzone SKU', 'dropshipzone-sync'); ?></th>
+                                <th><?php _e('Last Synced', 'dropshipzone-sync'); ?></th>
+                                <th class="column-actions"><?php _e('Actions', 'dropshipzone-sync'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($mappings)): ?>
+                                <tr>
+                                    <td colspan="4" class="dsz-no-logs"><?php _e('No mappings found.', 'dropshipzone-sync'); ?></td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($mappings as $mapping): ?>
+                                    <tr data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
+                                        <td>
+                                            <a href="<?php echo get_edit_post_link($mapping['wc_product_id']); ?>" target="_blank">
+                                                <?php echo esc_html($mapping['wc_product_name'] ?: '#' . $mapping['wc_product_id']); ?>
+                                            </a>
+                                        </td>
+                                        <td><code><?php echo esc_html($mapping['dsz_sku']); ?></code></td>
+                                        <td><?php echo $mapping['last_synced'] ? dsz_format_datetime($mapping['last_synced']) : __('Never', 'dropshipzone-sync'); ?></td>
+                                        <td class="column-actions">
+                                            <button type="button" class="button button-small dsz-unmap-btn" data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
+                                                <span class="dashicons dashicons-no-alt"></span>
+                                                <?php _e('Unmap', 'dropshipzone-sync'); ?>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <?php if ($total_pages > 1): ?>
+                        <div class="dsz-pagination">
+                            <?php
+                            $base_url = admin_url('admin.php?page=dsz-sync-mapping' . ($search ? '&search=' . urlencode($search) : ''));
+                            
+                            if ($page > 1): ?>
+                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php _e('Previous', 'dropshipzone-sync'); ?></a>
+                            <?php endif; ?>
+                            
+                            <span class="dsz-pagination-info">
+                                <?php printf(__('Page %d of %d', 'dropshipzone-sync'), $page, $total_pages); ?>
+                            </span>
+                            
+                            <?php if ($page < $total_pages): ?>
+                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="button"><?php _e('Next', 'dropshipzone-sync'); ?> &raquo;</a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * AJAX: Search WooCommerce products
+     */
+    public function ajax_search_wc_products() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        
+        if (strlen($search) < 2) {
+            wp_send_json_success(['products' => []]);
+        }
+
+        $products = $this->product_mapper->search_wc_products($search, 20);
+        wp_send_json_success(['products' => $products]);
+    }
+
+    /**
+     * AJAX: Search Dropshipzone products
+     */
+    public function ajax_search_dsz_products() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        
+        if (strlen($search) < 2) {
+            wp_send_json_success(['products' => []]);
+        }
+
+        // Search Dropshipzone API by SKU
+        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 20]);
+        
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()]);
+        }
+
+        $products = isset($response['result']) ? $response['result'] : [];
+        wp_send_json_success(['products' => $products]);
+    }
+
+    /**
+     * AJAX: Map product
+     */
+    public function ajax_map_product() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
+        $dsz_sku = isset($_POST['dsz_sku']) ? sanitize_text_field($_POST['dsz_sku']) : '';
+
+        if (!$wc_product_id || !$dsz_sku) {
+            wp_send_json_error(['message' => __('Product ID and SKU are required', 'dropshipzone-sync')]);
+        }
+
+        $result = $this->product_mapper->map($wc_product_id, $dsz_sku);
+
+        if ($result) {
+            wp_send_json_success(['message' => __('Mapping created successfully', 'dropshipzone-sync')]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to create mapping', 'dropshipzone-sync')]);
+        }
+    }
+
+    /**
+     * AJAX: Unmap product
+     */
+    public function ajax_unmap_product() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
+
+        if (!$wc_product_id) {
+            wp_send_json_error(['message' => __('Product ID is required', 'dropshipzone-sync')]);
+        }
+
+        $result = $this->product_mapper->unmap($wc_product_id);
+
+        if ($result) {
+            wp_send_json_success(['message' => __('Mapping removed successfully', 'dropshipzone-sync')]);
+        } else {
+            wp_send_json_error(['message' => __('Failed to remove mapping', 'dropshipzone-sync')]);
+        }
+    }
+
+    /**
+     * AJAX: Auto-map products
+     */
+    public function ajax_auto_map() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $results = $this->product_mapper->auto_map_by_sku();
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('Auto-mapping complete! %d products mapped, %d skipped.', 'dropshipzone-sync'),
+                $results['mapped'],
+                $results['skipped']
+            ),
+            'mapped' => $results['mapped'],
+            'skipped' => $results['skipped'],
         ]);
     }
 }

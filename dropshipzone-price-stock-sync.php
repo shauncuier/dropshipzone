@@ -49,6 +49,7 @@ final class Dropshipzone_Sync {
     public $cron;
     public $admin_ui;
     public $logger;
+    public $product_mapper;
 
     /**
      * Get single instance
@@ -104,6 +105,7 @@ final class Dropshipzone_Sync {
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-price-sync.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-stock-sync.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-cron.php';
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
         
         // Admin UI
         if (is_admin()) {
@@ -144,9 +146,10 @@ final class Dropshipzone_Sync {
         $this->price_sync = new Price_Sync($this->api_client, $this->logger);
         $this->stock_sync = new Stock_Sync($this->api_client, $this->logger);
         $this->cron = new Cron($this->price_sync, $this->stock_sync, $this->logger);
+        $this->product_mapper = new Product_Mapper($this->logger);
         
         if (is_admin()) {
-            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger);
+            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper);
         }
     }
 
@@ -156,6 +159,9 @@ final class Dropshipzone_Sync {
     public function activate() {
         // Create log table
         $this->create_log_table();
+        
+        // Create mapping table
+        Product_Mapper::create_table();
         
         // Create sync status option
         $this->create_default_options();
