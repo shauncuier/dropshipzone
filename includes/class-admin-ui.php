@@ -218,9 +218,41 @@ class Admin_UI {
     }
 
     /**
-     * Render page header
+     * Render page header with navigation
      */
     private function render_header($title, $subtitle = '') {
+        $current_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 'dsz-sync';
+        
+        $nav_items = [
+            'dsz-sync' => [
+                'label' => __('Dashboard', 'dropshipzone-sync'),
+                'icon' => 'dashicons-dashboard'
+            ],
+            'dsz-sync-api' => [
+                'label' => __('API Settings', 'dropshipzone-sync'),
+                'icon' => 'dashicons-admin-network'
+            ],
+            'dsz-sync-price' => [
+                'label' => __('Price Rules', 'dropshipzone-sync'),
+                'icon' => 'dashicons-money-alt'
+            ],
+            'dsz-sync-stock' => [
+                'label' => __('Stock Rules', 'dropshipzone-sync'),
+                'icon' => 'dashicons-archive'
+            ],
+            'dsz-sync-control' => [
+                'label' => __('Sync Control', 'dropshipzone-sync'),
+                'icon' => 'dashicons-update'
+            ],
+            'dsz-sync-logs' => [
+                'label' => __('Logs', 'dropshipzone-sync'),
+                'icon' => 'dashicons-list-view'
+            ],
+            'dsz-sync-mapping' => [
+                'label' => __('Product Mapping', 'dropshipzone-sync'),
+                'icon' => 'dashicons-admin-links'
+            ],
+        ];
         ?>
         <div class="dsz-header">
             <div class="dsz-header-content">
@@ -230,6 +262,19 @@ class Admin_UI {
                 <?php endif; ?>
             </div>
         </div>
+        
+        <nav class="dsz-nav">
+            <?php foreach ($nav_items as $page_slug => $item): 
+                $is_active = ($current_page === $page_slug);
+                $url = admin_url('admin.php?page=' . $page_slug);
+            ?>
+                <a href="<?php echo esc_url($url); ?>" 
+                   class="dsz-nav-item <?php echo $is_active ? 'dsz-nav-active' : ''; ?>">
+                    <span class="dashicons <?php echo esc_attr($item['icon']); ?>"></span>
+                    <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
         <?php
     }
 

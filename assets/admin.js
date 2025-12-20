@@ -2,7 +2,7 @@
  * Dropshipzone Sync Admin JavaScript
  *
  * @package Dropshipzone
- * @version 1.0.0
+ * @version 2.0.0 - Enhanced with animations
  */
 
 (function ($) {
@@ -19,6 +19,128 @@
             this.bindEvents();
             this.initPricePreview();
             this.checkSyncStatus();
+            this.initAnimations();
+            this.initRippleEffect();
+        },
+
+        /**
+         * Initialize UI animations
+         */
+        initAnimations: function () {
+            // Add entrance animation to elements
+            $('.dsz-card, .dsz-form-section, .dsz-section').each(function (index) {
+                $(this).css({
+                    'animation-delay': (index * 0.1) + 's'
+                });
+            });
+
+            // Animate stats numbers
+            this.animateNumbers();
+
+            // Add hover sound feedback (optional, visual only for now)
+            this.initInteractiveFeedback();
+        },
+
+        /**
+         * Initialize ripple effect for buttons
+         */
+        initRippleEffect: function () {
+            $(document).on('click', '.button, .dsz-card', function (e) {
+                var $this = $(this);
+                
+                // Skip if already has ripple or is a link that should navigate
+                if ($this.find('.dsz-ripple').length) {
+                    return;
+                }
+
+                var ripple = $('<span class="dsz-ripple"></span>');
+                var offset = $this.offset();
+                var x = e.pageX - offset.left;
+                var y = e.pageY - offset.top;
+
+                ripple.css({
+                    left: x + 'px',
+                    top: y + 'px'
+                });
+
+                $this.css('position', 'relative').css('overflow', 'hidden');
+                $this.append(ripple);
+
+                // Add ripple styles dynamically if not exists
+                if (!$('#dsz-ripple-style').length) {
+                    $('head').append(`
+                        <style id="dsz-ripple-style">
+                            .dsz-ripple {
+                                position: absolute;
+                                border-radius: 50%;
+                                background: rgba(255, 255, 255, 0.4);
+                                transform: scale(0);
+                                animation: dsz-ripple-effect 0.6s linear;
+                                pointer-events: none;
+                                width: 100px;
+                                height: 100px;
+                                margin-left: -50px;
+                                margin-top: -50px;
+                            }
+                            @keyframes dsz-ripple-effect {
+                                to {
+                                    transform: scale(4);
+                                    opacity: 0;
+                                }
+                            }
+                        </style>
+                    `);
+                }
+
+                setTimeout(function () {
+                    ripple.remove();
+                }, 600);
+            });
+        },
+
+        /**
+         * Animate number counters
+         */
+        animateNumbers: function () {
+            $('.dsz-card-value, .dsz-stat strong').each(function () {
+                var $this = $(this);
+                var text = $this.text().trim();
+                var number = parseInt(text.replace(/[^0-9]/g, ''));
+
+                if (!isNaN(number) && number > 0 && number < 10000) {
+                    $this.prop('counter', 0).animate({
+                        counter: number
+                    }, {
+                        duration: 1500,
+                        easing: 'swing',
+                        step: function (now) {
+                            $this.text(Math.ceil(now));
+                        },
+                        complete: function () {
+                            $this.text(text); // Restore original text with any prefix/suffix
+                        }
+                    });
+                }
+            });
+        },
+
+        /**
+         * Initialize interactive feedback
+         */
+        initInteractiveFeedback: function () {
+            // Add scale effect on button focus
+            $('.button').on('focus', function () {
+                $(this).css('transform', 'scale(1.02)');
+            }).on('blur', function () {
+                $(this).css('transform', '');
+            });
+
+            // Card icon bounce on hover
+            $('.dsz-card').on('mouseenter', function () {
+                $(this).find('.dashicons').css('animation', 'bounce 0.5s ease');
+            }).on('mouseleave', function () {
+                $(this).find('.dashicons').css('animation', '');
+            });
         },
 
         /**
@@ -74,12 +196,17 @@
                             .removeClass('hidden dsz-message-error')
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message +
-                                ' (' + response.data.products + ' products available)');
+                                ' <strong>(' + response.data.products + ' products available)</strong>');
+                        
+                        // Add celebration effect
+                        DSZAdmin.celebrateSuccess($btn);
                     } else {
                         $message
                             .removeClass('hidden dsz-message-success')
                             .addClass('dsz-message-error')
                             .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                        
+                        DSZAdmin.shakeElement($btn);
                     }
                 },
                 error: function () {
@@ -87,11 +214,98 @@
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
                         .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                    
+                    DSZAdmin.shakeElement($btn);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
+        },
+
+        /**
+         * Celebrate success with animation
+         */
+        celebrateSuccess: function ($element) {
+            // Add success pulse
+            $element.css({
+                'animation': 'pulse 0.5s ease',
+                'background': 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+            });
+
+            setTimeout(function () {
+                $element.css({
+                    'animation': '',
+                    'background': ''
+                });
+            }, 1000);
+
+            // Create confetti effect
+            this.createConfetti();
+        },
+
+        /**
+         * Create confetti particles
+         */
+        createConfetti: function () {
+            var colors = ['#667eea', '#764ba2', '#10b981', '#f59e0b', '#ef4444'];
+            var container = $('<div class="dsz-confetti-container"></div>');
+            
+            $('body').append(container);
+
+            for (var i = 0; i < 30; i++) {
+                var particle = $('<div class="dsz-confetti"></div>');
+                particle.css({
+                    'position': 'fixed',
+                    'width': '10px',
+                    'height': '10px',
+                    'background': colors[Math.floor(Math.random() * colors.length)],
+                    'top': '50%',
+                    'left': Math.random() * 100 + '%',
+                    'opacity': 1,
+                    'border-radius': Math.random() > 0.5 ? '50%' : '0',
+                    'z-index': 9999,
+                    'pointer-events': 'none'
+                });
+
+                container.append(particle);
+
+                particle.animate({
+                    top: (Math.random() * 100) + '%',
+                    left: (Math.random() * 20 - 10 + parseFloat(particle.css('left'))) + '%',
+                    opacity: 0,
+                    transform: 'rotate(' + (Math.random() * 360) + 'deg)'
+                }, 1500 + Math.random() * 1000, function () {
+                    $(this).remove();
+                });
+            }
+
+            setTimeout(function () {
+                container.remove();
+            }, 3000);
+        },
+
+        /**
+         * Shake element on error
+         */
+        shakeElement: function ($element) {
+            $element.css('animation', 'none');
+            setTimeout(function () {
+                $element.css('animation', 'shake 0.5s ease');
+            }, 10);
+
+            // Add shake animation if not exists
+            if (!$('#dsz-shake-style').length) {
+                $('head').append(`
+                    <style id="dsz-shake-style">
+                        @keyframes shake {
+                            0%, 100% { transform: translateX(0); }
+                            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                            20%, 40%, 60%, 80% { transform: translateX(5px); }
+                        }
+                    </style>
+                `);
+            }
         },
 
         /**
@@ -124,6 +338,8 @@
                             .removeClass('hidden dsz-message-error')
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                        
+                        DSZAdmin.celebrateSuccess($btn);
                     } else {
                         $message
                             .removeClass('hidden dsz-message-success')
@@ -190,6 +406,9 @@
                             .removeClass('hidden dsz-message-error')
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                        
+                        // Subtle success animation
+                        $message.css('animation', 'fadeInUp 0.3s ease');
                     } else {
                         $message
                             .removeClass('hidden dsz-message-success')
@@ -206,9 +425,12 @@
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
 
-                    // Auto-hide message after 5 seconds
+                    // Auto-hide message after 5 seconds with fade
                     setTimeout(function () {
-                        $message.addClass('hidden');
+                        $message.css('animation', 'fadeOut 0.3s ease forwards');
+                        setTimeout(function () {
+                            $message.addClass('hidden').css('animation', '');
+                        }, 300);
                     }, 5000);
                 }
             });
@@ -225,8 +447,11 @@
             var $progress = $('#dsz-progress-container');
 
             $btn.addClass('dsz-loading').prop('disabled', true);
-            $progress.removeClass('hidden');
+            $progress.removeClass('hidden').css('animation', 'fadeInUp 0.3s ease');
             $message.addClass('hidden');
+
+            // Add glow effect to progress bar
+            $('#dsz-progress-fill').css('box-shadow', '0 0 20px rgba(102, 126, 234, 0.5)');
 
             $.ajax({
                 url: dsz_admin.ajax_url,
@@ -312,9 +537,21 @@
          */
         updateProgress: function (data) {
             var progress = data.progress || 0;
-            $('#dsz-progress-fill').css('width', progress + '%');
-            $('#dsz-progress-text').text(data.message || 'Processing... ' + progress + '%');
-            $('#sync-status-text').text(dsz_admin.strings.syncing).addClass('dsz-status-active');
+            var $fill = $('#dsz-progress-fill');
+            var $text = $('#dsz-progress-text');
+            
+            // Smooth progress animation
+            $fill.css({
+                'width': progress + '%',
+                'transition': 'width 0.5s ease'
+            });
+            
+            $text.text(data.message || 'Processing... ' + progress + '%');
+            
+            // Update status text with pulse
+            $('#sync-status-text')
+                .text(dsz_admin.strings.syncing)
+                .addClass('dsz-status-active');
         },
 
         /**
@@ -336,12 +573,15 @@
                 $message
                     .removeClass('hidden dsz-message-error')
                     .addClass('dsz-message-success')
-                    .html('<span class="dashicons dashicons-yes-alt"></span> Sync completed! ' +
+                    .html('<span class="dashicons dashicons-yes-alt"></span> <strong>Sync completed!</strong> ' +
                         productsUpdated + ' products updated, ' +
                         errorsCount + ' errors.');
 
                 $('#dsz-progress-fill').css('width', '100%');
-                $('#dsz-progress-text').text('Complete!');
+                $('#dsz-progress-text').text('✓ Complete!');
+
+                // Celebrate!
+                this.createConfetti();
             } else {
                 $message
                     .removeClass('hidden dsz-message-success')
@@ -351,7 +591,10 @@
 
             // Hide progress after 3 seconds
             setTimeout(function () {
-                $progress.addClass('hidden');
+                $progress.css('animation', 'fadeOut 0.3s ease forwards');
+                setTimeout(function () {
+                    $progress.addClass('hidden').css('animation', '');
+                }, 300);
             }, 3000);
         },
 
@@ -416,7 +659,12 @@
                 }
             }
 
-            $('#calculated_price').text('$' + price.toFixed(2));
+            // Animate price change
+            var $priceEl = $('#calculated_price');
+            $priceEl.css('transform', 'scale(1.1)');
+            setTimeout(function () {
+                $priceEl.text('$' + price.toFixed(2)).css('transform', 'scale(1)');
+            }, 150);
         },
 
         /**
@@ -497,16 +745,77 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        alert(response.data.message);
+                        
+                        // Show success message instead of alert
+                        DSZAdmin.showNotification('success', response.data.message || 'Export successful!');
                     }
                 },
                 error: function () {
-                    alert(dsz_admin.strings.error);
+                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
+        },
+
+        /**
+         * Show notification toast
+         */
+        showNotification: function (type, message) {
+            // Remove existing notifications
+            $('.dsz-toast').remove();
+
+            var icon = type === 'success' ? 'dashicons-yes-alt' : 'dashicons-warning';
+            var toast = $(`
+                <div class="dsz-toast dsz-toast-${type}">
+                    <span class="dashicons ${icon}"></span>
+                    <span>${message}</span>
+                </div>
+            `);
+
+            // Add toast styles if not exist
+            if (!$('#dsz-toast-style').length) {
+                $('head').append(`
+                    <style id="dsz-toast-style">
+                        .dsz-toast {
+                            position: fixed;
+                            bottom: 30px;
+                            right: 30px;
+                            padding: 16px 24px;
+                            border-radius: 12px;
+                            display: flex;
+                            align-items: center;
+                            gap: 12px;
+                            z-index: 10000;
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                            animation: slideInUp 0.3s ease, fadeOut 0.3s ease 3s forwards;
+                            font-weight: 500;
+                        }
+                        .dsz-toast-success {
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            color: white;
+                        }
+                        .dsz-toast-error {
+                            background: linear-gradient(135deg, #ef4444, #dc2626);
+                            color: white;
+                        }
+                        @keyframes slideInUp {
+                            from { transform: translateY(100px); opacity: 0; }
+                            to { transform: translateY(0); opacity: 1; }
+                        }
+                        @keyframes fadeOut {
+                            to { opacity: 0; transform: translateY(-20px); }
+                        }
+                    </style>
+                `);
+            }
+
+            $('body').append(toast);
+
+            setTimeout(function () {
+                toast.remove();
+            }, 3500);
         },
 
         /**
@@ -539,7 +848,8 @@
                             .addClass('dsz-message-success')
                             .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
 
-                        // Reload page to show new mappings
+                        // Celebrate and reload
+                        DSZAdmin.createConfetti();
                         setTimeout(function () {
                             location.reload();
                         }, 2000);
@@ -651,9 +961,17 @@
                 },
                 success: function (response) {
                     if (response.success) {
-                        $btn.closest('tr').fadeOut(300, function () {
-                            $(this).remove();
+                        // Animate row removal
+                        $btn.closest('tr').css({
+                            'background': 'rgba(239, 68, 68, 0.1)',
+                            'transform': 'translateX(50px)',
+                            'opacity': 0,
+                            'transition': 'all 0.3s ease'
                         });
+                        
+                        setTimeout(function () {
+                            $btn.closest('tr').remove();
+                        }, 300);
                     } else {
                         alert(response.data.message);
                     }
@@ -699,10 +1017,10 @@
                             if (response.success && response.data.products.length > 0) {
                                 var html = '';
                                 response.data.products.forEach(function (product) {
-                                    var mapped = product.is_mapped ? ' (mapped)' : '';
-                                    var sku = product.sku ? ' [' + product.sku + ']' : '';
+                                    var mapped = product.is_mapped ? ' <span style="color: #f59e0b;">(mapped)</span>' : '';
+                                    var sku = product.sku ? ' <code style="font-size: 11px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">' + escapeHtml(product.sku) + '</code>' : '';
                                     html += '<div class="dsz-search-item" data-id="' + product.ID + '" data-name="' + escapeHtml(product.post_title) + '">';
-                                    html += escapeHtml(product.post_title) + sku + mapped;
+                                    html += '<strong>' + escapeHtml(product.post_title) + '</strong>' + sku + mapped;
                                     html += '</div>';
                                 });
                                 $results.html(html).removeClass('hidden');
@@ -721,6 +1039,12 @@
                 $('#dsz-wc-product-id').val($item.data('id'));
                 $('#dsz-wc-results').addClass('hidden');
                 self.updateMappingButton();
+                
+                // Highlight selected
+                $('#dsz-wc-search').css('border-color', '#10b981');
+                setTimeout(function () {
+                    $('#dsz-wc-search').css('border-color', '');
+                }, 1000);
             });
 
             // Handle SKU input
@@ -735,7 +1059,22 @@
         updateMappingButton: function () {
             var wcProductId = $('#dsz-wc-product-id').val();
             var dszSku = $('#dsz-dsz-sku').val();
-            $('#dsz-create-mapping').prop('disabled', !wcProductId || !dszSku);
+            var $btn = $('#dsz-create-mapping');
+            
+            $btn.prop('disabled', !wcProductId || !dszSku);
+            
+            // Add visual feedback
+            if (wcProductId && dszSku) {
+                $btn.css({
+                    'opacity': 1,
+                    'transform': 'scale(1.02)'
+                });
+            } else {
+                $btn.css({
+                    'opacity': 0.6,
+                    'transform': 'scale(1)'
+                });
+            }
         },
 
         /**
@@ -765,6 +1104,18 @@
     $(document).ready(function () {
         DSZAdmin.init();
         DSZAdmin.initMappingPage();
+
+        // Add fadeOut keyframe if not exists
+        if (!$('#dsz-fadeout-style').length) {
+            $('head').append(`
+                <style id="dsz-fadeout-style">
+                    @keyframes fadeOut {
+                        from { opacity: 1; }
+                        to { opacity: 0; }
+                    }
+                </style>
+            `);
+        }
     });
 
 })(jQuery);
