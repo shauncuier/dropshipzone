@@ -1,5 +1,7 @@
 # Dropshipzone Price & Stock Sync
 
+![Plugin Banner](assets/banner-1544x500.png)
+
 ![WordPress Plugin Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)
 ![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-purple.svg)
@@ -7,8 +9,6 @@
 ![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
 
 A lightweight, enterprise-grade WooCommerce plugin that automatically synchronizes product prices and stock levels from the Dropshipzone API.
-
-![Plugin Dashboard](assets/screenshot-dashboard.png)
 
 ## ✨ Features
 
