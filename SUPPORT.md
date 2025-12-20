@@ -17,6 +17,11 @@ If you've found a technical issue or bug, please search our **[Issue Tracker](ht
 
 For reporting security vulnerabilities, please refer to our **[Security Policy](SECURITY.md)**. Do not open public issues for security concerns.
 
+## 💖 Support the Project
+
+If you find this plugin useful, please consider supporting its development:
+- **Buy Me a Coffee**: [buymeacoffee.com/shauncuier](https://buymeacoffee.com/shauncuier)
+
 ## 🏢 Professional Support
 
 If you need professional integration services or custom development, please visit **[3s-Soft](https://3s-soft.com)**.

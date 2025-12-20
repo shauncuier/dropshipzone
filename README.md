@@ -163,10 +163,7 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) 
 ## 💖 Support the Project
 
 If you find this plugin useful, please consider supporting its development:
-- **GitHub Sponsors**: [Sponsor shauncuier](https://github.com/sponsors/shauncuier)
-- **Patreon**: [3sSoft](https://patreon.com/3sSoft)
-- **Ko-fi**: [Support on Ko-fi](https://ko-fi.com/3ssoft)
-- **Direct**: [3s-soft.com/donate](https://3s-soft.com/donate)
+- **Buy Me a Coffee**: [buymeacoffee.com/shauncuier](https://buymeacoffee.com/shauncuier)
 
 Your support helps us maintain the plugin and add new features!
 
