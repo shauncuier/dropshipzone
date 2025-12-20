@@ -315,12 +315,12 @@ class Cron {
                 // Update STOCK
                 $stock_updated = $this->update_product_stock($wc_product, $api_data);
                 
+                // Update last_synced for all checked products (not just updated)
+                $product_mapper->update_last_synced($wc_product_id);
+                
                 if ($price_updated || $stock_updated) {
                     $wc_product->save();
                     $updated++;
-                    
-                    // Update last_synced in mapping table
-                    $product_mapper->update_last_synced($wc_product_id);
                     
                     $this->logger->info('Product synced successfully', [
                         'wc_product_id' => $wc_product_id,
@@ -330,6 +330,10 @@ class Cron {
                     ]);
                 } else {
                     $skipped++;
+                    $this->logger->debug('Product already in sync', [
+                        'wc_product_id' => $wc_product_id,
+                        'dsz_sku' => $dsz_sku,
+                    ]);
                 }
                 
             } catch (\Exception $e) {
