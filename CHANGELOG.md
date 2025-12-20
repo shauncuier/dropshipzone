@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Commencing development for Version 2.0
+- New Product Import feature: Search and import products directly from Dropshipzone API
+- Core `Product_Importer` class for automated product creation and image sideloading
+- Dynamic rule application (Price & Stock) during product import
+- Automated Product Mapping for all imported items
+- Enhanced Admin UI with dedicated Product Import dashboard and grid layout results
 
 ## [1.0.0] - 2025-12-21
 
