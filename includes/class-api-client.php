@@ -324,7 +324,7 @@ class API_Client {
     }
 
     /**
-     * Make API request
+     * Make API request with rate limit protection
      *
      * @param string $method   HTTP method
      * @param string $endpoint API endpoint
@@ -349,7 +349,7 @@ class API_Client {
         $args = [
             'method' => $method,
             'headers' => $headers,
-            'timeout' => 30,
+            'timeout' => 60, // Increased timeout for large requests
             'sslverify' => true,
         ];
 
@@ -367,14 +367,16 @@ class API_Client {
 
         // Check for WP error
         if (is_wp_error($response)) {
-            // Retry on connection errors
+            // Retry on connection errors with exponential backoff
             if ($retry < $this->max_retries) {
+                $wait_time = pow(2, $retry) * 2; // 2, 4, 8 seconds
                 $this->logger->warning('Request failed, retrying...', [
                     'endpoint' => $endpoint,
                     'retry' => $retry + 1,
+                    'wait_seconds' => $wait_time,
                     'error' => $response->get_error_message(),
                 ]);
-                sleep(1); // Wait 1 second before retry
+                sleep($wait_time);
                 return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
             }
             return $response;
@@ -392,6 +394,7 @@ class API_Client {
                 $this->logger->info('Token expired, refreshing...');
                 $auth_result = $this->authenticate();
                 if (!is_wp_error($auth_result)) {
+                    sleep(1); // Small delay after re-auth
                     return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
                 }
             }
@@ -399,10 +402,17 @@ class API_Client {
         }
 
         if ($response_code === 429) {
-            // Rate limited
+            // Rate limited - use exponential backoff with longer delays
             if ($retry < $this->max_retries) {
-                $this->logger->warning('Rate limited, waiting...', ['endpoint' => $endpoint]);
-                sleep(5); // Wait 5 seconds
+                $wait_times = [10, 30, 60]; // 10 seconds, 30 seconds, 60 seconds
+                $wait_time = isset($wait_times[$retry]) ? $wait_times[$retry] : 60;
+                
+                $this->logger->warning('Rate limited, waiting...', [
+                    'endpoint' => $endpoint,
+                    'retry' => $retry + 1,
+                    'wait_seconds' => $wait_time,
+                ]);
+                sleep($wait_time);
                 return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
             }
             return new \WP_Error('rate_limited', __('API rate limit exceeded. Please try again later.', 'dropshipzone-sync'));
@@ -411,6 +421,12 @@ class API_Client {
         if ($response_code >= 400) {
             $error_message = isset($response_data['message']) ? $response_data['message'] : __('API request failed.', 'dropshipzone-sync');
             return new \WP_Error('api_error', $error_message, ['code' => $response_code, 'response' => $response_data]);
+        }
+
+        // Add small delay after successful request to prevent rate limiting
+        // Only for product/stock endpoints, not auth
+        if ($endpoint !== '/auth') {
+            usleep(500000); // 0.5 second delay between requests
         }
 
         return $response_data;
