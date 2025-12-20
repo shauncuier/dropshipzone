@@ -328,13 +328,17 @@
             $btn.removeClass('dsz-loading').prop('disabled', false);
             $('#sync-status-text').text('Idle').removeClass('dsz-status-active');
 
+            // Get values with defaults
+            var productsUpdated = data.products_updated !== undefined ? data.products_updated : 0;
+            var errorsCount = data.errors_count !== undefined ? data.errors_count : 0;
+
             if (data.status === 'complete') {
                 $message
                     .removeClass('hidden dsz-message-error')
                     .addClass('dsz-message-success')
                     .html('<span class="dashicons dashicons-yes-alt"></span> Sync completed! ' +
-                        data.products_updated + ' products updated, ' +
-                        data.errors_count + ' errors.');
+                        productsUpdated + ' products updated, ' +
+                        errorsCount + ' errors.');
 
                 $('#dsz-progress-fill').css('width', '100%');
                 $('#dsz-progress-text').text('Complete!');
