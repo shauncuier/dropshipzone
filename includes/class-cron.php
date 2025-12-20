@@ -161,7 +161,10 @@ class Cron {
     }
 
     /**
-     * Process a single sync batch
+     * Process a single sync batch - WooCommerce catalog driven
+     *
+     * This approach starts from YOUR WooCommerce products and only syncs
+     * those that have matching SKUs in Dropshipzone.
      *
      * @return array Batch results
      */
@@ -170,9 +173,6 @@ class Cron {
         $batch_size = isset($settings['batch_size']) ? intval($settings['batch_size']) : 100;
         $current_offset = isset($settings['current_offset']) ? intval($settings['current_offset']) : 0;
 
-        // Calculate page number from offset
-        $page_no = floor($current_offset / $batch_size) + 1;
-
         // Get API client
         $plugin = dsz_sync();
         if (!$plugin || !$plugin->api_client) {
@@ -180,38 +180,73 @@ class Cron {
             return ['status' => 'error', 'message' => 'Plugin not initialized'];
         }
 
-        // Fetch products from API
-        $response = $plugin->api_client->get_all_products($page_no, min($batch_size, 200));
-
-        if (is_wp_error($response)) {
-            $this->logger->error('Failed to fetch products for sync', [
-                'error' => $response->get_error_message(),
-                'page' => $page_no,
-            ]);
-            $this->complete_sync(['error' => $response->get_error_message()]);
-            return [
-                'status' => 'error',
-                'message' => $response->get_error_message(),
-            ];
-        }
-
-        $products = isset($response['result']) ? $response['result'] : [];
-        $total = isset($response['total']) ? intval($response['total']) : 0;
-        $total_pages = isset($response['total_pages']) ? intval($response['total_pages']) : 1;
-
-        if (empty($products)) {
-            $this->complete_sync(['message' => 'No products to sync']);
+        // Get WooCommerce products with SKUs (YOUR catalog)
+        $wc_products = $this->get_woocommerce_products_with_skus($batch_size, $current_offset);
+        
+        if (empty($wc_products['skus'])) {
+            $this->complete_sync(['message' => 'No products with SKUs to sync']);
             return [
                 'status' => 'complete',
-                'message' => __('No products to sync', 'dropshipzone-sync'),
+                'message' => __('Sync completed - No more products to sync', 'dropshipzone-sync'),
+                'products_updated' => isset($settings['products_updated']) ? $settings['products_updated'] : 0,
+                'errors_count' => isset($settings['errors_count']) ? $settings['errors_count'] : 0,
             ];
         }
 
-        // Sync prices
-        $price_results = $this->price_sync->sync_batch($products);
+        $skus = $wc_products['skus'];
+        $total_wc_products = $wc_products['total'];
+
+        $this->logger->info('Fetching Dropshipzone data for WooCommerce SKUs', [
+            'batch_skus' => count($skus),
+            'offset' => $current_offset,
+            'total' => $total_wc_products,
+        ]);
+
+        // Fetch only these SKUs from Dropshipzone API (max 100 per API call)
+        $api_products = [];
+        $sku_chunks = array_chunk($skus, 100); // API allows max 100 SKUs per request
         
-        // Sync stock
-        $stock_results = $this->stock_sync->sync_batch($products);
+        foreach ($sku_chunks as $chunk) {
+            $response = $plugin->api_client->get_products_by_skus($chunk);
+            
+            if (is_wp_error($response)) {
+                $this->logger->error('Failed to fetch products from Dropshipzone', [
+                    'error' => $response->get_error_message(),
+                    'skus_count' => count($chunk),
+                ]);
+                continue;
+            }
+
+            if (!empty($response['result'])) {
+                $api_products = array_merge($api_products, $response['result']);
+            }
+        }
+
+        // Create SKU-indexed map for easy lookup
+        $api_products_by_sku = [];
+        foreach ($api_products as $product) {
+            if (!empty($product['sku'])) {
+                $api_products_by_sku[$product['sku']] = $product;
+            }
+        }
+
+        $this->logger->info('Dropshipzone products fetched', [
+            'requested' => count($skus),
+            'found' => count($api_products_by_sku),
+        ]);
+
+        // Sync prices and stock for matched products
+        $price_results = $this->price_sync->sync_batch($api_products);
+        $stock_results = $this->stock_sync->sync_batch($api_products);
+
+        // Log SKUs not found in Dropshipzone
+        $not_found_skus = array_diff($skus, array_keys($api_products_by_sku));
+        if (!empty($not_found_skus)) {
+            $this->logger->warning('SKUs not found in Dropshipzone', [
+                'count' => count($not_found_skus),
+                'skus' => array_slice($not_found_skus, 0, 20), // Log first 20
+            ]);
+        }
 
         // Update settings
         $settings = get_option('dsz_sync_settings', []);
@@ -219,12 +254,13 @@ class Cron {
             + $price_results['updated'] + $stock_results['updated'];
         $settings['errors_count'] = (isset($settings['errors_count']) ? $settings['errors_count'] : 0)
             + $price_results['errors'] + $stock_results['errors'];
-        $settings['current_offset'] = $current_offset + count($products);
+        $settings['current_offset'] = $current_offset + count($skus);
         $settings['last_batch_time'] = time();
-        $settings['total_products'] = $total;
+        $settings['total_products'] = $total_wc_products;
 
-        // Check if we've processed all products
-        if ($page_no >= $total_pages) {
+        // Check if we've processed all WooCommerce products
+        $new_offset = $current_offset + count($skus);
+        if ($new_offset >= $total_wc_products) {
             $this->complete_sync([
                 'products_updated' => $settings['products_updated'],
                 'errors_count' => $settings['errors_count'],
@@ -242,21 +278,65 @@ class Cron {
         // Schedule next batch if not complete
         wp_schedule_single_event(time() + 5, 'dsz_sync_batch_continue');
 
+        $current_batch = floor($current_offset / $batch_size) + 1;
+        $total_batches = ceil($total_wc_products / $batch_size);
+
         $this->logger->info('Batch processed', [
-            'page' => $page_no,
-            'total_pages' => $total_pages,
+            'batch' => $current_batch,
+            'total_batches' => $total_batches,
             'price_updated' => $price_results['updated'],
             'stock_updated' => $stock_results['updated'],
+            'not_found_in_dsz' => count($not_found_skus),
         ]);
 
         return [
             'status' => 'processing',
-            'message' => sprintf(__('Processing batch %d of %d', 'dropshipzone-sync'), $page_no, $total_pages),
-            'current_page' => $page_no,
-            'total_pages' => $total_pages,
-            'progress' => round(($page_no / $total_pages) * 100),
+            'message' => sprintf(__('Processing batch %d of %d', 'dropshipzone-sync'), $current_batch, $total_batches),
+            'current_page' => $current_batch,
+            'total_pages' => $total_batches,
+            'progress' => round(($new_offset / $total_wc_products) * 100),
             'price_results' => $price_results,
             'stock_results' => $stock_results,
+        ];
+    }
+
+    /**
+     * Get WooCommerce products with SKUs from YOUR catalog
+     *
+     * @param int $limit  Number of products per batch
+     * @param int $offset Offset for pagination
+     * @return array Array with 'skus' and 'total'
+     */
+    private function get_woocommerce_products_with_skus($limit = 100, $offset = 0) {
+        global $wpdb;
+
+        // Get total count of products with SKUs
+        $total = $wpdb->get_var("
+            SELECT COUNT(DISTINCT p.ID)
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+            WHERE p.post_type IN ('product', 'product_variation')
+            AND p.post_status = 'publish'
+            AND pm.meta_value != ''
+            AND pm.meta_value IS NOT NULL
+        ");
+
+        // Get SKUs for current batch
+        $skus = $wpdb->get_col($wpdb->prepare("
+            SELECT DISTINCT pm.meta_value
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+            WHERE p.post_type IN ('product', 'product_variation')
+            AND p.post_status = 'publish'
+            AND pm.meta_value != ''
+            AND pm.meta_value IS NOT NULL
+            ORDER BY p.ID ASC
+            LIMIT %d OFFSET %d
+        ", $limit, $offset));
+
+        return [
+            'skus' => $skus ?: [],
+            'total' => intval($total),
         ];
     }
 
