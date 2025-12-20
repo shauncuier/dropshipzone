@@ -1,0 +1,82 @@
+# Dropshipzone Plugin Development Files
+# =====================================
+
+# WordPress & WP-CLI
+wp-cli.local.yml
+wp-config.php
+
+# IDE & Editors
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Dependencies & Vendors (if using Composer)
+vendor/
+node_modules/
+package-lock.json
+composer.lock
+
+# Build Tools
+.sass-cache/
+*.min.css.map
+*.min.js.map
+
+# Testing
+tests/
+phpunit.xml
+phpcs.xml
+.phpunit.result.cache
+coverage/
+
+# Logs & Debug (keep plugin logs in database)
+*.log
+debug.log
+error.log
+
+# Archives & Backups
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.backup
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Distribution (built archives)
+dist/
+build/
+
+# Development files
+.editorconfig
+.gitattributes
+.travis.yml
+.github/
+Gruntfile.js
+Gulpfile.js
+webpack.config.js
+phpstan.neon
+
+# Documentation build outputs (keep source)
+docs/_build/
+
+# Local development overrides
+local-config.php
+wp-content/debug.log
