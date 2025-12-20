@@ -155,9 +155,20 @@ This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) 
 ## 🆘 Support
 
 - **Documentation**: [Wiki](https://github.com/shauncuier/dropshipzone/wiki)
+- **Discussions**: [GitHub Discussions](https://github.com/shauncuier/dropshipzone/discussions)
 - **Issues**: [GitHub Issues](https://github.com/shauncuier/dropshipzone/issues)
 - **WordPress Forum**: [Support Threads](https://wordpress.org/support/plugin/dropshipzone-price-stock-sync/)
 - **Email**: support@dropshipzone.com.au
+
+## 💖 Support the Project
+
+If you find this plugin useful, please consider supporting its development:
+- **GitHub Sponsors**: [Sponsor shauncuier](https://github.com/sponsors/shauncuier)
+- **Patreon**: [3sSoft](https://patreon.com/3sSoft)
+- **Ko-fi**: [Support on Ko-fi](https://ko-fi.com/3ssoft)
+- **Direct**: [3s-soft.com/donate](https://3s-soft.com/donate)
+
+Your support helps us maintain the plugin and add new features!
 
 ## 📝 Changelog
 
