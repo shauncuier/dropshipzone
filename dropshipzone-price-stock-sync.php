@@ -131,6 +131,25 @@ final class Dropshipzone_Sync {
         
         // Declare HPOS compatibility
         add_action('before_woocommerce_init', [$this, 'declare_hpos_compatibility']);
+
+        // Clean up mapping when product is deleted
+        add_action('deleted_post', [$this, 'cleanup_product_mapping'], 10, 2);
+    }
+
+    /**
+     * Cleanup mapping when a product is deleted
+     * 
+     * @param int      $post_id Post ID
+     * @param \WP_Post $post    Post object
+     */
+    public function cleanup_product_mapping($post_id, $post) {
+        if ($post->post_type !== 'product' && $post->post_type !== 'product_variation') {
+            return;
+        }
+
+        if ($this->product_mapper) {
+            $this->product_mapper->unmap($post_id);
+        }
     }
 
     /**

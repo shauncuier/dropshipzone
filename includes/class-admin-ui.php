@@ -237,6 +237,7 @@ class Admin_UI {
         register_setting('dsz_sync_settings', 'dsz_sync_price_rules');
         register_setting('dsz_sync_settings', 'dsz_sync_stock_rules');
         register_setting('dsz_sync_settings', 'dsz_sync_settings');
+        register_setting('dsz_sync_settings', 'dsz_sync_import_settings');
     }
 
     /**
@@ -474,6 +475,29 @@ class Admin_UI {
                         </div>
 
                         <div id="dsz-api-message" class="dsz-message hidden"></div>
+                    </div>
+
+                    <!-- Import Settings -->
+                    <div class="dsz-form-section">
+                        <h2><?php _e('Import Settings', 'dropshipzone-sync'); ?></h2>
+                        <?php 
+                        $import_settings = get_option('dsz_sync_import_settings', ['default_status' => 'publish']);
+                        $default_status = isset($import_settings['default_status']) ? $import_settings['default_status'] : 'publish';
+                        ?>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="dsz_import_status"><?php _e('Default Product Status', 'dropshipzone-sync'); ?></label>
+                                </th>
+                                <td>
+                                    <select id="dsz_import_status" name="dsz_import_status" class="dsz-import-status-select">
+                                        <option value="publish" <?php selected($default_status, 'publish'); ?>><?php _e('Published', 'dropshipzone-sync'); ?></option>
+                                        <option value="draft" <?php selected($default_status, 'draft'); ?>><?php _e('Draft', 'dropshipzone-sync'); ?></option>
+                                    </select>
+                                    <p class="description"><?php _e('New products will be created with this status.', 'dropshipzone-sync'); ?></p>
+                                </td>
+                            </tr>
+                        </table>
                     </div>
 
                     <!-- Token Status -->
@@ -1050,6 +1074,13 @@ class Admin_UI {
                 $this->cron->schedule_sync($current['frequency']);
                 break;
 
+            case 'import_settings':
+                $import_settings = [
+                    'default_status' => isset($settings['default_status']) ? sanitize_text_field($settings['default_status']) : 'publish',
+                ];
+                update_option('dsz_sync_import_settings', $import_settings);
+                break;
+
             default:
                 wp_send_json_error(['message' => __('Invalid settings type', 'dropshipzone-sync')]);
         }
@@ -1511,7 +1542,18 @@ class Admin_UI {
             wp_send_json_error(['message' => __('SKU is required', 'dropshipzone-sync')]);
         }
 
-        $result = $this->product_importer->import_product($sku);
+        // Check if product data was passed from search results
+        $product_data = null;
+        if (isset($_POST['product_data']) && !empty($_POST['product_data'])) {
+            $product_data = json_decode(stripslashes($_POST['product_data']), true);
+        }
+
+        // If we have product data from search, use it directly; otherwise fetch by SKU
+        if ($product_data && isset($product_data['sku']) && $product_data['sku'] === $sku) {
+            $result = $this->product_importer->import_product($product_data);
+        } else {
+            $result = $this->product_importer->import_product($sku);
+        }
 
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()]);

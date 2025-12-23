@@ -366,6 +366,20 @@
                         .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
                 },
                 complete: function () {
+                    // Also save import settings
+                    $.ajax({
+                        url: dsz_admin.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'dsz_save_settings',
+                            nonce: dsz_admin.nonce,
+                            type: 'import_settings',
+                            settings: {
+                                default_status: $('#dsz_import_status').val()
+                            }
+                        }
+                    });
+
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
@@ -1170,15 +1184,23 @@
                 var btnClass = product.is_imported ? 'button-secondary' : 'button-primary dsz-import-btn';
                 var btnDisabled = product.is_imported ? 'disabled' : '';
 
+                var imageUrl = product.image_url || product.image || '';
+                if (!imageUrl && product.images && Array.isArray(product.images) && product.images.length > 0) {
+                    imageUrl = product.images[0];
+                }
+
+                // Encode product data for storage
+                var productDataJson = JSON.stringify(product);
+
                 html += `
-                    <div class="dsz-import-item" data-sku="${product.sku}">
+                    <div class="dsz-import-item" data-sku="${product.sku}" data-product="${escapeHtml(productDataJson)}">
                         <div class="dsz-import-item-image">
-                            ${product.image_url ? `<img src="${product.image_url}" alt="${escapeHtml(product.title)}">` : '<span class="dashicons dashicons-format-image"></span>'}
+                            ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(product.title || product.sku)}">` : '<span class="dashicons dashicons-format-image"></span>'}
                         </div>
                         <div class="dsz-import-item-info">
-                            <h4>${escapeHtml(product.title)}</h4>
+                            <h4>${escapeHtml(product.title || product.sku)}</h4>
                             <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code></p>
-                            <p class="dsz-import-item-price">$${parseFloat(product.price).toFixed(2)} <small>(Supplier Cost)</small></p>
+                            <p class="dsz-import-item-price">$${parseFloat(product.price || 0).toFixed(2)} <small>(Supplier Cost)</small></p>
                             <button type="button" class="button ${btnClass}" ${btnDisabled} data-sku="${escapeHtml(product.sku)}">
                                 ${product.is_imported ? '<span class="dashicons dashicons-yes-alt"></span> ' : '<span class="dashicons dashicons-plus"></span> '}
                                 ${btnText}
@@ -1199,6 +1221,7 @@
             var $btn = $(e.currentTarget);
             var sku = $btn.data('sku');
             var $item = $btn.closest('.dsz-import-item');
+            var productData = $item.data('product');
 
             $btn.addClass('dsz-loading').prop('disabled', true);
 
@@ -1208,7 +1231,8 @@
                 data: {
                     action: 'dsz_import_product',
                     nonce: dsz_admin.nonce,
-                    sku: sku
+                    sku: sku,
+                    product_data: typeof productData === 'string' ? productData : JSON.stringify(productData)
                 },
                 success: function (response) {
                     if (response.success) {

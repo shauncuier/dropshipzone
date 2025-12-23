@@ -105,10 +105,18 @@ class Product_Mapper {
         global $wpdb;
 
         // Check if mapping already exists for this WC product
-        $existing = $this->get_by_wc_product($wc_product_id);
+        $existing_by_wc = $this->get_by_wc_product($wc_product_id);
         
-        if ($existing) {
-            // Update existing mapping
+        // Check if mapping already exists for this SKU
+        $existing_by_sku = $this->get_by_dsz_sku($dsz_sku);
+
+        if ($existing_by_wc) {
+            // If the SKU is already mapped to a DIFFERENT product, we might need to clean that up
+            if ($existing_by_sku && (int)$existing_by_sku['wc_product_id'] !== (int)$wc_product_id) {
+                $this->unmap((int)$existing_by_sku['wc_product_id']);
+            }
+
+            // Update existing mapping for this product
             $result = $wpdb->update(
                 $this->table_name,
                 [
@@ -126,9 +134,16 @@ class Product_Mapper {
                     'wc_product_id' => $wc_product_id,
                     'dsz_sku' => $dsz_sku,
                 ]);
-                return $existing['id'];
+                return $existing_by_wc['id'];
             }
             return false;
+        }
+
+        // If we reach here, no mapping exists for this WC product ID.
+        // However, the SKU might still be mapped to a different (likely deleted) product.
+        if ($existing_by_sku) {
+            // Clean up the orphan SKU mapping
+            $this->unmap((int)$existing_by_sku['wc_product_id']);
         }
 
         // Create new mapping

@@ -96,7 +96,12 @@ class Product_Importer {
         // Create the product
         $product = new \WC_Product_Simple();
         $product->set_name(isset($data['title']) ? $data['title'] : $sku);
-        $product->set_status('publish'); // Default to publish or draft? 
+        
+        // Get default status from settings
+        $import_settings = get_option('dsz_sync_import_settings', ['default_status' => 'publish']);
+        $product_status = isset($import_settings['default_status']) ? $import_settings['default_status'] : 'publish';
+        $product->set_status($product_status); 
+
         $product->set_description(isset($data['description']) ? $data['description'] : '');
         $product->set_sku($sku);
         
@@ -125,6 +130,19 @@ class Product_Importer {
             $product->set_height($data['height']);
         }
 
+        // Set Categories
+        if (!empty($data['categories'])) {
+            $category_ids = $this->create_categories($data['categories']);
+            if (!empty($category_ids)) {
+                $product->set_category_ids($category_ids);
+            }
+        } elseif (!empty($data['category'])) {
+            $category_ids = $this->create_categories($data['category']);
+            if (!empty($category_ids)) {
+                $product->set_category_ids($category_ids);
+            }
+        }
+
         // Save the product to get an ID
         $product_id = $product->save();
 
@@ -134,12 +152,32 @@ class Product_Importer {
         }
 
         // Handle Image
-        if (!empty($data['image_url'])) {
-            $this->attach_image_from_url($data['image_url'], $product_id);
+        $main_image = !empty($data['image_url']) ? $data['image_url'] : (!empty($data['image']) ? $data['image'] : '');
+        if (empty($main_image) && !empty($data['images']) && is_array($data['images'])) {
+            $main_image = $data['images'][0];
+        }
+
+        if (!empty($main_image)) {
+            $this->attach_image_from_url($main_image, $product_id);
+        }
+
+        // Handle Gallery Images
+        if (!empty($data['gallery_images']) && is_array($data['gallery_images'])) {
+            $this->attach_gallery_images($data['gallery_images'], $product_id);
+        } elseif (!empty($data['images']) && is_array($data['images'])) {
+            $this->attach_gallery_images($data['images'], $product_id);
         }
 
         // Create mapping
-        $this->product_mapper->map($product_id, $sku, isset($data['title']) ? $data['title'] : '');
+        $mapping_id = $this->product_mapper->map($product_id, $sku, isset($data['title']) ? $data['title'] : '');
+        
+        if (!$mapping_id) {
+            $this->logger->error('Failed to create product mapping during import', [
+                'sku' => $sku,
+                'wc_id' => $product_id
+            ]);
+            // If mapping fails, we should still return the product ID but log the error
+        }
 
         $this->logger->info('Product imported successfully', [
             'sku' => $sku,
@@ -195,5 +233,84 @@ class Product_Importer {
         set_post_thumbnail($product_id, $id);
 
         return $id;
+    }
+
+    /**
+     * Attach gallery images from URLs
+     * 
+     * @param array $urls       Array of image URLs
+     * @param int   $product_id Product ID
+     */
+    private function attach_gallery_images($urls, $product_id) {
+        $gallery_ids = [];
+        $featured_id = get_post_thumbnail_id($product_id);
+
+        foreach ($urls as $url) {
+            // Skip if matches featured image (simple URL check)
+            if (isset($data['image_url']) && $url === $data['image_url']) {
+                continue;
+            }
+
+            $id = $this->attach_image_from_url($url, $product_id);
+            if ($id && $id !== $featured_id) {
+                $gallery_ids[] = $id;
+            }
+        }
+
+        if (!empty($gallery_ids)) {
+            update_post_meta($product_id, '_product_image_gallery', implode(',', $gallery_ids));
+        }
+    }
+
+    /**
+     * Create or get categories by name/path
+     * 
+     * @param string|array $categories Category name, path or array
+     * @return array Category IDs
+     */
+    private function create_categories($categories) {
+        if (is_string($categories)) {
+            // Check if it's a comma separated list
+            if (strpos($categories, ',') !== false) {
+                $categories = explode(',', $categories);
+            } else {
+                $categories = [$categories];
+            }
+        }
+
+        $ids = [];
+        foreach ($categories as $cat_string) {
+            $cat_string = trim($cat_string);
+            if (empty($cat_string)) continue;
+
+            // Handle hierarchical categories (e.g. "Furniture > Sofas")
+            $parts = explode('>', $cat_string);
+            $parent = 0;
+
+            foreach ($parts as $part) {
+                $part = trim($part);
+                if (empty($part)) continue;
+
+                $existing = term_exists($part, 'product_cat', $parent);
+                if ($existing) {
+                    $parent = is_array($existing) ? $existing['term_id'] : $existing;
+                } else {
+                    $new_term = wp_insert_term($part, 'product_cat', ['parent' => $parent]);
+                    if (!is_wp_error($new_term)) {
+                        $parent = $new_term['term_id'];
+                    } else {
+                        // If it failed (maybe someone else created it meanwhile), try to get it again
+                        $existing = term_exists($part, 'product_cat', $parent);
+                        $parent = $existing ? (is_array($existing) ? $existing['term_id'] : $existing) : 0;
+                    }
+                }
+            }
+
+            if ($parent > 0) {
+                $ids[] = $parent;
+            }
+        }
+
+        return array_unique($ids);
     }
 }
