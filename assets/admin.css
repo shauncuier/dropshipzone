@@ -1733,6 +1733,221 @@ select:focus-visible {
     outline: none;
 }
 
+/* Advanced Filters UI */
+.dsz-import-filters {
+    margin-top: 15px;
+}
+
+.dsz-toggle-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px !important;
+    padding: 0 15px !important;
+    font-size: 13px !important;
+    background: #fff !important;
+    color: var(--dsz-gray-600) !important;
+    border: 1px solid var(--dsz-gray-200) !important;
+    border-radius: 8px !important;
+    transition: all var(--dsz-transition) !important;
+}
+
+.dsz-toggle-filters-btn:hover {
+    background: var(--dsz-gray-50) !important;
+    border-color: var(--dsz-gray-300) !important;
+}
+
+.dsz-toggle-filters-btn .dashicons-arrow-down-alt2,
+.dsz-toggle-filters-btn .dashicons-arrow-up-alt2 {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.dsz-filters-panel {
+    margin-top: 15px;
+    padding: 25px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--dsz-gray-200);
+    border-radius: var(--dsz-border-radius);
+    animation: fadeInUp 0.3s ease;
+}
+
+.dsz-filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.dsz-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dsz-filter-item label:first-child {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dsz-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dsz-filter-item select {
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--dsz-gray-200);
+    background: #fff;
+}
+
+.dsz-filter-item .dsz-filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dsz-filter-item .dsz-filter-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dsz-filter-item .dsz-filter-checkbox label {
+    font-size: 14px;
+    color: var(--dsz-gray-700);
+    cursor: pointer;
+}
+
+.dsz-filter-item .dsz-filter-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border-radius: 4px;
+    border: 1px solid var(--dsz-gray-300);
+}
+
+.dsz-filter-item .dsz-filter-checkbox input[type="checkbox"]:checked {
+    background-color: var(--dsz-primary);
+    border-color: var(--dsz-primary);
+}
+
+#dsz-load-categories {
+    margin-top: 5px;
+    width: fit-content;
+}
+
+.dsz-filters-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--dsz-gray-200);
+}
+
+/* Search Information */
+.dsz-search-info {
+    margin: 30px 30px 0;
+    padding: 15px 25px;
+    background: var(--dsz-gray-100);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+    color: var(--dsz-gray-600);
+    animation: fadeIn 0.3s ease;
+}
+
+#dsz-result-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--dsz-primary);
+}
+
+#dsz-result-count .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+#dsz-active-filters {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.dsz-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.dsz-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 3px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: dsz-spin 1s ease infinite;
+}
+
+@keyframes dsz-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .dsz-import-results-container {
     margin-top: 40px;
     min-height: 300px;

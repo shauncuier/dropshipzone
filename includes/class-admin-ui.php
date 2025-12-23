@@ -94,6 +94,7 @@ class Admin_UI {
         add_action('wp_ajax_dsz_import_product', [$this, 'ajax_import_product']);
         add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
         add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
+        add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
     }
 
     /**
@@ -1496,19 +1497,100 @@ class Admin_UI {
 
             <div class="dsz-content">
                 <div class="dsz-form-section">
+                    <!-- Advanced Search Bar -->
                     <div class="dsz-import-search-bar">
-                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Search Dropshipzone products...', 'dropshipzone-sync'); ?>" />
+                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Enter keywords or SKU...', 'dropshipzone-sync'); ?>" />
                         <button type="button" id="dsz-import-search-btn" class="button button-primary">
                             <span class="dashicons dashicons-search"></span>
-                            <?php _e('Search API', 'dropshipzone-sync'); ?>
+                            <?php _e('Search', 'dropshipzone-sync'); ?>
                         </button>
                     </div>
+
+                    <!-- Advanced Filters (Collapsible) -->
+                    <div class="dsz-import-filters">
+                        <button type="button" id="dsz-toggle-filters" class="button button-secondary dsz-toggle-filters-btn">
+                            <span class="dashicons dashicons-filter"></span>
+                            <?php _e('Advanced Filters', 'dropshipzone-sync'); ?>
+                            <span class="dashicons dashicons-arrow-down-alt2"></span>
+                        </button>
+                        
+                        <div id="dsz-filters-panel" class="dsz-filters-panel hidden">
+                            <div class="dsz-filters-grid">
+                                <!-- Category Filter -->
+                                <div class="dsz-filter-item">
+                                    <label for="dsz-filter-category"><?php _e('Category', 'dropshipzone-sync'); ?></label>
+                                    <select id="dsz-filter-category">
+                                        <option value=""><?php _e('All Categories', 'dropshipzone-sync'); ?></option>
+                                    </select>
+                                    <button type="button" id="dsz-load-categories" class="button button-small" title="<?php _e('Load categories from API', 'dropshipzone-sync'); ?>">
+                                        <span class="dashicons dashicons-update"></span>
+                                    </button>
+                                </div>
+
+                                <!-- Stock Filter -->
+                                <div class="dsz-filter-item">
+                                    <label><?php _e('Stock Status', 'dropshipzone-sync'); ?></label>
+                                    <div class="dsz-filter-checkbox">
+                                        <input type="checkbox" id="dsz-filter-instock" value="1">
+                                        <label for="dsz-filter-instock"><?php _e('In Stock Only', 'dropshipzone-sync'); ?></label>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Filters -->
+                                <div class="dsz-filter-item">
+                                    <label><?php _e('Quick Filters', 'dropshipzone-sync'); ?></label>
+                                    <div class="dsz-filter-checkboxes">
+                                        <div class="dsz-filter-checkbox">
+                                            <input type="checkbox" id="dsz-filter-freeship" value="1">
+                                            <label for="dsz-filter-freeship"><?php _e('Free Shipping', 'dropshipzone-sync'); ?></label>
+                                        </div>
+                                        <div class="dsz-filter-checkbox">
+                                            <input type="checkbox" id="dsz-filter-promotion" value="1">
+                                            <label for="dsz-filter-promotion"><?php _e('On Promotion', 'dropshipzone-sync'); ?></label>
+                                        </div>
+                                        <div class="dsz-filter-checkbox">
+                                            <input type="checkbox" id="dsz-filter-newarrivals" value="1">
+                                            <label for="dsz-filter-newarrivals"><?php _e('New Arrivals', 'dropshipzone-sync'); ?></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sort Options -->
+                                <div class="dsz-filter-item">
+                                    <label for="dsz-filter-sort"><?php _e('Sort By', 'dropshipzone-sync'); ?></label>
+                                    <select id="dsz-filter-sort">
+                                        <option value=""><?php _e('Default', 'dropshipzone-sync'); ?></option>
+                                        <option value="price_asc"><?php _e('Price: Low to High', 'dropshipzone-sync'); ?></option>
+                                        <option value="price_desc"><?php _e('Price: High to Low', 'dropshipzone-sync'); ?></option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="dsz-filters-actions">
+                                <button type="button" id="dsz-apply-filters" class="button button-primary">
+                                    <span class="dashicons dashicons-yes"></span>
+                                    <?php _e('Apply Filters', 'dropshipzone-sync'); ?>
+                                </button>
+                                <button type="button" id="dsz-clear-filters" class="button button-secondary">
+                                    <span class="dashicons dashicons-no-alt"></span>
+                                    <?php _e('Clear All', 'dropshipzone-sync'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Results Info -->
+                <div id="dsz-search-info" class="dsz-search-info hidden">
+                    <span id="dsz-result-count"></span>
+                    <span id="dsz-active-filters"></span>
                 </div>
 
                 <div id="dsz-import-results" class="dsz-import-results-container">
                     <div class="dsz-import-empty">
                         <span class="dashicons dashicons-search"></span>
-                        <p><?php _e('Enter a keyword or SKU to search products from Dropshipzone.', 'dropshipzone-sync'); ?></p>
+                        <p><?php _e('Search for products using keywords, SKU, or browse by category.', 'dropshipzone-sync'); ?></p>
+                        <p class="dsz-import-empty-hint"><?php _e('Use Advanced Filters to narrow down results by stock status, promotions, or new arrivals.', 'dropshipzone-sync'); ?></p>
                     </div>
                 </div>
             </div>
@@ -1525,7 +1607,8 @@ class Admin_UI {
     }
 
     /**
-     * AJAX: Search API products
+     * AJAX: Search API products (Advanced)
+     * Supports keywords, category, stock status, promotions, free shipping, new arrivals, and sorting
      */
     public function ajax_search_api_products() {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
@@ -1534,80 +1617,93 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
         }
 
+        // Get search parameters
         $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
-        
-        if (strlen($search) < 2) {
-            wp_send_json_error(['message' => __('Search term is too short.', 'dropshipzone-sync')]);
+        $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
+        $in_stock = isset($_POST['in_stock']) && $_POST['in_stock'] === 'true';
+        $free_shipping = isset($_POST['free_shipping']) && $_POST['free_shipping'] === 'true';
+        $on_promotion = isset($_POST['on_promotion']) && $_POST['on_promotion'] === 'true';
+        $new_arrival = isset($_POST['new_arrival']) && $_POST['new_arrival'] === 'true';
+        $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : '';
+
+        // Validate: need at least a search term, category, or one filter
+        $has_filters = $category_id > 0 || $in_stock || $free_shipping || $on_promotion || $new_arrival;
+        if (strlen($search) < 2 && !$has_filters) {
+            wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone-sync')]);
         }
 
-        $search_lower = strtolower($search);
-        $products = [];
+        // Build API query parameters
+        $api_params = [
+            'limit' => 100,
+        ];
 
-        // First, try exact SKU search
-        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 50]);
-        
-        if (!is_wp_error($response) && !empty($response['result'])) {
-            $products = $response['result'];
-        }
-        
-        // If no results by SKU, fetch products and filter by title/name locally
-        // (The Dropshipzone API doesn't support keyword search, only SKU filtering)
-        if (empty($products)) {
-            // Fetch a batch of products to search through
-            $response = $this->api_client->get_products(['limit' => 200, 'page_no' => 1]);
-            
-            if (!is_wp_error($response) && !empty($response['result'])) {
-                // Filter products by title/name matching the search term
-                foreach ($response['result'] as $product) {
-                    $title = isset($product['title']) ? strtolower($product['title']) : '';
-                    $name = isset($product['name']) ? strtolower($product['name']) : '';
-                    $sku = isset($product['sku']) ? strtolower($product['sku']) : '';
-                    
-                    // Check if search term is found in title, name, or SKU
-                    if (strpos($title, $search_lower) !== false || 
-                        strpos($name, $search_lower) !== false || 
-                        strpos($sku, $search_lower) !== false) {
-                        $products[] = $product;
-                    }
-                    
-                    // Limit results to 50 matches
-                    if (count($products) >= 50) {
-                        break;
-                    }
-                }
-                
-                // If still no results, try fetching more pages
-                if (empty($products) && isset($response['total_pages']) && $response['total_pages'] > 1) {
-                    // Try page 2
-                    $response2 = $this->api_client->get_products(['limit' => 200, 'page_no' => 2]);
-                    
-                    if (!is_wp_error($response2) && !empty($response2['result'])) {
-                        foreach ($response2['result'] as $product) {
-                            $title = isset($product['title']) ? strtolower($product['title']) : '';
-                            $name = isset($product['name']) ? strtolower($product['name']) : '';
-                            $sku = isset($product['sku']) ? strtolower($product['sku']) : '';
-                            
-                            if (strpos($title, $search_lower) !== false || 
-                                strpos($name, $search_lower) !== false || 
-                                strpos($sku, $search_lower) !== false) {
-                                $products[] = $product;
-                            }
-                            
-                            if (count($products) >= 50) {
-                                break;
-                            }
-                        }
-                    }
-                }
+        // Add filters
+        if ($category_id > 0) $api_params['category_id'] = $category_id;
+        if ($in_stock) $api_params['in_stock'] = true;
+        if ($free_shipping) $api_params['au_free_shipping'] = true;
+        if ($on_promotion) $api_params['on_promotion'] = true;
+        if ($new_arrival) $api_params['new_arrival'] = true;
+        if (!empty($sort)) {
+            if ($sort === 'price_asc') {
+                $api_params['sort_by'] = 'price';
+                $api_params['sort_order'] = 'asc';
+            } elseif ($sort === 'price_desc') {
+                $api_params['sort_by'] = 'price';
+                $api_params['sort_order'] = 'desc';
             }
         }
 
-        if (is_wp_error($response)) {
-            wp_send_json_error(['message' => $response->get_error_message()]);
+        $products = [];
+        $last_error = null;
+        
+        // If we have a search term, try it as both SKU and keywords
+        if (!empty($search)) {
+            // 1. Try exact SKU match with ALL filters applied
+            $sku_params = $api_params;
+            $sku_params['skus'] = $search;
+            $sku_params['limit'] = 10;
+            
+            $sku_response = $this->api_client->get_products($sku_params);
+            if (is_wp_error($sku_response)) {
+                $last_error = $sku_response;
+            } elseif (!empty($sku_response['result'])) {
+                $products = $sku_response['result'];
+            }
+            
+            // 2. If no SKU results (or we want to find similar items via keywords), use keyword search
+            if (empty($products)) {
+                $keyword_params = $api_params;
+                $keyword_params['keywords'] = str_replace([' ', '+'], ',', trim($search));
+                
+                $response = $this->api_client->get_products($keyword_params);
+                if (is_wp_error($response)) {
+                    $last_error = $response;
+                } elseif (!empty($response['result'])) {
+                    $products = $response['result'];
+                }
+            }
+        } else {
+            // No search term, just use filters (browse mode)
+            $response = $this->api_client->get_products($api_params);
+            if (is_wp_error($response)) {
+                $last_error = $response;
+            } elseif (!empty($response['result'])) {
+                $products = $response['result'];
+            }
         }
 
         if (empty($products)) {
-            wp_send_json_error(['message' => __('No products found matching your search. Try a different keyword or enter an exact SKU.', 'dropshipzone-sync')]);
+            if ($last_error) {
+                wp_send_json_error(['message' => $last_error->get_error_message()]);
+            }
+            
+            $message = __('No products found.', 'dropshipzone-sync');
+            if (!empty($search)) {
+                $message .= ' ' . __('Try different keywords or adjust filters.', 'dropshipzone-sync');
+            } else {
+                $message .= ' ' . __('Try adjusting your filters.', 'dropshipzone-sync');
+            }
+            wp_send_json_error(['message' => $message]);
         }
         
         // Pre-check if products are already mapped/imported
@@ -1617,7 +1713,46 @@ class Admin_UI {
             $product['wc_product_id'] = $wc_product_id ? $wc_product_id : null;
         }
 
-        wp_send_json_success(['products' => $products]);
+        // Build response with metadata
+        $response_data = [
+            'products' => $products,
+            'total' => count($products),
+            'filters_applied' => array_filter([
+                'search' => $search ?: null,
+                'category_id' => $category_id ?: null,
+                'in_stock' => $in_stock ?: null,
+                'free_shipping' => $free_shipping ?: null,
+                'on_promotion' => $on_promotion ?: null,
+                'new_arrival' => $new_arrival ?: null,
+                'sort' => $sort ?: null,
+            ]),
+        ];
+
+        wp_send_json_success($response_data);
+    }
+
+    /**
+     * AJAX: Get categories from API
+     */
+    public function ajax_get_categories() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $response = $this->api_client->make_request('GET', '/v2/categories', [], true);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()]);
+        }
+
+        if (empty($response)) {
+            wp_send_json_error(['message' => __('No categories found or API error.', 'dropshipzone-sync')]);
+        }
+
+        // Return the flat list of categories
+        wp_send_json_success(['categories' => $response]);
     }
 
     /**

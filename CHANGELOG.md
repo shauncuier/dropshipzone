@@ -5,6 +5,19 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2025-12-24
+
+### Added
+- **Advanced Search Filters**: Users can now filter API products by Category, Stock Status (In Stock Only), Free Shipping, Promotions, and New Arrivals.
+- **Sorting Options**: Sort search results by Price (Low to High, High to Low).
+- **Category Loader**: Dynamically load the latest categories from Dropshipzone API for filtering.
+- **Search Metadata**: Displayed result counts and active filters for better context.
+
+### Improved
+- **Search Logic**: Replaced local filtering with API-native keyword and filter parameters for significantly faster and more accurate results.
+
+---
+
 ## [2.0.4] - 2025-12-24
 
 ### Improved

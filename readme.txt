@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.4
+Stable tag: 2.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.5 =
+* ADDED: Advanced search filters (Category, Stock, Promotion, Free Shipping, New Arrivals)
+* ADDED: Sorting by price
+* IMPROVED: Search logic using API-native keywords for better accuracy
 
 = 2.0.4 =
 * IMPROVED: Reordered navigation for better user workflow

@@ -2,7 +2,7 @@
  * Dropshipzone Sync Admin JavaScript
  *
  * @package Dropshipzone
- * @version 2.0.0 - Enhanced with animations
+ * @version 2.0.5 - Advanced Search & Filters
  */
 
 (function ($) {
@@ -1124,21 +1124,110 @@
             this.searchWCProducts();
         },
         /**
-         * Initialize Product Import
+         * Initialize Product Import (Advanced)
          */
         initProductImport: function () {
-            // Placeholder for any v2 specific init logic
+            // Bind filter toggle
+            $('#dsz-toggle-filters').on('click', function () {
+                var $panel = $('#dsz-filters-panel');
+                var $arrow = $(this).find('.dashicons-arrow-down-alt2, .dashicons-arrow-up-alt2');
+
+                $panel.toggleClass('hidden');
+                $arrow.toggleClass('dashicons-arrow-down-alt2 dashicons-arrow-up-alt2');
+            });
+
+            // Bind apply filters button
+            $('#dsz-apply-filters').on('click', function () {
+                DSZAdmin.searchApiProducts();
+            });
+
+            // Bind clear filters button
+            $('#dsz-clear-filters').on('click', function () {
+                $('#dsz-filter-category').val('');
+                $('#dsz-filter-instock').prop('checked', false);
+                $('#dsz-filter-freeship').prop('checked', false);
+                $('#dsz-filter-promotion').prop('checked', false);
+                $('#dsz-filter-newarrivals').prop('checked', false);
+                $('#dsz-filter-sort').val('');
+                $('#dsz-import-search').val('');
+                $('#dsz-search-info').addClass('hidden');
+            });
+
+            // Load categories button
+            $('#dsz-load-categories').on('click', function () {
+                DSZAdmin.loadCategories();
+            });
+
+            // Enter key triggers search
+            $('#dsz-import-search').on('keypress', function (e) {
+                if (e.which === 13) {
+                    DSZAdmin.searchApiProducts();
+                }
+            });
         },
 
         /**
-         * Search products from API
+         * Load categories from API
+         */
+        loadCategories: function () {
+            var $btn = $('#dsz-load-categories');
+            var $select = $('#dsz-filter-category');
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_get_categories',
+                    nonce: dsz_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success && response.data.categories) {
+                        // Clear existing options except first
+                        $select.find('option:not(:first)').remove();
+
+                        // Add categories
+                        response.data.categories.forEach(function (cat) {
+                            var prefix = cat.parent_id > 0 ? '— ' : '';
+                            $select.append(`<option value="${cat.category_id}">${prefix}${escapeHtml(cat.title)}</option>`);
+                        });
+
+                        DSZAdmin.showNotification('success', 'Categories loaded successfully!');
+                    } else {
+                        DSZAdmin.showNotification('error', response.data.message || 'Failed to load categories');
+                    }
+                },
+                error: function () {
+                    DSZAdmin.showNotification('error', 'Failed to load categories from API');
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Search products from API (Advanced with filters)
          */
         searchApiProducts: function () {
             var $btn = $('#dsz-import-search-btn');
             var $results = $('#dsz-import-results');
-            var search = $('#dsz-import-search').val();
+            var $searchInfo = $('#dsz-search-info');
 
-            if (search.length < 2) {
+            // Collect all filter values
+            var search = $('#dsz-import-search').val().trim();
+            var categoryId = $('#dsz-filter-category').val();
+            var inStock = $('#dsz-filter-instock').is(':checked');
+            var freeShipping = $('#dsz-filter-freeship').is(':checked');
+            var onPromotion = $('#dsz-filter-promotion').is(':checked');
+            var newArrival = $('#dsz-filter-newarrivals').is(':checked');
+            var sort = $('#dsz-filter-sort').val();
+
+            // Check if we have valid input
+            var hasFilters = categoryId || inStock || freeShipping || onPromotion || newArrival;
+            if (search.length < 2 && !hasFilters) {
+                DSZAdmin.showNotification('error', 'Enter at least 2 characters or select a filter.');
                 return;
             }
 
@@ -1146,7 +1235,7 @@
             $results.html(`
                 <div class="dsz-import-loading">
                     <span class="dsz-spinner"></span>
-                    <p>${dsz_admin.strings.syncing}</p>
+                    <p>Searching Dropshipzone products...</p>
                 </div>
             `);
 
@@ -1156,12 +1245,34 @@
                 data: {
                     action: 'dsz_search_api_products',
                     nonce: dsz_admin.nonce,
-                    search: search
+                    search: search,
+                    category_id: categoryId,
+                    in_stock: inStock.toString(),
+                    free_shipping: freeShipping.toString(),
+                    on_promotion: onPromotion.toString(),
+                    new_arrival: newArrival.toString(),
+                    sort: sort
                 },
                 success: function (response) {
-                    if (response.success && response.data.products.length > 0) {
+                    if (response.success && response.data.products && response.data.products.length > 0) {
                         DSZAdmin.renderImportResults(response.data.products);
+
+                        // Show result count and active filters
+                        var filterInfo = [];
+                        if (search) filterInfo.push('"' + search + '"');
+                        if (inStock) filterInfo.push('In Stock');
+                        if (freeShipping) filterInfo.push('Free Shipping');
+                        if (onPromotion) filterInfo.push('On Promotion');
+                        if (newArrival) filterInfo.push('New Arrivals');
+
+                        var countText = response.data.total + ' product' + (response.data.total !== 1 ? 's' : '') + ' found';
+                        var filterText = filterInfo.length > 0 ? ' — ' + filterInfo.join(', ') : '';
+
+                        $searchInfo.removeClass('hidden');
+                        $('#dsz-result-count').html('<span class="dashicons dashicons-products"></span> ' + countText);
+                        $('#dsz-active-filters').html(filterText);
                     } else {
+                        $searchInfo.addClass('hidden');
                         $results.html(`
                             <div class="dsz-import-empty">
                                 <span class="dashicons dashicons-search"></span>
@@ -1171,6 +1282,7 @@
                     }
                 },
                 error: function () {
+                    $searchInfo.addClass('hidden');
                     $results.html('<div class="dsz-message dsz-message-error">' + dsz_admin.strings.error + '</div>');
                 },
                 complete: function () {
@@ -1506,7 +1618,6 @@
     $(document).ready(function () {
         DSZAdmin.init();
         DSZAdmin.initMappingPage();
-        DSZAdmin.initProductImport(); // Initialize the new import feature
 
         // Add fadeOut keyframe if not exists
         if (!$('#dsz-fadeout-style').length) {
