@@ -722,6 +722,16 @@ class Admin_UI {
                                     </label>
                                 </td>
                             </tr>
+                            <tr>
+                                <th scope="row"><?php _e('Deactivate Missing Products', 'dropshipzone-sync'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="deactivate_if_not_found" value="1" <?php checked(isset($rules['deactivate_if_not_found']) ? $rules['deactivate_if_not_found'] : true, true); ?> />
+                                        <?php _e('Set products to Draft if not found in Dropshipzone API (discontinued products)', 'dropshipzone-sync'); ?>
+                                    </label>
+                                    <p class="description"><?php _e('When a product SKU is no longer available in Dropshipzone, the product will be set to Draft status and stock set to 0.', 'dropshipzone-sync'); ?></p>
+                                </td>
+                            </tr>
                         </table>
                     </div>
 
@@ -1061,6 +1071,7 @@ class Admin_UI {
                     'buffer_amount' => isset($settings['buffer_amount']) ? intval($settings['buffer_amount']) : 0,
                     'zero_on_unavailable' => !empty($settings['zero_on_unavailable']),
                     'auto_out_of_stock' => !empty($settings['auto_out_of_stock']),
+                    'deactivate_if_not_found' => !empty($settings['deactivate_if_not_found']),
                 ];
                 update_option('dsz_sync_stock_rules', $rules);
                 $this->stock_sync->reload_rules();

@@ -55,6 +55,7 @@ class Stock_Sync {
             'buffer_amount' => 0,
             'zero_on_unavailable' => true,
             'auto_out_of_stock' => true,
+            'deactivate_if_not_found' => true, // Set products to draft if not found in Dropshipzone API
         ];
 
         $this->stock_rules = wp_parse_args(
@@ -282,14 +283,86 @@ class Stock_Sync {
         }
 
         if (empty($response['result'])) {
+            // Product not found in Dropshipzone API
+            // Deactivate the WooCommerce product if option is enabled
+            if ($this->stock_rules['deactivate_if_not_found']) {
+                $deactivate_result = $this->deactivate_product_by_sku($sku);
+                if ($deactivate_result['deactivated']) {
+                    return [
+                        'status' => 'deactivated',
+                        'sku' => $sku,
+                        'product_id' => $deactivate_result['product_id'],
+                        'message' => 'Product not found in Dropshipzone API - set to draft',
+                    ];
+                }
+            }
+            
             return [
                 'status' => 'not_found',
                 'sku' => $sku,
-                'message' => 'Product not found in Dropshipzone',
+                'message' => 'Product not found in Dropshipzone API',
             ];
         }
 
         return $this->sync_product_stock($response['result'][0]);
+    }
+
+    /**
+     * Deactivate a product by SKU (set to draft status)
+     *
+     * @param string $sku Product SKU
+     * @return array Result with deactivated status and product_id
+     */
+    public function deactivate_product_by_sku($sku) {
+        $product_id = wc_get_product_id_by_sku($sku);
+        
+        if (!$product_id) {
+            return [
+                'deactivated' => false,
+                'product_id' => null,
+                'message' => 'Product not found in WooCommerce',
+            ];
+        }
+
+        $product = wc_get_product($product_id);
+        
+        if (!$product) {
+            return [
+                'deactivated' => false,
+                'product_id' => $product_id,
+                'message' => 'Failed to load product',
+            ];
+        }
+
+        // Only deactivate if currently published
+        if ($product->get_status() !== 'publish') {
+            return [
+                'deactivated' => false,
+                'product_id' => $product_id,
+                'message' => 'Product already inactive',
+            ];
+        }
+
+        // Set product to draft
+        $product->set_status('draft');
+        
+        // Also set stock to 0 and out of stock
+        $product->set_stock_quantity(0);
+        $product->set_stock_status('outofstock');
+        
+        $product->save();
+
+        $this->logger->warning('Product deactivated - not found in Dropshipzone API', [
+            'sku' => $sku,
+            'product_id' => $product_id,
+            'product_name' => $product->get_name(),
+        ]);
+
+        return [
+            'deactivated' => true,
+            'product_id' => $product_id,
+            'message' => 'Product set to draft',
+        ];
     }
 
     /**
