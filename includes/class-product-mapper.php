@@ -80,6 +80,17 @@ class Product_Mapper {
     }
 
     /**
+     * Get Dropshipzone SKU by WooCommerce product ID
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return string|null DSZ SKU or null
+     */
+    public function get_dsz_sku($wc_product_id) {
+        $mapping = $this->get_by_wc_product($wc_product_id);
+        return $mapping ? $mapping['dsz_sku'] : null;
+    }
+
+    /**
      * Get mapping by Dropshipzone SKU
      *
      * @param string $dsz_sku Dropshipzone SKU

@@ -179,6 +179,12 @@
 
             // Product Import action
             $(document).on('click', '.dsz-import-btn', this.importProduct.bind(this));
+
+            // Product Resync action
+            $(document).on('click', '.dsz-resync-btn', this.resyncProduct.bind(this));
+
+            // Resync All Products action
+            $('#dsz-resync-all').on('click', this.resyncAllProducts.bind(this));
         },
 
         /**
@@ -1205,6 +1211,27 @@
                 // Store product data in cache (avoid JSON corruption in HTML attributes)
                 DSZAdmin.importProductsCache[product.sku] = product;
 
+                // Build buttons HTML - show Resync button for imported products
+                var buttonsHtml = '';
+                if (product.is_imported) {
+                    buttonsHtml = `
+                        <div class="dsz-import-item-buttons">
+                            <button type="button" class="button button-secondary" disabled>
+                                <span class="dashicons dashicons-yes-alt"></span> Imported
+                            </button>
+                            <button type="button" class="button button-primary dsz-resync-btn" data-sku="${escapeHtml(product.sku)}" data-product-id="${product.wc_product_id || ''}">
+                                <span class="dashicons dashicons-update"></span> Resync
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    buttonsHtml = `
+                        <button type="button" class="button button-primary dsz-import-btn" data-sku="${escapeHtml(product.sku)}">
+                            <span class="dashicons dashicons-plus"></span> Import Product
+                        </button>
+                    `;
+                }
+
                 html += `
                     <div class="dsz-import-item" data-sku="${escapeHtml(product.sku)}">
                         <div class="dsz-import-item-image">
@@ -1214,10 +1241,7 @@
                             <h4>${escapeHtml(product.title || product.sku)}</h4>
                             <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code></p>
                             <p class="dsz-import-item-price">$${parseFloat(product.price || 0).toFixed(2)} <small>(Supplier Cost)</small></p>
-                            <button type="button" class="button ${btnClass}" ${btnDisabled} data-sku="${escapeHtml(product.sku)}">
-                                ${product.is_imported ? '<span class="dashicons dashicons-yes-alt"></span> ' : '<span class="dashicons dashicons-plus"></span> '}
-                                ${btnText}
-                            </button>
+                            ${buttonsHtml}
                         </div>
                     </div>
                 `;
@@ -1266,6 +1290,175 @@
                 error: function () {
                     DSZAdmin.showNotification('error', dsz_admin.strings.error);
                     $btn.removeClass('dsz-loading').prop('disabled', false);
+                }
+            });
+        },
+
+        /**
+         * Resync all mapped products with data from Dropshipzone API
+         */
+        resyncAllProducts: function (e) {
+            e.preventDefault();
+
+            var $btn = $('#dsz-resync-all');
+            var $message = $('#dsz-resync-all-message');
+            var $progress = $('#dsz-resync-all-progress');
+
+            if (!confirm('This will resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.). This may take a while depending on the number of mapped products. Continue?')) {
+                return;
+            }
+
+            // Show loading state and progress bar
+            $btn.addClass('dsz-loading').prop('disabled', true);
+            $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Resyncing All...');
+            $message.addClass('hidden').removeClass('dsz-message-success dsz-message-error');
+            $progress.removeClass('hidden');
+
+            // Add spin animation for the update icon if not exists
+            if (!$('#dsz-spin-style').length) {
+                $('head').append(`
+                    <style id="dsz-spin-style">
+                        .dsz-spin {
+                            animation: dsz-spin 1s linear infinite;
+                        }
+                        @keyframes dsz-spin {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
+                `);
+            }
+
+            // Reset progress bar
+            $('#dsz-resync-all-progress-fill').css('width', '0%');
+            $('#dsz-resync-all-progress-text').text('Starting resync...');
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_resync_all',
+                    nonce: dsz_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // Update progress to 100%
+                        $('#dsz-resync-all-progress-fill').css('width', '100%');
+                        $('#dsz-resync-all-progress-text').text('Complete!');
+
+                        $message
+                            .removeClass('hidden dsz-message-error')
+                            .addClass('dsz-message-success')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+
+                        DSZAdmin.createConfetti();
+                        DSZAdmin.showNotification('success', response.data.message);
+                    } else {
+                        $message
+                            .removeClass('hidden dsz-message-success')
+                            .addClass('dsz-message-error')
+                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+
+                        DSZAdmin.showNotification('error', response.data.message);
+                    }
+                },
+                error: function () {
+                    $message
+                        .removeClass('hidden dsz-message-success')
+                        .addClass('dsz-message-error')
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+
+                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                },
+                complete: function () {
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                    $btn.html('<span class="dashicons dashicons-update"></span> Resync All Products');
+
+                    // Hide progress bar after 3 seconds
+                    setTimeout(function () {
+                        $progress.addClass('hidden');
+                    }, 3000);
+                }
+            });
+        },
+
+        /**
+         * Resync product with data from Dropshipzone API
+         */
+        resyncProduct: function (e) {
+            var $btn = $(e.currentTarget);
+            var sku = $btn.data('sku');
+            var productId = $btn.data('product-id');
+            var $item = $btn.closest('.dsz-import-item');
+            
+            // Get product data from cache (stored during search results rendering)
+            var productData = this.importProductsCache[sku] || null;
+
+            $btn.addClass('dsz-loading').prop('disabled', true);
+            $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Syncing...');
+
+            // Add spin animation for the update icon
+            if (!$('#dsz-spin-style').length) {
+                $('head').append(`
+                    <style id="dsz-spin-style">
+                        .dsz-spin {
+                            animation: dsz-spin 1s linear infinite;
+                        }
+                        @keyframes dsz-spin {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
+                `);
+            }
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_resync_product',
+                    nonce: dsz_admin.nonce,
+                    product_id: productId,
+                    sku: sku,
+                    product_data: productData ? JSON.stringify(productData) : '',
+                    options: {
+                        update_images: true,
+                        update_description: true,
+                        update_price: true,
+                        update_stock: true,
+                        update_title: true
+                    }
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $btn.removeClass('dsz-loading')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> Synced!')
+                            .prop('disabled', false);
+
+                        // Reset button after 2 seconds
+                        setTimeout(function () {
+                            $btn.html('<span class="dashicons dashicons-update"></span> Resync');
+                        }, 2000);
+
+                        DSZAdmin.celebrateSuccess($item);
+                        DSZAdmin.showNotification('success', response.data.message);
+
+                        // Add link to edit product if available
+                        if (response.data.edit_url) {
+                            DSZAdmin.showNotification('success', response.data.message + ' <a href="' + response.data.edit_url + '" target="_blank">Edit product</a>');
+                        }
+                    } else {
+                        DSZAdmin.showNotification('error', response.data.message);
+                        $btn.removeClass('dsz-loading')
+                            .html('<span class="dashicons dashicons-update"></span> Resync')
+                            .prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                    $btn.removeClass('dsz-loading')
+                        .html('<span class="dashicons dashicons-update"></span> Resync')
+                        .prop('disabled', false);
                 }
             });
         }

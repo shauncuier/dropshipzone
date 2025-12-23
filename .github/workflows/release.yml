@@ -1,28 +1,122 @@
-name: Generate Release Zip
+name: Release
 
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
-  build:
-    name: Build & Release
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create Release Zip
+      - name: Get version from tag or input
+        id: get_version
         run: |
-          mkdir -p dist/dropshipzone
-          rsync -av --progress . dist/dropshipzone --exclude dist --exclude .git --exclude .github --exclude .gitignore --exclude .gitattributes
-          cd dist
-          zip -r dropshipzone.zip dropshipzone
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
 
-      - name: Create Release
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          tools: composer
+
+      - name: Validate plugin files
+        run: |
+          # Check main plugin file exists
+          if [ ! -f "dropshipzone-price-stock-sync.php" ]; then
+            echo "Main plugin file not found!"
+            exit 1
+          fi
+          
+          # Check version in main plugin file
+          PLUGIN_VERSION=$(grep -m 1 "Version:" dropshipzone-price-stock-sync.php | awk '{print $2}')
+          echo "Plugin version in file: $PLUGIN_VERSION"
+
+      - name: Create plugin directory structure
+        run: |
+          mkdir -p build/dropshipzone-price-stock-sync
+          
+          # Copy plugin files
+          cp -r assets build/dropshipzone-price-stock-sync/
+          cp -r includes build/dropshipzone-price-stock-sync/
+          cp dropshipzone-price-stock-sync.php build/dropshipzone-price-stock-sync/
+          cp readme.txt build/dropshipzone-price-stock-sync/
+          cp README.md build/dropshipzone-price-stock-sync/
+          cp LICENSE build/dropshipzone-price-stock-sync/
+          cp CHANGELOG.md build/dropshipzone-price-stock-sync/
+          
+          # Remove any development files
+          find build -name "*.map" -delete
+          find build -name ".DS_Store" -delete
+          find build -name "Thumbs.db" -delete
+
+      - name: Create ZIP archive
+        run: |
+          cd build
+          zip -r ../dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}.zip dropshipzone-price-stock-sync
+          cd ..
+          ls -la *.zip
+
+      - name: Generate changelog for release
+        id: changelog
+        run: |
+          # Extract changelog for this version from CHANGELOG.md
+          VERSION="${{ steps.get_version.outputs.version }}"
+          
+          # Try to extract version-specific changelog, or use a default message
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract section for this version (between two version headers)
+            CHANGELOG=$(awk "/## \[?$VERSION\]?|## \[?v$VERSION\]?/{flag=1; next} /## \[?[0-9]+\.[0-9]+/{if(flag) exit} flag" CHANGELOG.md)
+            
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG="Release version $VERSION of Dropshipzone Price & Stock Sync plugin."
+            fi
+          else
+            CHANGELOG="Release version $VERSION of Dropshipzone Price & Stock Sync plugin."
+          fi
+          
+          # Write to file for multiline output
+          echo "$CHANGELOG" > changelog_body.txt
+          echo "Generated changelog"
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/dropshipzone.zip
+          name: Dropshipzone Sync v${{ steps.get_version.outputs.version }}
+          body_path: changelog_body.txt
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'rc') }}
+          files: |
+            dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}.zip
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}
+          path: dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}.zip
+          retention-days: 30

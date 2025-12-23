@@ -92,6 +92,8 @@ class Admin_UI {
         // Import AJAX handlers
         add_action('wp_ajax_dsz_search_api_products', [$this, 'ajax_search_api_products']);
         add_action('wp_ajax_dsz_import_product', [$this, 'ajax_import_product']);
+        add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
+        add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
     }
 
     /**
@@ -1224,6 +1226,21 @@ class Admin_UI {
                         <p class="description"><?php _e('Automatically creates mappings for WooCommerce products that have SKUs matching their product SKU.', 'dropshipzone-sync'); ?></p>
                     </div>
                     <div id="dsz-automap-message" class="dsz-message hidden"></div>
+                    
+                    <div class="dsz-mapping-actions" style="margin-top: 15px;">
+                        <button type="button" id="dsz-resync-all" class="button button-secondary">
+                            <span class="dashicons dashicons-update"></span>
+                            <?php _e('Resync All Products', 'dropshipzone-sync'); ?>
+                        </button>
+                        <p class="description"><?php _e('Resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.).', 'dropshipzone-sync'); ?></p>
+                    </div>
+                    <div id="dsz-resync-all-message" class="dsz-message hidden"></div>
+                    <div id="dsz-resync-all-progress" class="dsz-progress-wrapper hidden">
+                        <div class="dsz-progress-bar">
+                            <div id="dsz-resync-all-progress-fill" class="dsz-progress-fill" style="width: 0%"></div>
+                        </div>
+                        <p id="dsz-resync-all-progress-text" class="dsz-progress-text"></p>
+                    </div>
                 </div>
 
                 <!-- Search and Add New -->
@@ -1289,6 +1306,10 @@ class Admin_UI {
                                         <td><code><?php echo esc_html($mapping['dsz_sku']); ?></code></td>
                                         <td><?php echo $mapping['last_synced'] ? dsz_format_datetime($mapping['last_synced']) : __('Never', 'dropshipzone-sync'); ?></td>
                                         <td class="column-actions">
+                                            <button type="button" class="button button-small dsz-resync-btn" data-product-id="<?php echo esc_attr($mapping['wc_product_id']); ?>" data-sku="<?php echo esc_attr($mapping['dsz_sku']); ?>">
+                                                <span class="dashicons dashicons-update"></span>
+                                                <?php _e('Resync', 'dropshipzone-sync'); ?>
+                                            </button>
                                             <button type="button" class="button button-small dsz-unmap-btn" data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
                                                 <span class="dashicons dashicons-no-alt"></span>
                                                 <?php _e('Unmap', 'dropshipzone-sync'); ?>
@@ -1575,7 +1596,9 @@ class Admin_UI {
         
         // Pre-check if products are already mapped/imported
         foreach ($products as &$product) {
-            $product['is_imported'] = !empty(wc_get_product_id_by_sku($product['sku']));
+            $wc_product_id = wc_get_product_id_by_sku($product['sku']);
+            $product['is_imported'] = !empty($wc_product_id);
+            $product['wc_product_id'] = $wc_product_id ? $wc_product_id : null;
         }
 
         wp_send_json_success(['products' => $products]);
@@ -1618,6 +1641,132 @@ class Admin_UI {
             'message' => __('Product imported successfully!', 'dropshipzone-sync'),
             'product_id' => $result,
             'edit_url' => get_edit_post_link($result, 'url')
+        ]);
+    }
+
+    /**
+     * AJAX: Resync existing product from Dropshipzone API
+     */
+    public function ajax_resync_product() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+        $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
+        
+        if (!$product_id && !$sku) {
+            wp_send_json_error(['message' => __('Product ID or SKU is required', 'dropshipzone-sync')]);
+        }
+
+        // If we only have SKU, try to find the product ID
+        if (!$product_id && $sku) {
+            $product_id = wc_get_product_id_by_sku($sku);
+            if (!$product_id) {
+                wp_send_json_error(['message' => __('Product not found in WooCommerce', 'dropshipzone-sync')]);
+            }
+        }
+
+        // Get resync options from request
+        $options = [];
+        if (isset($_POST['update_images'])) {
+            $options['update_images'] = filter_var($_POST['update_images'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($_POST['update_description'])) {
+            $options['update_description'] = filter_var($_POST['update_description'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($_POST['update_price'])) {
+            $options['update_price'] = filter_var($_POST['update_price'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($_POST['update_stock'])) {
+            $options['update_stock'] = filter_var($_POST['update_stock'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (isset($_POST['update_title'])) {
+            $options['update_title'] = filter_var($_POST['update_title'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        // Check if product data was passed from search results
+        $product_data = null;
+        if (isset($_POST['product_data']) && !empty($_POST['product_data'])) {
+            $product_data = json_decode(stripslashes($_POST['product_data']), true);
+        }
+
+        // Perform resync
+        $result = $this->product_importer->resync_product($product_id, $product_data, $options);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success([
+            'message' => __('Product resynced successfully!', 'dropshipzone-sync'),
+            'product_id' => $result,
+            'edit_url' => get_edit_post_link($result, 'url')
+        ]);
+    }
+
+    /**
+     * AJAX: Resync all mapped products
+     */
+    public function ajax_resync_all() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+        }
+
+        // Get all mappings
+        $mappings = $this->product_mapper->get_mappings(['limit' => 1000]);
+        
+        if (empty($mappings)) {
+            wp_send_json_error(['message' => __('No mapped products found to resync.', 'dropshipzone-sync')]);
+        }
+
+        $total = count($mappings);
+        $success_count = 0;
+        $error_count = 0;
+        $errors = [];
+
+        // Process each mapping
+        foreach ($mappings as $mapping) {
+            $product_id = $mapping['wc_product_id'];
+            $sku = $mapping['dsz_sku'];
+
+            // Resync the product
+            $result = $this->product_importer->resync_product($product_id, null, [
+                'update_price' => true,
+                'update_stock' => true,
+                'update_images' => true,
+                'update_description' => true,
+                'update_title' => true,
+            ]);
+
+            if (is_wp_error($result)) {
+                $error_count++;
+                $errors[] = sprintf('%s: %s', $sku, $result->get_error_message());
+            } else {
+                $success_count++;
+            }
+        }
+
+        $message = sprintf(
+            __('Resync complete! %d of %d products resynced successfully.', 'dropshipzone-sync'),
+            $success_count,
+            $total
+        );
+
+        if ($error_count > 0) {
+            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone-sync'), $error_count);
+        }
+
+        wp_send_json_success([
+            'message' => $message,
+            'total' => $total,
+            'success' => $success_count,
+            'errors' => $error_count,
+            'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
         ]);
     }
 }
