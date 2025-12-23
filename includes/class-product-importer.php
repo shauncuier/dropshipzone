@@ -59,7 +59,7 @@ class Product_Importer {
      * Import a single product by SKU or API data
      *
      * @param array|string $data API product data or SKU string
-     * @return int|WP_Error Product ID or error
+     * @return int|\WP_Error Product ID or error
      */
     public function import_product($data) {
         // If only SKU is provided, fetch data from API
@@ -83,7 +83,7 @@ class Product_Importer {
             return new \WP_Error('missing_sku', __('Product data is missing SKU.', 'dropshipzone-sync'));
         }
 
-        $sku = $data['sku'];
+        $sku = trim($data['sku']);
 
         // Check if product already exists by SKU
         $existing_id = wc_get_product_id_by_sku($sku);
@@ -91,18 +91,41 @@ class Product_Importer {
             return new \WP_Error('product_exists', sprintf(__('Product with SKU %s already exists in WooCommerce (ID: %d).', 'dropshipzone-sync'), $sku, $existing_id));
         }
 
-        $this->logger->info('Starting product import', ['sku' => $sku]);
+        $this->logger->info('Starting product import', ['sku' => $sku, 'data_keys' => array_keys($data)]);
 
         // Create the product
         $product = new \WC_Product_Simple();
-        $product->set_name(isset($data['title']) ? $data['title'] : $sku);
+        
+        // Set product name - check multiple possible field names
+        $product_name = $sku;
+        if (!empty($data['title'])) {
+            $product_name = $data['title'];
+        } elseif (!empty($data['name'])) {
+            $product_name = $data['name'];
+        } elseif (!empty($data['product_name'])) {
+            $product_name = $data['product_name'];
+        }
+        $product->set_name($product_name);
         
         // Get default status from settings
         $import_settings = get_option('dsz_sync_import_settings', ['default_status' => 'publish']);
         $product_status = isset($import_settings['default_status']) ? $import_settings['default_status'] : 'publish';
         $product->set_status($product_status); 
 
-        $product->set_description(isset($data['description']) ? $data['description'] : '');
+        // Set description - check multiple possible field names
+        $description = '';
+        if (!empty($data['description'])) {
+            $description = $data['description'];
+        } elseif (!empty($data['long_description'])) {
+            $description = $data['long_description'];
+        }
+        $product->set_description($description);
+        
+        // Set short description if available
+        if (!empty($data['short_description'])) {
+            $product->set_short_description($data['short_description']);
+        }
+        
         $product->set_sku($sku);
         
         // Use Price Sync logic to set price
@@ -110,11 +133,23 @@ class Product_Importer {
         $final_price = $this->price_sync->calculate_price($cost_price);
         $product->set_regular_price($final_price);
 
-        // Use Stock Sync logic to set stock
-        $api_stock = isset($data['stock']) ? intval($data['stock']) : 0;
+        // Use Stock Sync logic to set stock - check multiple possible field names
+        $api_stock = 0;
+        if (isset($data['stock_qty'])) {
+            $api_stock = intval($data['stock_qty']);
+        } elseif (isset($data['stock'])) {
+            $api_stock = intval($data['stock']);
+        } elseif (isset($data['qty'])) {
+            $api_stock = intval($data['qty']);
+        } elseif (isset($data['quantity'])) {
+            $api_stock = intval($data['quantity']);
+        }
         $final_stock = $this->stock_sync->calculate_stock($api_stock);
         $product->set_manage_stock(true);
         $product->set_stock_quantity($final_stock);
+        
+        // Set stock status based on quantity
+        $product->set_stock_status($final_stock > 0 ? 'instock' : 'outofstock');
 
         // Set dimensions and weight if available
         if (isset($data['weight'])) {
@@ -151,21 +186,44 @@ class Product_Importer {
             return new \WP_Error('save_failed', __('Failed to save WooCommerce product.', 'dropshipzone-sync'));
         }
 
-        // Handle Image
-        $main_image = !empty($data['image_url']) ? $data['image_url'] : (!empty($data['image']) ? $data['image'] : '');
-        if (empty($main_image) && !empty($data['images']) && is_array($data['images'])) {
+        // Handle Image - check multiple possible field names
+        $main_image = '';
+        if (!empty($data['image_url'])) {
+            $main_image = $data['image_url'];
+        } elseif (!empty($data['image'])) {
+            $main_image = $data['image'];
+        } elseif (!empty($data['gallery']) && is_array($data['gallery']) && !empty($data['gallery'][0])) {
+            // API returns images in 'gallery' field
+            $main_image = $data['gallery'][0];
+        } elseif (!empty($data['images']) && is_array($data['images']) && !empty($data['images'][0])) {
             $main_image = $data['images'][0];
         }
 
+        $this->logger->info('Image handling', [
+            'sku' => $sku,
+            'main_image' => $main_image,
+            'has_gallery' => !empty($data['gallery']),
+            'gallery_count' => !empty($data['gallery']) ? count($data['gallery']) : 0
+        ]);
+
         if (!empty($main_image)) {
-            $this->attach_image_from_url($main_image, $product_id);
+            $attach_result = $this->attach_image_from_url($main_image, $product_id);
+            $this->logger->info('Main image attachment result', ['sku' => $sku, 'result' => $attach_result]);
         }
 
-        // Handle Gallery Images
+        // Handle Gallery Images - check multiple possible field names
+        $gallery_images = [];
         if (!empty($data['gallery_images']) && is_array($data['gallery_images'])) {
-            $this->attach_gallery_images($data['gallery_images'], $product_id);
+            $gallery_images = $data['gallery_images'];
+        } elseif (!empty($data['gallery']) && is_array($data['gallery'])) {
+            // API returns images in 'gallery' field
+            $gallery_images = $data['gallery'];
         } elseif (!empty($data['images']) && is_array($data['images'])) {
-            $this->attach_gallery_images($data['images'], $product_id);
+            $gallery_images = $data['images'];
+        }
+
+        if (!empty($gallery_images)) {
+            $this->attach_gallery_images($gallery_images, $product_id, $main_image);
         }
 
         // Create mapping
@@ -190,13 +248,230 @@ class Product_Importer {
     }
 
     /**
+     * Resync an existing product with data from Dropshipzone API
+     *
+     * @param int          $product_id WooCommerce product ID
+     * @param array|string $data       API product data or SKU string (optional - will fetch from mapping if not provided)
+     * @param array        $options    Resync options (update_images, update_description, update_price, update_stock)
+     * @return int|\WP_Error Product ID or error
+     */
+    public function resync_product($product_id, $data = null, $options = []) {
+        // Default options
+        $defaults = [
+            'update_images' => true,
+            'update_description' => true,
+            'update_price' => true,
+            'update_stock' => true,
+            'update_title' => false, // Don't update title by default (user might have customized it)
+        ];
+        $options = wp_parse_args($options, $defaults);
+
+        // Get the product
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            return new \WP_Error('product_not_found', __('WooCommerce product not found.', 'dropshipzone-sync'));
+        }
+
+        $sku = $product->get_sku();
+
+        // If no data provided, get SKU from product or mapping and fetch from API
+        if (empty($data)) {
+            if (empty($sku)) {
+                // Try to get SKU from mapping
+                $sku = $this->product_mapper->get_dsz_sku($product_id);
+            }
+
+            if (empty($sku)) {
+                return new \WP_Error('no_sku', __('Product has no SKU or mapping to resync from.', 'dropshipzone-sync'));
+            }
+
+            // Fetch from API
+            $response = $this->api_client->get_products_by_skus([$sku]);
+            
+            if (is_wp_error($response)) {
+                return $response;
+            }
+
+            if (empty($response['result'])) {
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone-sync'), $sku));
+            }
+
+            $data = $response['result'][0];
+        }
+
+        // If data is still a string (SKU), fetch it
+        if (is_string($data)) {
+            $sku = $data;
+            $response = $this->api_client->get_products_by_skus([$sku]);
+            
+            if (is_wp_error($response)) {
+                return $response;
+            }
+
+            if (empty($response['result'])) {
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone-sync'), $sku));
+            }
+
+            $data = $response['result'][0];
+        }
+
+        $this->logger->info('Starting product resync', [
+            'product_id' => $product_id,
+            'sku' => $sku,
+            'options' => $options
+        ]);
+
+        // Update title if enabled
+        if ($options['update_title']) {
+            $product_name = '';
+            if (!empty($data['title'])) {
+                $product_name = $data['title'];
+            } elseif (!empty($data['name'])) {
+                $product_name = $data['name'];
+            } elseif (!empty($data['product_name'])) {
+                $product_name = $data['product_name'];
+            }
+            if (!empty($product_name)) {
+                $product->set_name($product_name);
+            }
+        }
+
+        // Update description if enabled
+        if ($options['update_description']) {
+            $description = '';
+            if (!empty($data['description'])) {
+                $description = $data['description'];
+            } elseif (!empty($data['long_description'])) {
+                $description = $data['long_description'];
+            }
+            if (!empty($description)) {
+                $product->set_description($description);
+            }
+            
+            if (!empty($data['short_description'])) {
+                $product->set_short_description($data['short_description']);
+            }
+        }
+
+        // Update price if enabled
+        if ($options['update_price']) {
+            $cost_price = isset($data['price']) ? floatval($data['price']) : 0;
+            if ($cost_price > 0) {
+                $final_price = $this->price_sync->calculate_price($cost_price);
+                $product->set_regular_price($final_price);
+            }
+        }
+
+        // Update stock if enabled
+        if ($options['update_stock']) {
+            $api_stock = 0;
+            if (isset($data['stock_qty'])) {
+                $api_stock = intval($data['stock_qty']);
+            } elseif (isset($data['stock'])) {
+                $api_stock = intval($data['stock']);
+            } elseif (isset($data['qty'])) {
+                $api_stock = intval($data['qty']);
+            } elseif (isset($data['quantity'])) {
+                $api_stock = intval($data['quantity']);
+            }
+            $final_stock = $this->stock_sync->calculate_stock($api_stock);
+            $product->set_manage_stock(true);
+            $product->set_stock_quantity($final_stock);
+            $product->set_stock_status($final_stock > 0 ? 'instock' : 'outofstock');
+        }
+
+        // Update dimensions and weight
+        if (isset($data['weight'])) {
+            $product->set_weight($data['weight']);
+        }
+        if (isset($data['length'])) {
+            $product->set_length($data['length']);
+        }
+        if (isset($data['width'])) {
+            $product->set_width($data['width']);
+        }
+        if (isset($data['height'])) {
+            $product->set_height($data['height']);
+        }
+
+        // Save the product
+        $product->save();
+
+        // Update images if enabled
+        if ($options['update_images']) {
+            // Get the main image URL
+            $main_image = '';
+            if (!empty($data['image_url'])) {
+                $main_image = $data['image_url'];
+            } elseif (!empty($data['image'])) {
+                $main_image = $data['image'];
+            } elseif (!empty($data['gallery']) && is_array($data['gallery']) && !empty($data['gallery'][0])) {
+                $main_image = $data['gallery'][0];
+            } elseif (!empty($data['images']) && is_array($data['images']) && !empty($data['images'][0])) {
+                $main_image = $data['images'][0];
+            }
+
+            // Delete existing featured image and gallery
+            $existing_thumbnail_id = get_post_thumbnail_id($product_id);
+            if ($existing_thumbnail_id) {
+                wp_delete_attachment($existing_thumbnail_id, true);
+            }
+
+            $existing_gallery = get_post_meta($product_id, '_product_image_gallery', true);
+            if ($existing_gallery) {
+                $gallery_ids = explode(',', $existing_gallery);
+                foreach ($gallery_ids as $gallery_id) {
+                    wp_delete_attachment(intval($gallery_id), true);
+                }
+                delete_post_meta($product_id, '_product_image_gallery');
+            }
+
+            // Attach new main image
+            if (!empty($main_image)) {
+                $this->attach_image_from_url($main_image, $product_id);
+            }
+
+            // Attach new gallery images
+            $gallery_images = [];
+            if (!empty($data['gallery_images']) && is_array($data['gallery_images'])) {
+                $gallery_images = $data['gallery_images'];
+            } elseif (!empty($data['gallery']) && is_array($data['gallery'])) {
+                $gallery_images = $data['gallery'];
+            } elseif (!empty($data['images']) && is_array($data['images'])) {
+                $gallery_images = $data['images'];
+            }
+
+            if (!empty($gallery_images)) {
+                $this->attach_gallery_images($gallery_images, $product_id, $main_image);
+            }
+        }
+
+        // Update mapping last synced time
+        $this->product_mapper->update_last_synced($product_id);
+
+        $this->logger->info('Product resynced successfully', [
+            'product_id' => $product_id,
+            'sku' => $sku
+        ]);
+
+        return $product_id;
+    }
+
+    /**
      * Attach image from URL to a product
      *
      * @param string $url        Image URL
      * @param int    $product_id Product ID
+     * @param bool   $set_featured Whether to set as featured image (default true)
      * @return int|bool Attachment ID or false
      */
-    private function attach_image_from_url($url, $product_id) {
+    private function attach_image_from_url($url, $product_id, $set_featured = true) {
+        // Validate URL
+        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            $this->logger->warning('Invalid image URL provided', ['url' => $url]);
+            return false;
+        }
+
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
@@ -212,8 +487,11 @@ class Product_Importer {
             return false;
         }
 
+        // Extract filename from URL (handle query strings and special characters)
+        $filename = $this->get_filename_from_url($url);
+        
         $file_array = [
-            'name'     => basename($url),
+            'name'     => $filename,
             'tmp_name' => $tmp,
         ];
 
@@ -229,29 +507,75 @@ class Product_Importer {
             return false;
         }
 
-        // Set as featured image
-        set_post_thumbnail($product_id, $id);
+        // Set as featured image only if requested
+        if ($set_featured) {
+            set_post_thumbnail($product_id, $id);
+        }
 
         return $id;
     }
 
     /**
+     * Extract clean filename from URL
+     *
+     * @param string $url Image URL
+     * @return string Clean filename
+     */
+    private function get_filename_from_url($url) {
+        // Parse URL and get path
+        $parsed = wp_parse_url($url);
+        $path = isset($parsed['path']) ? $parsed['path'] : '';
+        
+        // Get basename from path (excludes query string)
+        $filename = basename($path);
+        
+        // If filename is empty or doesn't have an extension, generate one
+        if (empty($filename) || strpos($filename, '.') === false) {
+            $filename = 'product-image-' . uniqid() . '.jpg';
+        }
+        
+        // Remove any URL encoding
+        $filename = urldecode($filename);
+        
+        // Sanitize filename
+        $filename = sanitize_file_name($filename);
+        
+        return $filename;
+    }
+
+    /**
      * Attach gallery images from URLs
      * 
-     * @param array $urls       Array of image URLs
-     * @param int   $product_id Product ID
+     * @param array  $urls       Array of image URLs
+     * @param int    $product_id Product ID
+     * @param string $main_image Main/featured image URL to skip (optional)
      */
-    private function attach_gallery_images($urls, $product_id) {
+    private function attach_gallery_images($urls, $product_id, $main_image = '') {
+        if (empty($urls) || !is_array($urls)) {
+            return;
+        }
+
         $gallery_ids = [];
         $featured_id = get_post_thumbnail_id($product_id);
 
-        foreach ($urls as $url) {
-            // Skip if matches featured image (simple URL check)
-            if (isset($data['image_url']) && $url === $data['image_url']) {
+        foreach ($urls as $index => $url) {
+            // Skip empty URLs
+            if (empty($url)) {
                 continue;
             }
 
-            $id = $this->attach_image_from_url($url, $product_id);
+            // Skip the first image if it was already used as featured image
+            // Also skip if URL matches the main image URL
+            if ($index === 0 && $featured_id) {
+                continue;
+            }
+            
+            if (!empty($main_image) && $url === $main_image) {
+                continue;
+            }
+
+            // Attach image but don't set as featured (pass false)
+            $id = $this->attach_image_from_url($url, $product_id, false);
             if ($id && $id !== $featured_id) {
                 $gallery_ids[] = $id;
             }

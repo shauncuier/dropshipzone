@@ -1503,20 +1503,75 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Search term is too short.', 'dropshipzone-sync')]);
         }
 
-        // Search Dropshipzone API
-        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 20]);
+        $search_lower = strtolower($search);
+        $products = [];
+
+        // First, try exact SKU search
+        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 50]);
         
-        // If no results by SKU, try keyword search (if API supports it - assuming it does based on common patterns)
-        if (is_wp_error($response) || empty($response['result'])) {
-            // Fetch products without SKU filter (API usually has a keyword or title param, but let's check API data or just use query arg)
-            $response = $this->api_client->get_products(['title' => $search, 'limit' => 20]);
+        if (!is_wp_error($response) && !empty($response['result'])) {
+            $products = $response['result'];
+        }
+        
+        // If no results by SKU, fetch products and filter by title/name locally
+        // (The Dropshipzone API doesn't support keyword search, only SKU filtering)
+        if (empty($products)) {
+            // Fetch a batch of products to search through
+            $response = $this->api_client->get_products(['limit' => 200, 'page_no' => 1]);
+            
+            if (!is_wp_error($response) && !empty($response['result'])) {
+                // Filter products by title/name matching the search term
+                foreach ($response['result'] as $product) {
+                    $title = isset($product['title']) ? strtolower($product['title']) : '';
+                    $name = isset($product['name']) ? strtolower($product['name']) : '';
+                    $sku = isset($product['sku']) ? strtolower($product['sku']) : '';
+                    
+                    // Check if search term is found in title, name, or SKU
+                    if (strpos($title, $search_lower) !== false || 
+                        strpos($name, $search_lower) !== false || 
+                        strpos($sku, $search_lower) !== false) {
+                        $products[] = $product;
+                    }
+                    
+                    // Limit results to 50 matches
+                    if (count($products) >= 50) {
+                        break;
+                    }
+                }
+                
+                // If still no results, try fetching more pages
+                if (empty($products) && isset($response['total_pages']) && $response['total_pages'] > 1) {
+                    // Try page 2
+                    $response2 = $this->api_client->get_products(['limit' => 200, 'page_no' => 2]);
+                    
+                    if (!is_wp_error($response2) && !empty($response2['result'])) {
+                        foreach ($response2['result'] as $product) {
+                            $title = isset($product['title']) ? strtolower($product['title']) : '';
+                            $name = isset($product['name']) ? strtolower($product['name']) : '';
+                            $sku = isset($product['sku']) ? strtolower($product['sku']) : '';
+                            
+                            if (strpos($title, $search_lower) !== false || 
+                                strpos($name, $search_lower) !== false || 
+                                strpos($sku, $search_lower) !== false) {
+                                $products[] = $product;
+                            }
+                            
+                            if (count($products) >= 50) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         if (is_wp_error($response)) {
             wp_send_json_error(['message' => $response->get_error_message()]);
         }
 
-        $products = isset($response['result']) ? $response['result'] : [];
+        if (empty($products)) {
+            wp_send_json_error(['message' => __('No products found matching your search. Try a different keyword or enter an exact SKU.', 'dropshipzone-sync')]);
+        }
         
         // Pre-check if products are already mapped/imported
         foreach ($products as &$product) {

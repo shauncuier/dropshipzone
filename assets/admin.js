@@ -1174,10 +1174,18 @@
         },
 
         /**
+         * Store products data for import
+         */
+        importProductsCache: {},
+
+        /**
          * Render API search results
          */
         renderImportResults: function (products) {
             var html = '<div class="dsz-import-grid">';
+
+            // Clear and rebuild products cache
+            this.importProductsCache = {};
 
             products.forEach(function (product) {
                 var btnText = product.is_imported ? 'Imported' : 'Import Product';
@@ -1185,15 +1193,20 @@
                 var btnDisabled = product.is_imported ? 'disabled' : '';
 
                 var imageUrl = product.image_url || product.image || '';
+                // Check for gallery array (API returns images in 'gallery' field)
+                if (!imageUrl && product.gallery && Array.isArray(product.gallery) && product.gallery.length > 0) {
+                    imageUrl = product.gallery[0];
+                }
+                // Fallback to images array if gallery not found
                 if (!imageUrl && product.images && Array.isArray(product.images) && product.images.length > 0) {
                     imageUrl = product.images[0];
                 }
 
-                // Encode product data for storage
-                var productDataJson = JSON.stringify(product);
+                // Store product data in cache (avoid JSON corruption in HTML attributes)
+                DSZAdmin.importProductsCache[product.sku] = product;
 
                 html += `
-                    <div class="dsz-import-item" data-sku="${product.sku}" data-product="${escapeHtml(productDataJson)}">
+                    <div class="dsz-import-item" data-sku="${escapeHtml(product.sku)}">
                         <div class="dsz-import-item-image">
                             ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(product.title || product.sku)}">` : '<span class="dashicons dashicons-format-image"></span>'}
                         </div>
@@ -1221,7 +1234,9 @@
             var $btn = $(e.currentTarget);
             var sku = $btn.data('sku');
             var $item = $btn.closest('.dsz-import-item');
-            var productData = $item.data('product');
+            
+            // Get product data from cache (stored during search results rendering)
+            var productData = this.importProductsCache[sku] || null;
 
             $btn.addClass('dsz-loading').prop('disabled', true);
 
@@ -1232,7 +1247,7 @@
                     action: 'dsz_import_product',
                     nonce: dsz_admin.nonce,
                     sku: sku,
-                    product_data: typeof productData === 'string' ? productData : JSON.stringify(productData)
+                    product_data: productData ? JSON.stringify(productData) : ''
                 },
                 success: function (response) {
                     if (response.success) {
