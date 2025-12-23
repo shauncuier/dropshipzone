@@ -91,7 +91,12 @@ class Product_Importer {
             return new \WP_Error('product_exists', sprintf(__('Product with SKU %s already exists in WooCommerce (ID: %d).', 'dropshipzone-sync'), $sku, $existing_id));
         }
 
-        $this->logger->info('Starting product import', ['sku' => $sku, 'data_keys' => array_keys($data)]);
+        $this->logger->info('Starting product import', [
+            'sku' => $sku, 
+            'data_keys' => array_keys($data),
+            'has_desc' => !empty($data['desc']),
+            'desc_length' => !empty($data['desc']) ? strlen($data['desc']) : 0,
+        ]);
 
         // Create the product
         $product = new \WC_Product_Simple();
@@ -113,8 +118,11 @@ class Product_Importer {
         $product->set_status($product_status); 
 
         // Set description - check multiple possible field names
+        // Note: Dropshipzone API returns description in 'desc' field
         $description = '';
-        if (!empty($data['description'])) {
+        if (!empty($data['desc'])) {
+            $description = $data['desc'];
+        } elseif (!empty($data['description'])) {
             $description = $data['description'];
         } elseif (!empty($data['long_description'])) {
             $description = $data['long_description'];
@@ -338,8 +346,11 @@ class Product_Importer {
 
         // Update description if enabled
         if ($options['update_description']) {
+            // Note: Dropshipzone API returns description in 'desc' field
             $description = '';
-            if (!empty($data['description'])) {
+            if (!empty($data['desc'])) {
+                $description = $data['desc'];
+            } elseif (!empty($data['description'])) {
                 $description = $data['description'];
             } elseif (!empty($data['long_description'])) {
                 $description = $data['long_description'];
