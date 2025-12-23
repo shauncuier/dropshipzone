@@ -1,114 +1,140 @@
-# Dropshipzone Price & Stock Sync
+# 🇦🇺 Dropshipzone Price & Stock Sync for WooCommerce
+
+<div align="center">
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
-![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)
-![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-purple.svg)
-![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF.svg)
-![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
+[![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
+[![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
+[![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-A lightweight, enterprise-grade WooCommerce plugin that automatically synchronizes product prices and stock levels from the Dropshipzone API.
+**The official integration plugin for Australian dropshippers using [Dropshipzone](https://dropshipzone.com.au).**
+
+Automatically sync 10,000+ products with real-time pricing, stock levels, and seamless product imports.
+
+[📦 Download Latest Release](https://github.com/shauncuier/dropshipzone/releases) · [📖 Documentation](https://github.com/shauncuier/dropshipzone/wiki) · [🐛 Report Bug](https://github.com/shauncuier/dropshipzone/issues) · [✨ Request Feature](https://github.com/shauncuier/dropshipzone/discussions)
+
+</div>
+
+---
+
+## 🚀 What's New in v2.0.0
+
+- **🛍️ Product Import** - Search and import products directly from Dropshipzone catalog
+- **⚡ Rate Limiting** - Smart API throttling (60/min, 600/hour) to comply with API limits
+- **🎨 Enhanced UI** - Modern admin dashboard with improved UX
+- **🔗 Auto-Mapping** - Automatically map imported products to Dropshipzone SKUs
+
+---
 
 ## ✨ Features
 
-- **🔄 Price Sync** - Automatically update regular and sale prices
-- **📦 Stock Sync** - Keep stock quantities accurate in real-time
-- **🏷️ SKU Matching** - Products matched by SKU for accuracy
-- **💰 Flexible Pricing** - Percentage or fixed markup options
-- **🧮 GST Support** - Include or exclude 10% Australian GST
-- **🔢 Price Rounding** - Round to .99, .95, or nearest dollar
-- **🛡️ Stock Buffer** - Subtract units to prevent overselling
-- **⏰ Scheduled Sync** - Hourly, twice daily, or daily options
-- **▶️ Manual Sync** - Run sync anytime with one click
-- **📊 Batch Processing** - Handles 10,000+ products efficiently
-- **📝 Detailed Logging** - Track all sync activity and errors
-- **🎨 Modern UI** - Beautiful, responsive admin interface
+| Feature | Description |
+|---------|-------------|
+| 🔄 **Price Sync** | Automatically update regular and sale prices from supplier |
+| 📦 **Stock Sync** | Keep stock quantities accurate in real-time |
+| 🛍️ **Product Import** | Import products directly from Dropshipzone catalog |
+| 🏷️ **SKU Matching** | Products matched by SKU for accuracy |
+| 💰 **Flexible Pricing** | Percentage or fixed markup options |
+| 🧮 **GST Support** | Include or exclude 10% Australian GST |
+| 🔢 **Price Rounding** | Round to .99, .95, or nearest dollar |
+| 🛡️ **Stock Buffer** | Subtract units to prevent overselling |
+| ⏰ **Scheduled Sync** | Hourly, twice daily, or daily options |
+| ▶️ **Manual Sync** | Run sync anytime with one click |
+| 📊 **Batch Processing** | Handles 10,000+ products efficiently |
+| 📝 **Detailed Logging** | Track all sync activity and errors |
+| ⚡ **Rate Limiting** | Smart API throttling to prevent limits |
+| 🎨 **Modern UI** | Beautiful, responsive admin interface |
+
+---
 
 ## 📋 Requirements
 
-- WordPress 5.8 or higher
-- WooCommerce 5.0 or higher
-- PHP 7.4 or higher
-- Dropshipzone API account
+| Requirement | Version |
+|-------------|---------|
+| WordPress | 6.0 or higher |
+| WooCommerce | 8.0 or higher |
+| PHP | 7.4 or higher |
+| Dropshipzone | API account required |
+
+---
 
 ## 🚀 Installation
 
-### From WordPress Admin
+### Option 1: From WordPress Admin (Recommended)
 
-1. Download the latest release `.zip` file
-2. Go to **Plugins > Add New > Upload Plugin**
+1. Download the latest release `.zip` file from [Releases](https://github.com/shauncuier/dropshipzone/releases)
+2. Go to **Plugins → Add New → Upload Plugin**
 3. Upload the zip file and click **Install Now**
 4. Activate the plugin
 
-### Manual Installation
-
-1. Download and extract the plugin
-2. Upload the `dropshipzone` folder to `/wp-content/plugins/`
-3. Activate through the **Plugins** menu in WordPress
-
-### From GitHub
+### Option 2: Manual Installation
 
 ```bash
 cd /path/to/wordpress/wp-content/plugins/
 git clone https://github.com/shauncuier/dropshipzone.git
 ```
 
-## ⚙️ Configuration
+### Option 3: From GitHub Releases
 
-### 1. API Settings
-Navigate to **DSZ Sync > API Settings** and enter your Dropshipzone credentials:
+1. Download `dropshipzone-price-stock-sync-v2.0.0.zip` from [Releases](https://github.com/shauncuier/dropshipzone/releases)
+2. Extract and upload to `/wp-content/plugins/`
+3. Activate through WordPress admin
+
+---
+
+## ⚙️ Quick Start
+
+### 1️⃣ Configure API Settings
+Navigate to **DSZ Sync → API Settings** and enter your Dropshipzone credentials:
 - API Email
 - API Password
 
 Click **Test Connection** to verify.
 
-### 2. Price Rules
+### 2️⃣ Set Price Rules
 Configure your pricing strategy:
 - **Markup Type**: Percentage or Fixed amount
-- **Markup Value**: Your desired markup
-- **GST Options**: Include or exclude 10% GST
+- **Markup Value**: Your desired markup (e.g., 30%)
+- **GST Options**: Include or exclude 10% Australian GST
 - **Rounding**: Round to .99, .95, or nearest dollar
 
-### 3. Stock Rules
-Set up stock management:
+### 3️⃣ Configure Stock Rules
 - **Stock Buffer**: Units to subtract (prevents overselling)
 - **Out of Stock Handling**: How to handle zero stock items
 
-### 4. Product Mapping
-Map your WooCommerce products to Dropshipzone SKUs:
-- **Auto-Map**: Automatically matches products by SKU
+### 4️⃣ Import or Map Products
+- **Import**: Search and import products from Dropshipzone catalog
+- **Auto-Map**: Automatically matches existing products by SKU
 - **Manual Map**: Manually link products to specific SKUs
 
-### 5. Sync Control
-Configure and run syncs:
-- **Schedule**: Hourly, Twice Daily, Daily, or Disabled
-- **Batch Size**: Products per batch (10-200)
-- **Manual Sync**: Run sync immediately
+### 5️⃣ Run Sync
+- Navigate to **DSZ Sync → Sync Control**
+- Click **Run Sync Now** or configure a schedule
 
-## 📖 Usage
+---
 
-### Running a Manual Sync
+## 📊 Rate Limiting
 
-1. Go to **DSZ Sync > Sync Control**
-2. Click **Run Sync Now**
-3. Monitor progress in real-time
+This plugin respects Dropshipzone's API throttle limits:
 
-### Viewing Logs
+| Limit | Value |
+|-------|-------|
+| Requests per minute | 60 |
+| Requests per hour | 600 |
 
-1. Go to **DSZ Sync > Logs**
-2. Filter by log level (info, warning, error)
-3. Export logs as CSV if needed
+The built-in rate limiter automatically:
+- ✅ Tracks all API requests
+- ✅ Waits when approaching limits
+- ✅ Prevents rate limit errors
+- ✅ Logs throttling events
 
-### Checking Sync Status
+---
 
-The **Dashboard** shows:
-- API connection status
-- Last sync time
-- Products updated
-- Error count
-
-## 🔧 Hooks & Filters
+## 🔧 Developer Hooks
 
 ### Filters
 
@@ -138,6 +164,17 @@ add_action('dsz_price_updated', function($product_id, $old_price, $new_price) {
 }, 10, 3);
 ```
 
+---
+
+## 📖 Documentation
+
+- [📚 Full Documentation](https://github.com/shauncuier/dropshipzone/wiki)
+- [🔌 API Documentation](API-DOCUMENTATION.md)
+- [📝 Changelog](CHANGELOG.md)
+- [🤝 Contributing Guidelines](CONTRIBUTING.md)
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) first.
@@ -148,36 +185,64 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
+---
+
 ## 📄 License
 
 This project is licensed under the GPL v2 or later - see the [LICENSE](LICENSE) file for details.
 
+---
+
 ## 🆘 Support
 
-- **Documentation**: [Wiki](https://github.com/shauncuier/dropshipzone/wiki)
-- **Discussions**: [GitHub Discussions](https://github.com/shauncuier/dropshipzone/discussions)
-- **Issues**: [GitHub Issues](https://github.com/shauncuier/dropshipzone/issues)
-- **WordPress Forum**: [Support Threads](https://wordpress.org/support/plugin/dropshipzone-price-stock-sync/)
-- **Email**: support@dropshipzone.com.au
-
-## 💖 Support the Project
-
-If you find this plugin useful, please consider supporting its development:
-- **Buy Me a Coffee**: [buymeacoffee.com/shauncuier](https://buymeacoffee.com/shauncuier)
-
-Your support helps us maintain the plugin and add new features!
-
-## 📝 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
-
-## 🙏 Credits
-
-- Developed by [3s-Soft](https://3s-soft.com)
-- Built for [Dropshipzone](https://dropshipzone.com.au)
-- Uses WordPress Plugin API
-- WooCommerce integration
+| Channel | Link |
+|---------|------|
+| 📖 Documentation | [Wiki](https://github.com/shauncuier/dropshipzone/wiki) |
+| 💬 Discussions | [GitHub Discussions](https://github.com/shauncuier/dropshipzone/discussions) |
+| 🐛 Issues | [GitHub Issues](https://github.com/shauncuier/dropshipzone/issues) |
+| 📧 Email | support@dropshipzone.com.au |
 
 ---
 
-**Note**: This plugin only syncs prices and stock. It does NOT create, import, or modify product titles, descriptions, images, or categories.
+## 💖 Support the Project
+
+If you find this plugin useful, please consider:
+
+- ⭐ **Star this repository** to show your support
+- 🐛 **Report bugs** to help improve the plugin
+- 💡 **Suggest features** in discussions
+- ☕ **Buy us a coffee**: [buymeacoffee.com/shauncuier](https://buymeacoffee.com/shauncuier)
+
+Your support helps us maintain the plugin and add new features!
+
+---
+
+## 🙏 Credits
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Developed by</strong><br>
+      <a href="https://3s-soft.com">3s-Soft</a>
+    </td>
+    <td align="center">
+      <strong>Built for</strong><br>
+      <a href="https://dropshipzone.com.au">Dropshipzone Australia</a>
+    </td>
+    <td align="center">
+      <strong>Powered by</strong><br>
+      <a href="https://woocommerce.com">WooCommerce</a>
+    </td>
+  </tr>
+</table>
+
+---
+
+<div align="center">
+
+**Made with ❤️ for Australian Dropshippers**
+
+[![GitHub stars](https://img.shields.io/github/stars/shauncuier/dropshipzone?style=social)](https://github.com/shauncuier/dropshipzone)
+[![GitHub forks](https://img.shields.io/github/forks/shauncuier/dropshipzone?style=social)](https://github.com/shauncuier/dropshipzone/fork)
+
+</div>
