@@ -5,7 +5,7 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0-dev] - Unreleased
+## [2.0.0] - 2025-12-24
 
 ### Added
 - Commencing development for Version 2.0
@@ -121,4 +121,5 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[2.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.0
 [1.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v1.0.0

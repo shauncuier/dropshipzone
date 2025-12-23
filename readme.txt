@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.0-dev
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 
 == Changelog ==
 
+= 2.0.0 =
+* New Product Import feature: Search and import products directly from Dropshipzone API
+* Core Product Importer class for automated product creation and image sideloading
+* Dynamic rule application (Price & Stock) during product import
+* Automated Product Mapping for all imported items
+* Enhanced Admin UI with dedicated Product Import dashboard and grid layout results
+
 = 1.0.0 =
 * Initial release
 * Price sync with percentage/fixed markup
@@ -107,6 +114,9 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 * Modern admin UI
 
 == Upgrade Notice ==
+
+= 2.0.0 =
+Major update with new Product Import feature! You can now search and import products directly from Dropshipzone API.
 
 = 1.0.0 =
 Initial release of Dropshipzone Price & Stock Sync.
