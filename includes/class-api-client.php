@@ -35,6 +35,11 @@ class API_Client {
     private $logger;
 
     /**
+     * Rate limiter instance
+     */
+    private $rate_limiter;
+
+    /**
      * Current API token
      */
     private $token = null;
@@ -56,6 +61,7 @@ class API_Client {
      */
     public function __construct(Logger $logger) {
         $this->logger = $logger;
+        $this->rate_limiter = new Rate_Limiter($logger);
         $this->load_token();
     }
 
@@ -389,6 +395,43 @@ class API_Client {
      * @return array|WP_Error Response data or error
      */
     private function make_request($method, $endpoint, $data = [], $use_auth = true, $retry = 0) {
+        // Check rate limits before making request
+        if (!$this->rate_limiter->can_make_request()) {
+            $wait_time = $this->rate_limiter->get_wait_time();
+            
+            // If wait time is reasonable, wait and proceed
+            if ($wait_time <= 120) {
+                $this->logger->info('Rate limit: Waiting before request', [
+                    'endpoint' => $endpoint,
+                    'wait_seconds' => $wait_time,
+                    'status' => $this->rate_limiter->get_status(),
+                ]);
+                
+                if (!$this->rate_limiter->wait_if_needed(120)) {
+                    return new \WP_Error(
+                        'rate_limit_exceeded',
+                        __('API rate limit exceeded. Maximum 60 requests/minute or 600 requests/hour. Please try again later.', 'dropshipzone-sync'),
+                        $this->rate_limiter->get_status()
+                    );
+                }
+            } else {
+                $this->logger->error('Rate limit: Wait time too long', [
+                    'endpoint' => $endpoint,
+                    'wait_seconds' => $wait_time,
+                    'status' => $this->rate_limiter->get_status(),
+                ]);
+                
+                return new \WP_Error(
+                    'rate_limit_exceeded',
+                    sprintf(
+                        __('API rate limit exceeded. Please wait %d minutes before trying again.', 'dropshipzone-sync'),
+                        ceil($wait_time / 60)
+                    ),
+                    $this->rate_limiter->get_status()
+                );
+            }
+        }
+
         $url = self::API_BASE_URL . $endpoint;
 
         // Build headers
@@ -421,7 +464,11 @@ class API_Client {
         $this->logger->debug('API request', [
             'method' => $method,
             'url' => $url,
+            'rate_limit_status' => $this->rate_limiter->get_status(),
         ]);
+
+        // Record the request BEFORE making it
+        $this->rate_limiter->record_request();
 
         // Make request
         $response = wp_remote_request($url, $args);
@@ -529,5 +576,21 @@ class API_Client {
             'total_products' => isset($products['total']) ? $products['total'] : 0,
             'total_pages' => isset($products['total_pages']) ? $products['total_pages'] : 0,
         ];
+    }
+
+    /**
+     * Get rate limit status
+     *
+     * @return array Rate limit status
+     */
+    public function get_rate_limit_status() {
+        return $this->rate_limiter->get_status();
+    }
+
+    /**
+     * Reset rate limit counters (emergency use)
+     */
+    public function reset_rate_limit() {
+        $this->rate_limiter->reset();
     }
 }

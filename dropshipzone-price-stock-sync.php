@@ -102,6 +102,7 @@ final class Dropshipzone_Sync {
         
         // Core classes
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-logger.php';
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-rate-limiter.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-api-client.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-price-sync.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-stock-sync.php';
