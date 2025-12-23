@@ -40,6 +40,7 @@ $Excludes = @(
     ".gitattributes",
     "build",
     "build.ps1",
+    "release.ps1",
     "build.sh",
     "node_modules",
     ".DS_Store",
