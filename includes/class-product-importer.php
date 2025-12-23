@@ -173,17 +173,36 @@ class Product_Importer {
             $product->set_height($data['height']);
         }
 
-        // Set Categories
-        if (!empty($data['categories'])) {
-            $category_ids = $this->create_categories($data['categories']);
-            if (!empty($category_ids)) {
-                $product->set_category_ids($category_ids);
-            }
+        // Set Categories - check multiple possible field names
+        // Note: Dropshipzone API returns category in 'Category' field (with path like "Appliances > Air Conditioners > Evaporative Coolers")
+        // Also has l1_category_name, l2_category_name, l3_category_name for hierarchical data
+        $category_string = '';
+        if (!empty($data['Category'])) {
+            // API returns full path like "Appliances > Air Conditioners > Evaporative Coolers"
+            $category_string = $data['Category'];
+        } elseif (!empty($data['l1_category_name'])) {
+            // Build category path from hierarchical fields
+            $cat_parts = [];
+            if (!empty($data['l1_category_name'])) $cat_parts[] = $data['l1_category_name'];
+            if (!empty($data['l2_category_name'])) $cat_parts[] = $data['l2_category_name'];
+            if (!empty($data['l3_category_name'])) $cat_parts[] = $data['l3_category_name'];
+            $category_string = implode(' > ', $cat_parts);
+        } elseif (!empty($data['categories'])) {
+            $category_string = $data['categories'];
         } elseif (!empty($data['category'])) {
-            $category_ids = $this->create_categories($data['category']);
+            $category_string = $data['category'];
+        }
+
+        if (!empty($category_string)) {
+            $category_ids = $this->create_categories($category_string);
             if (!empty($category_ids)) {
                 $product->set_category_ids($category_ids);
             }
+            $this->logger->info('Category assignment', [
+                'sku' => $sku,
+                'category_string' => $category_string,
+                'category_ids' => $category_ids
+            ]);
         }
 
         // Save the product to get an ID
@@ -270,6 +289,7 @@ class Product_Importer {
             'update_description' => true,
             'update_price' => true,
             'update_stock' => true,
+            'update_categories' => true, // Update product categories from API
             'update_title' => false, // Don't update title by default (user might have customized it)
         ];
         $options = wp_parse_args($options, $defaults);
@@ -403,6 +423,31 @@ class Product_Importer {
         }
         if (isset($data['height'])) {
             $product->set_height($data['height']);
+        }
+
+        // Update categories if enabled
+        if ($options['update_categories']) {
+            $category_string = '';
+            if (!empty($data['Category'])) {
+                $category_string = $data['Category'];
+            } elseif (!empty($data['l1_category_name'])) {
+                $cat_parts = [];
+                if (!empty($data['l1_category_name'])) $cat_parts[] = $data['l1_category_name'];
+                if (!empty($data['l2_category_name'])) $cat_parts[] = $data['l2_category_name'];
+                if (!empty($data['l3_category_name'])) $cat_parts[] = $data['l3_category_name'];
+                $category_string = implode(' > ', $cat_parts);
+            } elseif (!empty($data['categories'])) {
+                $category_string = $data['categories'];
+            } elseif (!empty($data['category'])) {
+                $category_string = $data['category'];
+            }
+
+            if (!empty($category_string)) {
+                $category_ids = $this->create_categories($category_string);
+                if (!empty($category_ids)) {
+                    $product->set_category_ids($category_ids);
+                }
+            }
         }
 
         // Save the product

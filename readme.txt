@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.3 =
+* FIXED: Product categories not importing (API uses 'Category' field with capital C)
+* Categories now create proper hierarchical structure (e.g., "Appliances > Air Conditioners")
+* Added update_categories option to resync functionality
 
 = 2.0.2 =
 * FIXED: Product descriptions not importing (API uses 'desc' field not 'description')
