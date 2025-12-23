@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.1 =
+* NEW: API Rate Limiting - Smart throttling to comply with Dropshipzone API limits (60/min, 600/hour)
+* NEW: Auto-Deactivate Products - Products not found in Dropshipzone API are automatically set to Draft
+* Added Rate_Limiter class for proactive API throttle management
+* Added "Deactivate Missing Products" option in Stock Rules settings
+* Improved logging for rate limit and deactivation events
 
 = 2.0.0 =
 * New Product Import feature: Search and import products directly from Dropshipzone API

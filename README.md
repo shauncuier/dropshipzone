@@ -4,7 +4,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
@@ -21,12 +21,12 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 
 ---
 
-## 🚀 What's New in v2.0.0
+## 🚀 What's New in v2.0.1
 
-- **🛍️ Product Import** - Search and import products directly from Dropshipzone catalog
 - **⚡ Rate Limiting** - Smart API throttling (60/min, 600/hour) to comply with API limits
+- **🗑️ Auto-Deactivate** - Products not found in Dropshipzone API are automatically set to Draft
+- **🛍️ Product Import** - Search and import products directly from Dropshipzone catalog
 - **🎨 Enhanced UI** - Modern admin dashboard with improved UX
-- **🔗 Auto-Mapping** - Automatically map imported products to Dropshipzone SKUs
 
 ---
 

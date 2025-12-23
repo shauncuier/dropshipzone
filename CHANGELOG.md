@@ -5,6 +5,22 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-12-24
+
+### Added
+- **API Rate Limiting**: Smart throttling to comply with Dropshipzone API limits (60/min, 600/hour)
+- **Auto-Deactivate Products**: Products not found in Dropshipzone API are automatically set to Draft
+- New `Rate_Limiter` class for proactive API throttle management
+- New `deactivate_product_by_sku()` method in Stock_Sync class
+- "Deactivate Missing Products" option in Stock Rules settings
+
+### Changed
+- API client now checks rate limits before each request
+- API client records all request timestamps for accurate tracking
+- Improved logging for rate limit and deactivation events
+
+---
+
 ## [2.0.0] - 2025-12-24
 
 ### Added
@@ -121,5 +137,6 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[2.0.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.1
 [2.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.0
 [1.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v1.0.0
