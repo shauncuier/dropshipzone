@@ -292,6 +292,28 @@ class Cron {
                     'dsz_sku' => $dsz_sku,
                     'wc_product_id' => $wc_product_id,
                 ]);
+
+                // Check if we should deactivate missing products
+                $stock_rules = $this->stock_sync->get_rules();
+                if (!empty($stock_rules['deactivate_if_not_found'])) {
+                    $wc_product = wc_get_product($wc_product_id);
+                    if ($wc_product) {
+                        $this->logger->info('Deactivating missing product', [
+                            'wc_product_id' => $wc_product_id,
+                            'dsz_sku' => $dsz_sku,
+                        ]);
+
+                        // Set to draft and zero stock
+                        $wc_product->set_status('draft');
+                        $wc_product->set_manage_stock(true);
+                        $wc_product->set_stock_quantity(0);
+                        $wc_product->set_stock_status('outofstock');
+                        $wc_product->save();
+                        
+                        // Update last synced
+                        $product_mapper->update_last_synced($wc_product_id);
+                    }
+                }
                 continue;
             }
 

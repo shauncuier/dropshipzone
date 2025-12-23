@@ -4,7 +4,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.5-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.6-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
@@ -21,11 +21,11 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 
 ---
 
-## 🚀 What's New in v2.0.5
+## 🚀 What's New in v2.0.6
 
-- **🔍 Advanced Search** - Filter products by Category, Stock, Promotion, and more directly from the API
-- **📊 Result Metadata** - Real-time result counts and active filter visibility
-- **🎨 Improved Navigation** - Reordered for logical workflow: API → Import → Mapping → Rules → Sync
+- **🛑 Auto-Deactivation** - Discontinued products (not found in API) are now automatically set to Draft status and zero stock.
+- **🔍 Advanced Search** - Filter products by Category, Stock, Promotion, and more directly from the API.
+- **📊 Result Metadata** - Real-time result counts and active filter visibility.
 
 ---
 
