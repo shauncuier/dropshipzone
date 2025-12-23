@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.6
+Stable tag: 2.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,10 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.7 =
+* IMPROVED: Modernized Sync Control UI with card-based dashboard.
+* IMPROVED: Real-time progress visualization and status indicators.
 
 = 2.0.6 =
 * ADDED: Auto-deactivation of products not found in the Dropshipzone API.

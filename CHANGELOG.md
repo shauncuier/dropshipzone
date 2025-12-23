@@ -5,6 +5,14 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.7] - 2025-12-24
+
+### Improved
+- **Modern Sync Control**: Overhauled the Sync Control UI with a card-based dashboard, glassmorphism effects, and an animated, high-fidelity progress bar.
+- **Enhanced UX**: Real-time sync status updates and clearer catalog overview cards.
+
+---
+
 ## [2.0.6] - 2025-12-24
 
 ### Added

@@ -765,129 +765,180 @@ class Admin_UI {
 
         $sync_status = $this->cron->get_sync_status();
         $frequencies = $this->cron->get_frequencies();
+        $total_mapped = intval($this->product_mapper->get_count());
+        $in_progress = !empty($sync_status['in_progress']);
         ?>
         <div class="wrap dsz-wrap">
             <?php $this->render_header(__('Sync Control', 'dropshipzone-sync'), __('Manage sync schedule and run manual syncs', 'dropshipzone-sync')); ?>
 
-            <div class="dsz-content">
-                <!-- Sync Status -->
-                <div class="dsz-form-section">
-                    <h2><?php _e('Current Status', 'dropshipzone-sync'); ?></h2>
-                    <div id="dsz-sync-status" class="dsz-sync-status">
-                        <div class="dsz-status-grid">
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Status:', 'dropshipzone-sync'); ?></span>
-                                <span id="sync-status-text" class="dsz-status-value <?php echo $sync_status['in_progress'] ? 'dsz-status-active' : ''; ?>">
-                                    <?php echo $sync_status['in_progress'] ? __('Syncing...', 'dropshipzone-sync') : __('Idle', 'dropshipzone-sync'); ?>
-                                </span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Sync Frequency:', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value">
-                                    <?php 
-                                    $freq_labels = [
-                                        'hourly' => __('Every Hour', 'dropshipzone-sync'),
-                                        'every_six_hours' => __('Every 6 Hours', 'dropshipzone-sync'),
-                                        'twicedaily' => __('Twice Daily', 'dropshipzone-sync'),
-                                        'daily' => __('Daily', 'dropshipzone-sync'),
-                                        'disabled' => __('Disabled', 'dropshipzone-sync'),
-                                    ];
-                                    echo isset($freq_labels[$sync_status['frequency']]) ? $freq_labels[$sync_status['frequency']] : ucfirst($sync_status['frequency']);
-                                    ?>
-                                </span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Last Sync:', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value"><?php echo $sync_status['last_sync'] ? dsz_format_datetime($sync_status['last_sync']) : __('Never', 'dropshipzone-sync'); ?></span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Next Scheduled:', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value"><?php echo $sync_status['next_scheduled'] ? dsz_format_datetime($sync_status['next_scheduled']) : __('Not scheduled', 'dropshipzone-sync'); ?></span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Products Updated (Last Run):', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value"><?php echo intval($sync_status['last_products_updated']); ?></span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Errors (Last Run):', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value <?php echo intval($sync_status['last_errors_count']) > 0 ? 'dsz-status-error' : 'dsz-status-success'; ?>">
-                                    <?php echo intval($sync_status['last_errors_count']); ?>
-                                </span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Batch Size:', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value"><?php echo intval($sync_status['batch_size']); ?> <?php _e('products', 'dropshipzone-sync'); ?></span>
-                            </div>
-                            <div class="dsz-status-item">
-                                <span class="dsz-status-label"><?php _e('Total Mapped:', 'dropshipzone-sync'); ?></span>
-                                <span class="dsz-status-value"><?php echo intval($this->product_mapper->get_count()); ?> <?php _e('products', 'dropshipzone-sync'); ?></span>
-                            </div>
+            <div class="dsz-sync-dashboard">
+                <!-- Status Cards Grid -->
+                <div class="dsz-sync-cards">
+                    <!-- Card: Current Status -->
+                    <div class="dsz-sync-card <?php echo $in_progress ? 'dsz-card-syncing' : 'dsz-card-idle'; ?>">
+                        <div class="dsz-sync-card-icon">
+                            <span class="dashicons <?php echo $in_progress ? 'dashicons-update-alt dsz-spin' : 'dashicons- PERFORMANCE'; ?>"></span>
                         </div>
-
-                        <!-- Progress bar (shown during sync) -->
-                        <div id="dsz-progress-container" class="dsz-progress-wrapper <?php echo $sync_status['in_progress'] ? '' : 'hidden'; ?>">
-                            <div class="dsz-progress-bar">
-                                <div id="dsz-progress-fill" class="dsz-progress-fill" style="width: <?php echo $this->cron->get_progress(); ?>%"></div>
+                        <div class="dsz-sync-card-content">
+                            <h3><?php _e('Sync State', 'dropshipzone-sync'); ?></h3>
+                            <div class="dsz-sync-card-value" id="sync-status-text">
+                                <?php echo $in_progress ? __('Syncing...', 'dropshipzone-sync') : __('System Idle', 'dropshipzone-sync'); ?>
                             </div>
-                            <p id="dsz-progress-text" class="dsz-progress-text">
-                                <?php printf(__('Processing... %d%%', 'dropshipzone-sync'), $this->cron->get_progress()); ?>
-                            </p>
+                            <div class="dsz-sync-card-meta">
+                                <?php if ($in_progress): ?>
+                                    <span class="dsz-pulse-dot"></span> <?php _e('Processing batch...', 'dropshipzone-sync'); ?>
+                                <?php else: ?>
+                                    <?php _e('Standing by for next task', 'dropshipzone-sync'); ?>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="dsz-form-actions">
-                        <button type="button" id="dsz-run-sync" class="button button-primary button-hero" <?php echo $sync_status['in_progress'] ? 'disabled' : ''; ?>>
-                            <span class="dashicons dashicons-update"></span>
-                            <?php _e('Run Sync Now', 'dropshipzone-sync'); ?>
-                        </button>
+                    <!-- Card: Last Sync Results -->
+                    <div class="dsz-sync-card">
+                        <div class="dsz-sync-card-icon">
+                            <span class="dashicons dashicons-calendar-alt"></span>
+                        </div>
+                        <div class="dsz-sync-card-content">
+                            <h3><?php _e('Last Sync', 'dropshipzone-sync'); ?></h3>
+                            <div class="dsz-sync-card-value">
+                                <?php echo $sync_status['last_sync'] ? dsz_format_datetime($sync_status['last_sync']) : __('Never', 'dropshipzone-sync'); ?>
+                            </div>
+                            <div class="dsz-sync-card-meta">
+                                <span class="dsz-text-success"><?php echo intval($sync_status['last_products_updated']); ?> <?php _e('Updated', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-divider">|</span>
+                                <span class="<?php echo intval($sync_status['last_errors_count']) > 0 ? 'dsz-text-error' : 'dsz-text-success'; ?>">
+                                    <?php echo intval($sync_status['last_errors_count']); ?> <?php _e('Errors', 'dropshipzone-sync'); ?>
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="dsz-sync-message" class="dsz-message hidden"></div>
+                    <!-- Card: Schedule Details -->
+                    <div class="dsz-sync-card">
+                        <div class="dsz-sync-card-icon">
+                            <span class="dashicons dashicons-clock"></span>
+                        </div>
+                        <div class="dsz-sync-card-content">
+                            <h3><?php _e('Next Schedule', 'dropshipzone-sync'); ?></h3>
+                            <div class="dsz-sync-card-value">
+                                <?php echo $sync_status['next_scheduled'] ? dsz_format_datetime($sync_status['next_scheduled']) : __('Not Scheduled', 'dropshipzone-sync'); ?>
+                            </div>
+                            <div class="dsz-sync-card-meta">
+                                <?php 
+                                $freq_labels = [
+                                    'hourly' => __('Every Hour', 'dropshipzone-sync'),
+                                    'every_six_hours' => __('Every 6 Hours', 'dropshipzone-sync'),
+                                    'twicedaily' => __('Twice Daily', 'dropshipzone-sync'),
+                                    'daily' => __('Daily', 'dropshipzone-sync'),
+                                    'disabled' => __('Disabled', 'dropshipzone-sync'),
+                                ];
+                                echo isset($freq_labels[$sync_status['frequency']]) ? $freq_labels[$sync_status['frequency']] : ucfirst($sync_status['frequency']);
+                                ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card: Catalog Overview -->
+                    <div class="dsz-sync-card">
+                        <div class="dsz-sync-card-icon">
+                            <span class="dashicons dashicons-database"></span>
+                        </div>
+                        <div class="dsz-sync-card-content">
+                            <h3><?php _e('Catalog Size', 'dropshipzone-sync'); ?></h3>
+                            <div class="dsz-sync-card-value">
+                                <?php echo number_format($total_mapped); ?> <?php _e('Products', 'dropshipzone-sync'); ?>
+                            </div>
+                            <div class="dsz-sync-card-meta">
+                                <?php _e('Actively being synced', 'dropshipzone-sync'); ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Schedule Settings -->
-                <form id="dsz-schedule-form" class="dsz-form" data-type="sync_settings">
-                    <?php wp_nonce_field('dsz_sync_settings', 'dsz_nonce'); ?>
-                    
-                    <div class="dsz-form-section">
-                        <h2><?php _e('Schedule Settings', 'dropshipzone-sync'); ?></h2>
-                        
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row">
-                                    <label for="frequency"><?php _e('Sync Frequency', 'dropshipzone-sync'); ?></label>
-                                </th>
-                                <td>
-                                    <select id="frequency" name="frequency">
+                <!-- Sync Console & Settings Grid -->
+                <div class="dsz-sync-main-grid">
+                    <!-- Left: Sync Console -->
+                    <div class="dsz-content dsz-sync-console">
+                        <div class="dsz-form-section">
+                            <div class="dsz-section-header">
+                                <h2><?php _e('Sync Console', 'dropshipzone-sync'); ?></h2>
+                                <p class="description"><?php _e('Run a manual synchronization of your entire mapped catalog.', 'dropshipzone-sync'); ?></p>
+                            </div>
+
+                            <div class="dsz-console-actions">
+                                <button type="button" id="dsz-run-sync" class="button button-primary button-hero dsz-btn-sync" <?php echo $in_progress ? 'disabled' : ''; ?>>
+                                    <span class="dashicons dashicons-update-alt"></span>
+                                    <?php _e('Run Manual Sync', 'dropshipzone-sync'); ?>
+                                </button>
+                                
+                                <p id="dsz-sync-hint" class="dsz-sync-hint <?php echo $in_progress ? 'hidden' : ''; ?>">
+                                    <?php _e('Manual sync processes products in batches to prevent server timeouts.', 'dropshipzone-sync'); ?>
+                                </p>
+                            </div>
+
+                            <!-- Animated Progress Section -->
+                            <div id="dsz-progress-container" class="dsz-progress-console <?php echo $in_progress ? '' : 'hidden'; ?>">
+                                <div class="dsz-progress-stats">
+                                    <span class="dsz-progress-label"><?php _e('Current Progress', 'dropshipzone-sync'); ?></span>
+                                    <span id="dsz-progress-percent" class="dsz-progress-value"><?php echo $this->cron->get_progress(); ?>%</span>
+                                </div>
+                                <div class="dsz-progress-bar-wrapper">
+                                    <div id="dsz-progress-fill" class="dsz-progress-fill" style="width: <?php echo $this->cron->get_progress(); ?>%">
+                                        <div class="dsz-progress-glow"></div>
+                                    </div>
+                                </div>
+                                <div id="dsz-progress-text" class="dsz-progress-status-text">
+                                    <?php printf(__('Syncing batch %d of %d...', 'dropshipzone-sync'), ceil($sync_status['current_offset'] / $sync_status['batch_size']) + 1, ceil($total_mapped / $sync_status['batch_size'])); ?>
+                                </div>
+                            </div>
+
+                            <div id="dsz-sync-message" class="dsz-message hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Schedule Settings -->
+                    <div class="dsz-content dsz-sync-settings">
+                        <form id="dsz-schedule-form" class="dsz-form" data-type="sync_settings">
+                            <?php wp_nonce_field('dsz_sync_settings', 'dsz_nonce'); ?>
+                            
+                            <div class="dsz-form-section">
+                                <div class="dsz-section-header">
+                                    <h2><?php _e('Schedule Config', 'dropshipzone-sync'); ?></h2>
+                                </div>
+                                
+                                <div class="dsz-form-group">
+                                    <label for="frequency"><?php _e('Auto-Sync Interval', 'dropshipzone-sync'); ?></label>
+                                    <select id="frequency" name="frequency" class="dsz-select">
                                         <?php foreach ($frequencies as $value => $label): ?>
                                             <option value="<?php echo esc_attr($value); ?>" <?php selected($sync_status['frequency'], $value); ?>>
                                                 <?php echo esc_html($label); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <label for="batch_size"><?php _e('Batch Size', 'dropshipzone-sync'); ?></label>
-                                </th>
-                                <td>
-                                    <input type="number" id="batch_size" name="batch_size" value="<?php echo esc_attr($sync_status['batch_size']); ?>" min="10" max="200" step="10" class="small-text" />
-                                    <p class="description"><?php _e('Number of products to process per batch (10-200). Higher values are faster but use more memory.', 'dropshipzone-sync'); ?></p>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
+                                    <p class="description"><?php _e('How often to automatically sync price and stock.', 'dropshipzone-sync'); ?></p>
+                                </div>
 
-                    <div class="dsz-form-actions">
-                        <button type="submit" class="button button-primary">
-                            <span class="dashicons dashicons-saved"></span>
-                            <?php _e('Save Schedule', 'dropshipzone-sync'); ?>
-                        </button>
-                    </div>
+                                <div class="dsz-form-group">
+                                    <label for="batch_size"><?php _e('Batch Processing Size', 'dropshipzone-sync'); ?></label>
+                                    <div class="dsz-input-with-label">
+                                        <input type="number" id="batch_size" name="batch_size" value="<?php echo esc_attr($sync_status['batch_size']); ?>" min="10" max="200" step="10" />
+                                        <span><?php _e('products', 'dropshipzone-sync'); ?></span>
+                                    </div>
+                                    <p class="description"><?php _e('100 is recommended for most servers.', 'dropshipzone-sync'); ?></p>
+                                </div>
+                            </div>
 
-                    <div id="dsz-schedule-message" class="dsz-message hidden"></div>
-                </form>
+                            <div class="dsz-form-actions">
+                                <button type="submit" class="button button-primary">
+                                    <span class="dashicons dashicons-saved"></span>
+                                    <?php _e('Save Schedule', 'dropshipzone-sync'); ?>
+                                </button>
+                                <div id="dsz-schedule-message" class="dsz-message hidden"></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
         <?php

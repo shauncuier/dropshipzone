@@ -481,6 +481,7 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
             $progress.removeClass('hidden').css('animation', 'fadeInUp 0.3s ease');
             $message.addClass('hidden');
+            $('#dsz-sync-hint').addClass('hidden');
 
             // Add glow effect to progress bar
             $('#dsz-progress-fill').css('box-shadow', '0 0 20px rgba(102, 126, 234, 0.5)');
@@ -575,15 +576,18 @@
             // Smooth progress animation
             $fill.css({
                 'width': progress + '%',
-                'transition': 'width 0.5s ease'
+                'transition': 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
             });
 
-            $text.text(data.message || 'Processing... ' + progress + '%');
+            $('#dsz-progress-percent').text(progress + '%');
+            $text.text(data.message || 'Processing catalog... ' + progress + '%');
 
             // Update status text with pulse
             $('#sync-status-text')
                 .text(dsz_admin.strings.syncing)
-                .addClass('dsz-status-active');
+                .closest('.dsz-sync-card')
+                .removeClass('dsz-card-idle')
+                .addClass('dsz-card-syncing');
         },
 
         /**
@@ -595,7 +599,13 @@
             var $progress = $('#dsz-progress-container');
 
             $btn.removeClass('dsz-loading').prop('disabled', false);
-            $('#sync-status-text').text('Idle').removeClass('dsz-status-active');
+            $('#dsz-sync-hint').removeClass('hidden');
+
+            $('#sync-status-text')
+                .text('System Idle')
+                .closest('.dsz-sync-card')
+                .removeClass('dsz-card-syncing')
+                .addClass('dsz-card-idle');
 
             // Get values with defaults
             var productsUpdated = data.products_updated !== undefined ? data.products_updated : 0;
