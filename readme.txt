@@ -6,7 +6,7 @@ Tested up to: 6.9
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.1
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -94,6 +94,10 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 
 == Changelog ==
 
+= 2.0.2 =
+* FIXED: Product descriptions not importing (API uses 'desc' field not 'description')
+* Added debug logging for description import tracking
+
 = 2.0.1 =
 * NEW: API Rate Limiting - Smart throttling to comply with Dropshipzone API limits (60/min, 600/hour)
 * NEW: Auto-Deactivate Products - Products not found in Dropshipzone API are automatically set to Draft
@@ -121,6 +125,9 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 * Modern admin UI
 
 == Upgrade Notice ==
+
+= 2.0.2 =
+Bug fix: Product descriptions now import correctly from the Dropshipzone API.
 
 = 2.0.0 =
 Major update with new Product Import feature! You can now search and import products directly from Dropshipzone API.

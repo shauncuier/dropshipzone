@@ -5,6 +5,14 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2025-12-24
+
+### Fixed
+- **Product Description Import**: Fixed issue where product descriptions were not being imported. The Dropshipzone API returns descriptions in the `desc` field, not `description`.
+- Added debug logging for description import tracking
+
+---
+
 ## [2.0.1] - 2025-12-24
 
 ### Added
