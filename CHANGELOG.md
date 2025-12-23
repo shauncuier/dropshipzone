@@ -5,6 +5,16 @@ All notable changes to the Dropshipzone Price & Stock Sync plugin will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2025-12-24
+
+### Improved
+- **Navigation Reordered**: Better workflow sequence: Dashboard → API → Import → Mapping → Price Rules → Stock Rules → Sync → Logs
+- **Import Product Cards**: Now display category path, color-coded stock status, and description preview
+- Changed import icon from plus to download for clearer meaning
+- Renamed "Product Import" to "Import Products" for clarity
+
+---
+
 ## [2.0.3] - 2025-12-24
 
 ### Fixed

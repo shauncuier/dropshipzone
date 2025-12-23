@@ -3,7 +3,7 @@
  * Plugin Name: Dropshipzone Price & Stock Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.0.3
+ * Version: 2.0.4
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.0.3');
+define('DSZ_SYNC_VERSION', '2.0.4');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));

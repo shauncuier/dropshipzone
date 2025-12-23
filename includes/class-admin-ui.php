@@ -249,14 +249,26 @@ class Admin_UI {
         $current_page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : 'dsz-sync';
         
         $nav_items = [
+            // Overview
             'dsz-sync' => [
                 'label' => __('Dashboard', 'dropshipzone-sync'),
                 'icon' => 'dashicons-dashboard'
             ],
+            // 1. First: Configure API
             'dsz-sync-api' => [
                 'label' => __('API Settings', 'dropshipzone-sync'),
                 'icon' => 'dashicons-admin-network'
             ],
+            // 2. Products: Import first, then map
+            'dsz-sync-import' => [
+                'label' => __('Import Products', 'dropshipzone-sync'),
+                'icon' => 'dashicons-download'
+            ],
+            'dsz-sync-mapping' => [
+                'label' => __('Product Mapping', 'dropshipzone-sync'),
+                'icon' => 'dashicons-admin-links'
+            ],
+            // 3. Rules: Configure pricing and stock
             'dsz-sync-price' => [
                 'label' => __('Price Rules', 'dropshipzone-sync'),
                 'icon' => 'dashicons-money-alt'
@@ -265,6 +277,7 @@ class Admin_UI {
                 'label' => __('Stock Rules', 'dropshipzone-sync'),
                 'icon' => 'dashicons-archive'
             ],
+            // 4. Operations: Run sync and view logs
             'dsz-sync-control' => [
                 'label' => __('Sync Control', 'dropshipzone-sync'),
                 'icon' => 'dashicons-update'
@@ -272,14 +285,6 @@ class Admin_UI {
             'dsz-sync-logs' => [
                 'label' => __('Logs', 'dropshipzone-sync'),
                 'icon' => 'dashicons-list-view'
-            ],
-            'dsz-sync-mapping' => [
-                'label' => __('Product Mapping', 'dropshipzone-sync'),
-                'icon' => 'dashicons-admin-links'
-            ],
-            'dsz-sync-import' => [
-                'label' => __('Product Import', 'dropshipzone-sync'),
-                'icon' => 'dashicons-plus'
             ],
         ];
         ?>

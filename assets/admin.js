@@ -1227,9 +1227,38 @@
                 } else {
                     buttonsHtml = `
                         <button type="button" class="button button-primary dsz-import-btn" data-sku="${escapeHtml(product.sku)}">
-                            <span class="dashicons dashicons-plus"></span> Import Product
+                            <span class="dashicons dashicons-download"></span> Import Product
                         </button>
                     `;
+                }
+
+                // Build category display (API returns 'Category' field with path like "Electronics > Audio > Headphones")
+                var categoryHtml = '';
+                if (product.Category) {
+                    categoryHtml = `<p class="dsz-import-item-category"><span class="dashicons dashicons-category"></span> ${escapeHtml(product.Category)}</p>`;
+                } else if (product.l1_category_name) {
+                    var catPath = product.l1_category_name;
+                    if (product.l2_category_name) catPath += ' > ' + product.l2_category_name;
+                    if (product.l3_category_name) catPath += ' > ' + product.l3_category_name;
+                    categoryHtml = `<p class="dsz-import-item-category"><span class="dashicons dashicons-category"></span> ${escapeHtml(catPath)}</p>`;
+                }
+
+                // Build stock status display
+                var stockQty = parseInt(product.stock_qty) || parseInt(product.stock) || 0;
+                var stockClass = stockQty > 10 ? 'dsz-stock-high' : (stockQty > 0 ? 'dsz-stock-low' : 'dsz-stock-out');
+                var stockLabel = stockQty > 10 ? 'In Stock' : (stockQty > 0 ? 'Low Stock' : 'Out of Stock');
+                var stockHtml = `<span class="dsz-import-item-stock ${stockClass}"><span class="dashicons dashicons-${stockQty > 0 ? 'yes' : 'no'}"></span> ${stockLabel} (${stockQty})</span>`;
+
+                // Build description preview (API returns 'desc' field)
+                var descHtml = '';
+                var desc = product.desc || product.description || '';
+                if (desc) {
+                    // Strip HTML tags and truncate
+                    var cleanDesc = desc.replace(/<[^>]*>/g, '').trim();
+                    if (cleanDesc.length > 80) {
+                        cleanDesc = cleanDesc.substring(0, 80) + '...';
+                    }
+                    descHtml = `<p class="dsz-import-item-desc">${escapeHtml(cleanDesc)}</p>`;
                 }
 
                 html += `
@@ -1239,7 +1268,9 @@
                         </div>
                         <div class="dsz-import-item-info">
                             <h4>${escapeHtml(product.title || product.sku)}</h4>
-                            <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code></p>
+                            <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code> ${stockHtml}</p>
+                            ${categoryHtml}
+                            ${descHtml}
                             <p class="dsz-import-item-price">$${parseFloat(product.price || 0).toFixed(2)} <small>(Supplier Cost)</small></p>
                             ${buttonsHtml}
                         </div>
@@ -1258,7 +1289,7 @@
             var $btn = $(e.currentTarget);
             var sku = $btn.data('sku');
             var $item = $btn.closest('.dsz-import-item');
-            
+
             // Get product data from cache (stored during search results rendering)
             var productData = this.importProductsCache[sku] || null;
 
@@ -1390,7 +1421,7 @@
             var sku = $btn.data('sku');
             var productId = $btn.data('product-id');
             var $item = $btn.closest('.dsz-import-item');
-            
+
             // Get product data from cache (stored during search results rendering)
             var productData = this.importProductsCache[sku] || null;
 
