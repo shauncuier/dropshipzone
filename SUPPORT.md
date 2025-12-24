@@ -1,6 +1,6 @@
 # Support
 
-First of all, thank you for using Dropshipzone Price & Stock Sync!
+First of all, thank you for using DropshipZone Sync!
 
 ## 💬 Community Support
 

@@ -1,4 +1,4 @@
-=== Dropshipzone Price & Stock Sync ===
+=== DropshipZone Sync ===
 Contributors: 3s-Soft, dropshipzone
 Tags: woocommerce, dropshipzone, price sync, stock sync, dropshipping
 Requires at least: 6.0
@@ -14,7 +14,7 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 == Description ==
 
-**Dropshipzone Price & Stock Sync** is a lightweight, enterprise-grade WooCommerce plugin that automatically synchronizes product prices and stock levels from the Dropshipzone API.
+**DropshipZone Sync** is a lightweight, enterprise-grade WooCommerce plugin that automatically synchronizes product prices and stock levels from the Dropshipzone API.
 
 = Key Features =
 
@@ -156,4 +156,4 @@ Bug fix: Product descriptions now import correctly from the Dropshipzone API.
 Major update with new Product Import feature! You can now search and import products directly from Dropshipzone API.
 
 = 1.0.0 =
-Initial release of Dropshipzone Price & Stock Sync.
+Initial release of DropshipZone Sync.

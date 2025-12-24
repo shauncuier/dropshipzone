@@ -1,6 +1,6 @@
-# Contributing to Dropshipzone Price & Stock Sync
+# Contributing to DropshipZone Sync
 
-First off, thank you for considering contributing to Dropshipzone Price & Stock Sync! It's people like you that make this plugin better for everyone.
+First off, thank you for considering contributing to DropshipZone Sync! It's people like you that make this plugin better for everyone.
 
 ## Code of Conduct
 
