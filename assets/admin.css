@@ -2004,6 +2004,68 @@ select:focus-visible {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;
+}
+
+/* Product Badges */
+.dsz-import-item-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2;
+}
+
+.dsz-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dsz-badge .dashicons {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+}
+
+.dsz-badge-promo {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+}
+
+.dsz-badge-shipping {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+}
+
+.dsz-badge-new {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+}
+
+/* Imported State */
+.dsz-import-item.dsz-imported {
+    opacity: 0.85;
+    border-color: var(--dsz-success);
+}
+
+.dsz-import-item.dsz-imported::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(16, 185, 129, 0.03);
+    pointer-events: none;
 }
 
 .dsz-import-item-image img {
@@ -2072,6 +2134,48 @@ select:focus-visible {
     font-weight: 400;
     color: var(--dsz-gray-400);
     text-transform: uppercase;
+}
+
+/* Enhanced Price Display */
+.dsz-import-item-prices {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin: 0 0 16px;
+}
+
+.dsz-price-supplier {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--dsz-primary);
+}
+
+.dsz-price-supplier small {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--dsz-gray-400);
+    text-transform: uppercase;
+    margin-left: 4px;
+}
+
+.dsz-price-rrp {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dsz-gray-400);
+    text-decoration: line-through;
+}
+
+.dsz-price-rrp small {
+    font-size: 9px;
+    font-weight: 400;
+    margin-left: 2px;
+}
+
+/* Specs Display */
+.dsz-import-item-specs {
+    font-size: 11px;
+    color: var(--dsz-gray-500);
+    margin: 0 0 8px;
 }
 
 /* Import Item - Category Display */

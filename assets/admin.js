@@ -1333,6 +1333,19 @@
                 // Store product data in cache (avoid JSON corruption in HTML attributes)
                 DSZAdmin.importProductsCache[product.sku] = product;
 
+                // Build badges HTML
+                var badgesHtml = '<div class="dsz-import-item-badges">';
+                if (product.on_promotion || product.is_on_promotion) {
+                    badgesHtml += '<span class="dsz-badge dsz-badge-promo"><span class="dashicons dashicons-tag"></span> Sale</span>';
+                }
+                if (product.au_free_shipping || product.free_shipping) {
+                    badgesHtml += '<span class="dsz-badge dsz-badge-shipping"><span class="dashicons dashicons-car"></span> Free Ship</span>';
+                }
+                if (product.new_arrival || product.is_new_arrival) {
+                    badgesHtml += '<span class="dsz-badge dsz-badge-new">NEW</span>';
+                }
+                badgesHtml += '</div>';
+
                 // Build buttons HTML - show Resync button for imported products
                 var buttonsHtml = '';
                 if (product.is_imported) {
@@ -1377,23 +1390,48 @@
                 if (desc) {
                     // Strip HTML tags and truncate
                     var cleanDesc = desc.replace(/<[^>]*>/g, '').trim();
-                    if (cleanDesc.length > 80) {
-                        cleanDesc = cleanDesc.substring(0, 80) + '...';
+                    if (cleanDesc.length > 100) {
+                        cleanDesc = cleanDesc.substring(0, 100) + '...';
                     }
                     descHtml = `<p class="dsz-import-item-desc">${escapeHtml(cleanDesc)}</p>`;
                 }
 
+                // Build price display with RRP if available
+                var supplierPrice = parseFloat(product.price || 0).toFixed(2);
+                var rrpPrice = product.rrp ? parseFloat(product.rrp).toFixed(2) : null;
+                var priceHtml = `<div class="dsz-import-item-prices">`;
+                priceHtml += `<span class="dsz-price-supplier">$${supplierPrice} <small>Cost</small></span>`;
+                if (rrpPrice && parseFloat(rrpPrice) > parseFloat(supplierPrice)) {
+                    priceHtml += `<span class="dsz-price-rrp">$${rrpPrice} <small>RRP</small></span>`;
+                }
+                priceHtml += `</div>`;
+
+                // Build specs (weight, dimensions)
+                var specsHtml = '';
+                var specs = [];
+                if (product.weight && parseFloat(product.weight) > 0) {
+                    specs.push(parseFloat(product.weight).toFixed(2) + 'kg');
+                }
+                if (product.brand) {
+                    specs.push(escapeHtml(product.brand));
+                }
+                if (specs.length > 0) {
+                    specsHtml = `<p class="dsz-import-item-specs">${specs.join(' • ')}</p>`;
+                }
+
                 html += `
-                    <div class="dsz-import-item" data-sku="${escapeHtml(product.sku)}">
+                    <div class="dsz-import-item ${product.is_imported ? 'dsz-imported' : ''}" data-sku="${escapeHtml(product.sku)}">
                         <div class="dsz-import-item-image">
-                            ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(product.title || product.sku)}">` : '<span class="dashicons dashicons-format-image"></span>'}
+                            ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(product.title || product.sku)}" loading="lazy">` : '<span class="dashicons dashicons-format-image"></span>'}
+                            ${badgesHtml}
                         </div>
                         <div class="dsz-import-item-info">
                             <h4>${escapeHtml(product.title || product.sku)}</h4>
                             <p class="dsz-import-item-sku">SKU: <code>${escapeHtml(product.sku)}</code> ${stockHtml}</p>
                             ${categoryHtml}
+                            ${specsHtml}
                             ${descHtml}
-                            <p class="dsz-import-item-price">$${parseFloat(product.price || 0).toFixed(2)} <small>(Supplier Cost)</small></p>
+                            ${priceHtml}
                             ${buttonsHtml}
                         </div>
                     </div>

@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.1 =
+* NEW: Product badges on import cards (Sale, Free Shipping, New Arrival).
+* NEW: Dual price display showing Cost and RRP.
+* NEW: Specs display with weight and brand info.
+* IMPROVED: Better visual styling for already-imported products.
+* IMPROVED: Lazy loading for product images.
 
 = 2.2.0 =
 * NEW: Auto-Republish on Restock - Draft products automatically republish when stock is restored.

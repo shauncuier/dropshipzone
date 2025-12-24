@@ -5,6 +5,19 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-12-25
+
+### Added
+- **Product Badges**: Import cards now show Sale, Free Shipping, and New Arrival badges.
+- **Dual Price Display**: Shows both Cost (supplier) and RRP when available.
+- **Product Specs**: Displays weight and brand information on product cards.
+- **Lazy Loading**: Product images now lazy load for better performance.
+
+### Improved
+- **Import Card Styling**: Better visual distinction for already-imported products.
+
+---
+
 ## [2.2.0] - 2025-12-25
 
 ### Added
