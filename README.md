@@ -4,7 +4,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.7-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)

@@ -6,7 +6,7 @@ Tested up to: 6.7
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.7
+Stable tag: 2.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,12 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.8 =
+* IMPROVED: Full WordPress.org plugin repository compatibility.
+* IMPROVED: Plugin renamed to "DropshipZone Sync" for clarity.
+* ADDED: Languages folder with POT template for translations.
+* ADDED: Future roadmap section in README.
 
 = 2.0.7 =
 * IMPROVED: Modernized Sync Control UI with card-based dashboard.
