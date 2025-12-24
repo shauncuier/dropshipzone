@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Dropshipzone Price & Stock Sync
+ * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
  * Version: 2.0.7
@@ -88,7 +88,7 @@ final class Dropshipzone_Sync {
     public function woocommerce_missing_notice() {
         ?>
         <div class="notice notice-error">
-            <p><?php esc_html_e('Dropshipzone Price & Stock Sync requires WooCommerce to be installed and active.', 'dropshipzone-sync'); ?></p>
+            <p><?php esc_html_e('DropshipZone Sync requires WooCommerce to be installed and active.', 'dropshipzone-sync'); ?></p>
         </div>
         <?php
     }

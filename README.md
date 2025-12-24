@@ -1,4 +1,4 @@
-# 🇦🇺 Dropshipzone Price & Stock Sync for WooCommerce
+# 🇦🇺 DropshipZone Sync for WooCommerce
 
 <div align="center">
 
@@ -26,6 +26,30 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 - **📊 Modern Sync Dashboard** - Reimagined Sync Control with glassmorphism cards and real-time progress visualization.
 - **🛑 Auto-Deactivation** - Discontinued products (not found in API) are now automatically set to Draft status and zero stock.
 - **🔍 Advanced Search** - Filter products by Category, Stock, Promotion, and more directly from the API.
+
+---
+
+## 🔮 Future Plans (Roadmap)
+
+We're constantly working to improve DropshipZone Sync! Here's what's coming:
+
+| Priority | Feature | Description | Status |
+|----------|---------|-------------|--------|
+| 🔴 High | **Order Auto-Fulfillment** | Automatically submit orders to Dropshipzone for fulfillment | 📋 Planned |
+| 🔴 High | **Tracking Number Sync** | Auto-import tracking numbers and update WooCommerce orders | 📋 Planned |
+| 🟡 Medium | **Category Mapping** | Map Dropshipzone categories to WooCommerce categories | 📋 Planned |
+| 🟡 Medium | **Bulk Product Actions** | Select multiple products for bulk import/sync operations | 📋 Planned |
+| 🟡 Medium | **Email Notifications** | Get notified on sync errors, low stock, or price changes | 📋 Planned |
+| 🟢 Low | **Multi-currency Support** | Support for international stores with currency conversion | 💭 Considering |
+| 🟢 Low | **Webhook Integration** | Real-time updates via webhooks (when API supports it) | 💭 Considering |
+| 🟢 Low | **Performance Analytics** | Dashboard with sales analytics for dropship products | 💭 Considering |
+
+### Legend
+- 📋 **Planned** - Feature is in our development roadmap
+- 🚧 **In Progress** - Currently being developed
+- 💭 **Considering** - Under evaluation based on user feedback
+
+> 💡 **Have a feature request?** [Submit it here](https://github.com/shauncuier/dropshipzone/discussions) and help shape the future of the plugin!
 
 ---
 
