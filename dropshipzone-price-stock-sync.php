@@ -8,7 +8,7 @@
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: dropshipzone-price-stock-sync
+ * Text Domain: dropshipzone
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -88,7 +88,7 @@ final class Dropshipzone_Sync {
     public function woocommerce_missing_notice() {
         ?>
         <div class="notice notice-error">
-            <p><?php esc_html_e('DropshipZone Sync requires WooCommerce to be installed and active.', 'dropshipzone-price-stock-sync'); ?></p>
+            <p><?php esc_html_e('DropshipZone Sync requires WooCommerce to be installed and active.', 'dropshipzone'); ?></p>
         </div>
         <?php
     }
@@ -316,7 +316,7 @@ final class Dropshipzone_Sync {
      * Load plugin text domain
      */
     public function load_textdomain() {
-        load_plugin_textdomain('dropshipzone-price-stock-sync', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
+        load_plugin_textdomain('dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
     }
 
     /**

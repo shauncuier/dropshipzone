@@ -125,11 +125,11 @@ function dsz_validate_credentials($email, $password) {
     $password = sanitize_text_field($password);
     
     if (empty($email) || !is_email($email)) {
-        return new \WP_Error('invalid_email', __('Please enter a valid email address.', 'dropshipzone-price-stock-sync'));
+        return new \WP_Error('invalid_email', __('Please enter a valid email address.', 'dropshipzone'));
     }
     
     if (empty($password)) {
-        return new \WP_Error('empty_password', __('Password cannot be empty.', 'dropshipzone-price-stock-sync'));
+        return new \WP_Error('empty_password', __('Password cannot be empty.', 'dropshipzone'));
     }
     
     return [
@@ -146,7 +146,7 @@ function dsz_validate_credentials($email, $password) {
  */
 function dsz_format_datetime($timestamp) {
     if (empty($timestamp)) {
-        return __('Never', 'dropshipzone-price-stock-sync');
+        return __('Never', 'dropshipzone');
     }
     
     if (is_string($timestamp)) {
@@ -164,10 +164,10 @@ function dsz_format_datetime($timestamp) {
  */
 function dsz_time_ago($timestamp) {
     if (empty($timestamp)) {
-        return __('Never', 'dropshipzone-price-stock-sync');
+        return __('Never', 'dropshipzone');
     }
     
-    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', 'dropshipzone-price-stock-sync');
+    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', 'dropshipzone');
 }
 
 /**

@@ -72,7 +72,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
-                return new \WP_Error('product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone-price-stock-sync'), $sku));
+                return new \WP_Error('product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];
@@ -80,7 +80,7 @@ class Product_Importer {
 
         // Validate required data
         if (empty($data['sku'])) {
-            return new \WP_Error('missing_sku', __('Product data is missing SKU.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('missing_sku', __('Product data is missing SKU.', 'dropshipzone'));
         }
 
         $sku = trim($data['sku']);
@@ -88,7 +88,7 @@ class Product_Importer {
         // Check if product already exists by SKU
         $existing_id = wc_get_product_id_by_sku($sku);
         if ($existing_id) {
-            return new \WP_Error('product_exists', sprintf(__('Product with SKU %s already exists in WooCommerce (ID: %d).', 'dropshipzone-price-stock-sync'), $sku, $existing_id));
+            return new \WP_Error('product_exists', sprintf(__('Product with SKU %s already exists in WooCommerce (ID: %d).', 'dropshipzone'), $sku, $existing_id));
         }
 
         $this->logger->info('Starting product import', [
@@ -210,7 +210,7 @@ class Product_Importer {
 
         if (!$product_id) {
             $this->logger->error('Failed to create WooCommerce product', ['sku' => $sku]);
-            return new \WP_Error('save_failed', __('Failed to save WooCommerce product.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('save_failed', __('Failed to save WooCommerce product.', 'dropshipzone'));
         }
 
         // Handle Image - check multiple possible field names
@@ -297,7 +297,7 @@ class Product_Importer {
         // Get the product
         $product = wc_get_product($product_id);
         if (!$product) {
-            return new \WP_Error('product_not_found', __('WooCommerce product not found.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('product_not_found', __('WooCommerce product not found.', 'dropshipzone'));
         }
 
         $sku = $product->get_sku();
@@ -310,7 +310,7 @@ class Product_Importer {
             }
 
             if (empty($sku)) {
-                return new \WP_Error('no_sku', __('Product has no SKU or mapping to resync from.', 'dropshipzone-price-stock-sync'));
+                return new \WP_Error('no_sku', __('Product has no SKU or mapping to resync from.', 'dropshipzone'));
             }
 
             // Fetch from API
@@ -321,7 +321,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
-                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone-price-stock-sync'), $sku));
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];
@@ -337,7 +337,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
-                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone-price-stock-sync'), $sku));
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];

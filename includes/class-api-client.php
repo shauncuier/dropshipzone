@@ -116,7 +116,7 @@ class API_Client {
         // Validate credentials
         if (empty($email) || empty($password)) {
             $this->logger->error('Authentication failed: Missing credentials');
-            return new \WP_Error('missing_credentials', __('API email and password are required.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('missing_credentials', __('API email and password are required.', 'dropshipzone'));
         }
 
         // Make authentication request
@@ -151,7 +151,7 @@ class API_Client {
         }
 
         $this->logger->error('Authentication failed: Invalid response', ['response' => $response]);
-        return new \WP_Error('invalid_response', __('Invalid API response. Please check your credentials.', 'dropshipzone-price-stock-sync'));
+        return new \WP_Error('invalid_response', __('Invalid API response. Please check your credentials.', 'dropshipzone'));
     }
 
     /**
@@ -379,7 +379,7 @@ class API_Client {
 
         return [
             'success' => true,
-            'message' => __('Connection successful!', 'dropshipzone-price-stock-sync'),
+            'message' => __('Connection successful!', 'dropshipzone'),
             'products_available' => isset($products['total']) ? $products['total'] : 0,
         ];
     }
@@ -410,7 +410,7 @@ class API_Client {
                 if (!$this->rate_limiter->wait_if_needed(120)) {
                     return new \WP_Error(
                         'rate_limit_exceeded',
-                        __('API rate limit exceeded. Maximum 60 requests/minute or 600 requests/hour. Please try again later.', 'dropshipzone-price-stock-sync'),
+                        __('API rate limit exceeded. Maximum 60 requests/minute or 600 requests/hour. Please try again later.', 'dropshipzone'),
                         $this->rate_limiter->get_status()
                     );
                 }
@@ -424,7 +424,7 @@ class API_Client {
                 return new \WP_Error(
                     'rate_limit_exceeded',
                     sprintf(
-                        __('API rate limit exceeded. Please wait %d minutes before trying again.', 'dropshipzone-price-stock-sync'),
+                        __('API rate limit exceeded. Please wait %d minutes before trying again.', 'dropshipzone'),
                         ceil($wait_time / 60)
                     ),
                     $this->rate_limiter->get_status()
@@ -513,7 +513,7 @@ class API_Client {
                     'error' => $auth_result->get_error_message(),
                 ]);
             }
-            return new \WP_Error('unauthorized', __('Authentication failed. Please check your credentials.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('unauthorized', __('Authentication failed. Please check your credentials.', 'dropshipzone'));
         }
 
         if ($response_code === 429) {
@@ -530,11 +530,11 @@ class API_Client {
                 sleep($wait_time);
                 return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
             }
-            return new \WP_Error('rate_limited', __('API rate limit exceeded. Please try again later.', 'dropshipzone-price-stock-sync'));
+            return new \WP_Error('rate_limited', __('API rate limit exceeded. Please try again later.', 'dropshipzone'));
         }
 
         if ($response_code >= 400) {
-            $error_message = isset($response_data['message']) ? $response_data['message'] : __('API request failed.', 'dropshipzone-price-stock-sync');
+            $error_message = isset($response_data['message']) ? $response_data['message'] : __('API request failed.', 'dropshipzone');
             return new \WP_Error('api_error', $error_message, ['code' => $response_code, 'response' => $response_data]);
         }
 
