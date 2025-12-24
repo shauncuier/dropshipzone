@@ -1174,6 +1174,34 @@
                     DSZAdmin.searchApiProducts();
                 }
             });
+
+            // Quick filter card clicks
+            $('.dsz-quick-filter-card').on('click', function () {
+                var $card = $(this);
+                var filter = $card.data('filter');
+
+                // Toggle active state
+                $card.toggleClass('active');
+
+                // Map filter to checkbox and toggle
+                var checkboxMap = {
+                    'in_stock': '#dsz-filter-instock',
+                    'on_promotion': '#dsz-filter-promotion',
+                    'free_shipping': '#dsz-filter-freeship',
+                    'new_arrival': '#dsz-filter-newarrivals'
+                };
+
+                var $checkbox = $(checkboxMap[filter]);
+                $checkbox.prop('checked', $card.hasClass('active'));
+
+                // Trigger search with the new filter
+                DSZAdmin.searchApiProducts();
+            });
+
+            // Toggle arrow on advanced filters
+            $('#dsz-toggle-filters').on('click', function () {
+                $(this).toggleClass('open');
+            });
         },
 
         /**
