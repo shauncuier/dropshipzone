@@ -103,8 +103,8 @@ class Admin_UI {
     public function register_menu() {
         // Main menu
         add_menu_page(
-            __('Dropshipzone Sync', 'dropshipzone-sync'),
-            __('DSZ Sync', 'dropshipzone-sync'),
+            __('Dropshipzone Sync', 'dropshipzone-price-stock-sync'),
+            __('DSZ Sync', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync',
             [$this, 'render_dashboard'],
@@ -115,8 +115,8 @@ class Admin_UI {
         // Dashboard (same as main)
         add_submenu_page(
             'dsz-sync',
-            __('Dashboard', 'dropshipzone-sync'),
-            __('Dashboard', 'dropshipzone-sync'),
+            __('Dashboard', 'dropshipzone-price-stock-sync'),
+            __('Dashboard', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync',
             [$this, 'render_dashboard']
@@ -125,8 +125,8 @@ class Admin_UI {
         // API Settings
         add_submenu_page(
             'dsz-sync',
-            __('API Settings', 'dropshipzone-sync'),
-            __('API Settings', 'dropshipzone-sync'),
+            __('API Settings', 'dropshipzone-price-stock-sync'),
+            __('API Settings', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-api',
             [$this, 'render_api_settings']
@@ -135,8 +135,8 @@ class Admin_UI {
         // Price Rules
         add_submenu_page(
             'dsz-sync',
-            __('Price Rules', 'dropshipzone-sync'),
-            __('Price Rules', 'dropshipzone-sync'),
+            __('Price Rules', 'dropshipzone-price-stock-sync'),
+            __('Price Rules', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-price',
             [$this, 'render_price_rules']
@@ -145,8 +145,8 @@ class Admin_UI {
         // Stock Rules
         add_submenu_page(
             'dsz-sync',
-            __('Stock Rules', 'dropshipzone-sync'),
-            __('Stock Rules', 'dropshipzone-sync'),
+            __('Stock Rules', 'dropshipzone-price-stock-sync'),
+            __('Stock Rules', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-stock',
             [$this, 'render_stock_rules']
@@ -155,8 +155,8 @@ class Admin_UI {
         // Sync Control
         add_submenu_page(
             'dsz-sync',
-            __('Sync Control', 'dropshipzone-sync'),
-            __('Sync Control', 'dropshipzone-sync'),
+            __('Sync Control', 'dropshipzone-price-stock-sync'),
+            __('Sync Control', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-control',
             [$this, 'render_sync_control']
@@ -165,8 +165,8 @@ class Admin_UI {
         // Logs
         add_submenu_page(
             'dsz-sync',
-            __('Logs', 'dropshipzone-sync'),
-            __('Logs', 'dropshipzone-sync'),
+            __('Logs', 'dropshipzone-price-stock-sync'),
+            __('Logs', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-logs',
             [$this, 'render_logs']
@@ -175,8 +175,8 @@ class Admin_UI {
         // Product Mapping
         add_submenu_page(
             'dsz-sync',
-            __('Product Mapping', 'dropshipzone-sync'),
-            __('Product Mapping', 'dropshipzone-sync'),
+            __('Product Mapping', 'dropshipzone-price-stock-sync'),
+            __('Product Mapping', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-mapping',
             [$this, 'render_mapping']
@@ -185,8 +185,8 @@ class Admin_UI {
         // Product Import
         add_submenu_page(
             'dsz-sync',
-            __('Product Import', 'dropshipzone-sync'),
-            __('Product Import', 'dropshipzone-sync'),
+            __('Product Import', 'dropshipzone-price-stock-sync'),
+            __('Product Import', 'dropshipzone-price-stock-sync'),
             'manage_woocommerce',
             'dsz-sync-import',
             [$this, 'render_import']
@@ -221,12 +221,12 @@ class Admin_UI {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('dsz_admin_nonce'),
             'strings' => [
-                'testing' => __('Testing connection...', 'dropshipzone-sync'),
-                'saving' => __('Saving...', 'dropshipzone-sync'),
-                'syncing' => __('Syncing...', 'dropshipzone-sync'),
-                'success' => __('Success!', 'dropshipzone-sync'),
-                'error' => __('Error occurred', 'dropshipzone-sync'),
-                'confirm_clear' => __('Are you sure you want to clear all logs?', 'dropshipzone-sync'),
+                'testing' => __('Testing connection...', 'dropshipzone-price-stock-sync'),
+                'saving' => __('Saving...', 'dropshipzone-price-stock-sync'),
+                'syncing' => __('Syncing...', 'dropshipzone-price-stock-sync'),
+                'success' => __('Success!', 'dropshipzone-price-stock-sync'),
+                'error' => __('Error occurred', 'dropshipzone-price-stock-sync'),
+                'confirm_clear' => __('Are you sure you want to clear all logs?', 'dropshipzone-price-stock-sync'),
             ],
         ]);
     }
@@ -252,39 +252,39 @@ class Admin_UI {
         $nav_items = [
             // Overview
             'dsz-sync' => [
-                'label' => __('Dashboard', 'dropshipzone-sync'),
+                'label' => __('Dashboard', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-dashboard'
             ],
             // 1. First: Configure API
             'dsz-sync-api' => [
-                'label' => __('API Settings', 'dropshipzone-sync'),
+                'label' => __('API Settings', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-admin-network'
             ],
             // 2. Products: Import first, then map
             'dsz-sync-import' => [
-                'label' => __('Import Products', 'dropshipzone-sync'),
+                'label' => __('Import Products', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-download'
             ],
             'dsz-sync-mapping' => [
-                'label' => __('Product Mapping', 'dropshipzone-sync'),
+                'label' => __('Product Mapping', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-admin-links'
             ],
             // 3. Rules: Configure pricing and stock
             'dsz-sync-price' => [
-                'label' => __('Price Rules', 'dropshipzone-sync'),
+                'label' => __('Price Rules', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-money-alt'
             ],
             'dsz-sync-stock' => [
-                'label' => __('Stock Rules', 'dropshipzone-sync'),
+                'label' => __('Stock Rules', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-archive'
             ],
             // 4. Operations: Run sync and view logs
             'dsz-sync-control' => [
-                'label' => __('Sync Control', 'dropshipzone-sync'),
+                'label' => __('Sync Control', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-update'
             ],
             'dsz-sync-logs' => [
-                'label' => __('Logs', 'dropshipzone-sync'),
+                'label' => __('Logs', 'dropshipzone-price-stock-sync'),
                 'icon' => 'dashicons-list-view'
             ],
         ];
@@ -319,7 +319,7 @@ class Admin_UI {
      */
     public function render_dashboard() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $sync_status = $this->cron->get_sync_status();
@@ -327,7 +327,7 @@ class Admin_UI {
         $error_count = $this->logger->get_count('error');
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Dropshipzone Sync Dashboard', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Dropshipzone Sync Dashboard', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-dashboard">
                 <!-- Status Cards -->
@@ -337,12 +337,12 @@ class Admin_UI {
                             <span class="dashicons <?php echo $token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
                         </div>
                         <div class="dsz-card-content">
-                            <h3><?php _e('API Status', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('API Status', 'dropshipzone-price-stock-sync'); ?></h3>
                             <p class="dsz-card-value">
-                                <?php echo $token_status['is_valid'] ? __('Connected', 'dropshipzone-sync') : __('Not Connected', 'dropshipzone-sync'); ?>
+                                <?php echo $token_status['is_valid'] ? __('Connected', 'dropshipzone-price-stock-sync') : __('Not Connected', 'dropshipzone-price-stock-sync'); ?>
                             </p>
                             <?php if ($token_status['is_valid'] && $token_status['expires_in'] > 0): ?>
-                                <p class="dsz-card-meta"><?php printf(__('Expires in %s', 'dropshipzone-sync'), human_time_diff(time(), time() + $token_status['expires_in'])); ?></p>
+                                <p class="dsz-card-meta"><?php printf(__('Expires in %s', 'dropshipzone-price-stock-sync'), human_time_diff(time(), time() + $token_status['expires_in'])); ?></p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -352,12 +352,12 @@ class Admin_UI {
                             <span class="dashicons dashicons-clock"></span>
                         </div>
                         <div class="dsz-card-content">
-                            <h3><?php _e('Last Sync', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Last Sync', 'dropshipzone-price-stock-sync'); ?></h3>
                             <p class="dsz-card-value">
-                                <?php echo $sync_status['last_sync'] ? dsz_time_ago($sync_status['last_sync']) : __('Never', 'dropshipzone-sync'); ?>
+                                <?php echo $sync_status['last_sync'] ? dsz_time_ago($sync_status['last_sync']) : __('Never', 'dropshipzone-price-stock-sync'); ?>
                             </p>
                             <?php if ($sync_status['next_scheduled']): ?>
-                                <p class="dsz-card-meta"><?php printf(__('Next: %s', 'dropshipzone-sync'), dsz_format_datetime($sync_status['next_scheduled'])); ?></p>
+                                <p class="dsz-card-meta"><?php printf(__('Next: %s', 'dropshipzone-price-stock-sync'), dsz_format_datetime($sync_status['next_scheduled'])); ?></p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -367,9 +367,9 @@ class Admin_UI {
                             <span class="dashicons dashicons-chart-bar"></span>
                         </div>
                         <div class="dsz-card-content">
-                            <h3><?php _e('Products Updated', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Products Updated', 'dropshipzone-price-stock-sync'); ?></h3>
                             <p class="dsz-card-value"><?php echo intval($sync_status['last_products_updated']); ?></p>
-                            <p class="dsz-card-meta"><?php _e('Last sync run', 'dropshipzone-sync'); ?></p>
+                            <p class="dsz-card-meta"><?php _e('Last sync run', 'dropshipzone-price-stock-sync'); ?></p>
                         </div>
                     </div>
 
@@ -378,10 +378,10 @@ class Admin_UI {
                             <span class="dashicons dashicons-flag"></span>
                         </div>
                         <div class="dsz-card-content">
-                            <h3><?php _e('Errors', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Errors', 'dropshipzone-price-stock-sync'); ?></h3>
                             <p class="dsz-card-value"><?php echo intval($error_count); ?></p>
                             <p class="dsz-card-meta">
-                                <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs&level=error'); ?>"><?php _e('View Logs', 'dropshipzone-sync'); ?></a>
+                                <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs&level=error'); ?>"><?php _e('View Logs', 'dropshipzone-price-stock-sync'); ?></a>
                             </p>
                         </div>
                     </div>
@@ -389,23 +389,23 @@ class Admin_UI {
 
                 <!-- Quick Actions -->
                 <div class="dsz-section">
-                    <h2><?php _e('Quick Actions', 'dropshipzone-sync'); ?></h2>
+                    <h2><?php _e('Quick Actions', 'dropshipzone-price-stock-sync'); ?></h2>
                     <div class="dsz-quick-actions">
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-api'); ?>" class="button button-secondary">
                             <span class="dashicons dashicons-admin-network"></span>
-                            <?php _e('Configure API', 'dropshipzone-sync'); ?>
+                            <?php _e('Configure API', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-control'); ?>" class="button button-primary">
                             <span class="dashicons dashicons-update"></span>
-                            <?php _e('Run Sync Now', 'dropshipzone-sync'); ?>
+                            <?php _e('Run Sync Now', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-price'); ?>" class="button button-secondary">
                             <span class="dashicons dashicons-money-alt"></span>
-                            <?php _e('Price Rules', 'dropshipzone-sync'); ?>
+                            <?php _e('Price Rules', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-stock'); ?>" class="button button-secondary">
                             <span class="dashicons dashicons-archive"></span>
-                            <?php _e('Stock Rules', 'dropshipzone-sync'); ?>
+                            <?php _e('Stock Rules', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                     </div>
                 </div>
@@ -413,13 +413,13 @@ class Admin_UI {
                 <!-- Sync Status (if in progress) -->
                 <?php if ($sync_status['in_progress']): ?>
                 <div class="dsz-section dsz-sync-progress-section">
-                    <h2><?php _e('Sync in Progress', 'dropshipzone-sync'); ?></h2>
+                    <h2><?php _e('Sync in Progress', 'dropshipzone-price-stock-sync'); ?></h2>
                     <div class="dsz-progress-wrapper">
                         <div class="dsz-progress-bar">
                             <div class="dsz-progress-fill" style="width: <?php echo $this->cron->get_progress(); ?>%"></div>
                         </div>
                         <p class="dsz-progress-text">
-                            <?php printf(__('Processing... %d%%', 'dropshipzone-sync'), $this->cron->get_progress()); ?>
+                            <?php printf(__('Processing... %d%%', 'dropshipzone-price-stock-sync'), $this->cron->get_progress()); ?>
                         </p>
                     </div>
                 </div>
@@ -434,39 +434,39 @@ class Admin_UI {
      */
     public function render_api_settings() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $email = get_option('dsz_sync_api_email', '');
         $token_status = $this->api_client->get_token_status();
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('API Settings', 'dropshipzone-sync'), __('Configure your Dropshipzone API credentials', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('API Settings', 'dropshipzone-price-stock-sync'), __('Configure your Dropshipzone API credentials', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <form id="dsz-api-form" class="dsz-form">
                     <?php wp_nonce_field('dsz_api_settings', 'dsz_nonce'); ?>
                     
                     <div class="dsz-form-section">
-                        <h2><?php _e('API Credentials', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('API Credentials', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
                                 <th scope="row">
-                                    <label for="dsz_api_email"><?php _e('API Email', 'dropshipzone-sync'); ?></label>
+                                    <label for="dsz_api_email"><?php _e('API Email', 'dropshipzone-price-stock-sync'); ?></label>
                                 </th>
                                 <td>
                                     <input type="email" id="dsz_api_email" name="dsz_api_email" value="<?php echo esc_attr($email); ?>" class="regular-text" />
-                                    <p class="description"><?php _e('Your Dropshipzone account email', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('Your Dropshipzone account email', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <label for="dsz_api_password"><?php _e('API Password', 'dropshipzone-sync'); ?></label>
+                                    <label for="dsz_api_password"><?php _e('API Password', 'dropshipzone-price-stock-sync'); ?></label>
                                 </th>
                                 <td>
                                     <input type="password" id="dsz_api_password" name="dsz_api_password" value="" class="regular-text" placeholder="<?php echo $email ? '••••••••' : ''; ?>" />
-                                    <p class="description"><?php _e('Your Dropshipzone account password (stored securely)', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('Your Dropshipzone account password (stored securely)', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                         </table>
@@ -474,11 +474,11 @@ class Admin_UI {
                         <div class="dsz-form-actions">
                             <button type="button" id="dsz-test-connection" class="button button-secondary">
                                 <span class="dashicons dashicons-admin-network"></span>
-                                <?php _e('Test Connection', 'dropshipzone-sync'); ?>
+                                <?php _e('Test Connection', 'dropshipzone-price-stock-sync'); ?>
                             </button>
                             <button type="submit" class="button button-primary">
                                 <span class="dashicons dashicons-saved"></span>
-                                <?php _e('Save Settings', 'dropshipzone-sync'); ?>
+                                <?php _e('Save Settings', 'dropshipzone-price-stock-sync'); ?>
                             </button>
                         </div>
 
@@ -487,7 +487,7 @@ class Admin_UI {
 
                     <!-- Import Settings -->
                     <div class="dsz-form-section">
-                        <h2><?php _e('Import Settings', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Import Settings', 'dropshipzone-price-stock-sync'); ?></h2>
                         <?php 
                         $import_settings = get_option('dsz_sync_import_settings', ['default_status' => 'publish']);
                         $default_status = isset($import_settings['default_status']) ? $import_settings['default_status'] : 'publish';
@@ -495,14 +495,14 @@ class Admin_UI {
                         <table class="form-table">
                             <tr>
                                 <th scope="row">
-                                    <label for="dsz_import_status"><?php _e('Default Product Status', 'dropshipzone-sync'); ?></label>
+                                    <label for="dsz_import_status"><?php _e('Default Product Status', 'dropshipzone-price-stock-sync'); ?></label>
                                 </th>
                                 <td>
                                     <select id="dsz_import_status" name="dsz_import_status" class="dsz-import-status-select">
-                                        <option value="publish" <?php selected($default_status, 'publish'); ?>><?php _e('Published', 'dropshipzone-sync'); ?></option>
-                                        <option value="draft" <?php selected($default_status, 'draft'); ?>><?php _e('Draft', 'dropshipzone-sync'); ?></option>
+                                        <option value="publish" <?php selected($default_status, 'publish'); ?>><?php _e('Published', 'dropshipzone-price-stock-sync'); ?></option>
+                                        <option value="draft" <?php selected($default_status, 'draft'); ?>><?php _e('Draft', 'dropshipzone-price-stock-sync'); ?></option>
                                     </select>
-                                    <p class="description"><?php _e('New products will be created with this status.', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('New products will be created with this status.', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                         </table>
@@ -510,15 +510,15 @@ class Admin_UI {
 
                     <!-- Token Status -->
                     <div class="dsz-form-section">
-                        <h2><?php _e('Connection Status', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Connection Status', 'dropshipzone-price-stock-sync'); ?></h2>
                         <div class="dsz-status-box <?php echo $token_status['is_valid'] ? 'dsz-status-success' : 'dsz-status-warning'; ?>">
                             <span class="dashicons <?php echo $token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
                             <div>
-                                <strong><?php echo $token_status['is_valid'] ? __('Connected', 'dropshipzone-sync') : __('Not Connected', 'dropshipzone-sync'); ?></strong>
+                                <strong><?php echo $token_status['is_valid'] ? __('Connected', 'dropshipzone-price-stock-sync') : __('Not Connected', 'dropshipzone-price-stock-sync'); ?></strong>
                                 <?php if ($token_status['is_valid']): ?>
-                                    <p><?php printf(__('Token expires: %s', 'dropshipzone-sync'), dsz_format_datetime($token_status['expires_at'])); ?></p>
+                                    <p><?php printf(__('Token expires: %s', 'dropshipzone-price-stock-sync'), dsz_format_datetime($token_status['expires_at'])); ?></p>
                                 <?php else: ?>
-                                    <p><?php _e('Please enter your credentials and test the connection.', 'dropshipzone-sync'); ?></p>
+                                    <p><?php _e('Please enter your credentials and test the connection.', 'dropshipzone-price-stock-sync'); ?></p>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -534,71 +534,71 @@ class Admin_UI {
      */
     public function render_price_rules() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $rules = $this->price_sync->get_rules();
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Price Rules', 'dropshipzone-sync'), __('Configure how prices are calculated from supplier cost', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Price Rules', 'dropshipzone-price-stock-sync'), __('Configure how prices are calculated from supplier cost', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <form id="dsz-price-form" class="dsz-form" data-type="price_rules">
                     <?php wp_nonce_field('dsz_price_settings', 'dsz_nonce'); ?>
                     
                     <div class="dsz-form-section">
-                        <h2><?php _e('Markup Settings', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Markup Settings', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
-                                <th scope="row"><?php _e('Markup Type', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Markup Type', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="radio" name="markup_type" value="percentage" <?php checked($rules['markup_type'], 'percentage'); ?> />
-                                        <?php _e('Percentage', 'dropshipzone-sync'); ?>
+                                        <?php _e('Percentage', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                     <label style="margin-left: 20px;">
                                         <input type="radio" name="markup_type" value="fixed" <?php checked($rules['markup_type'], 'fixed'); ?> />
-                                        <?php _e('Fixed Amount', 'dropshipzone-sync'); ?>
+                                        <?php _e('Fixed Amount', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <label for="markup_value"><?php _e('Markup Value', 'dropshipzone-sync'); ?></label>
+                                    <label for="markup_value"><?php _e('Markup Value', 'dropshipzone-price-stock-sync'); ?></label>
                                 </th>
                                 <td>
                                     <input type="number" id="markup_value" name="markup_value" value="<?php echo esc_attr($rules['markup_value']); ?>" step="0.01" min="0" class="small-text" />
                                     <span class="dsz-markup-symbol">%</span>
-                                    <p class="description"><?php _e('Enter percentage (e.g., 30 for 30%) or fixed amount (e.g., 15 for $15)', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('Enter percentage (e.g., 30 for 30%) or fixed amount (e.g., 15 for $15)', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                         </table>
                     </div>
 
                     <div class="dsz-form-section">
-                        <h2><?php _e('GST Settings', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('GST Settings', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
-                                <th scope="row"><?php _e('Apply GST', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Apply GST', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="gst_enabled" value="1" <?php checked($rules['gst_enabled'], true); ?> />
-                                        <?php _e('Enable GST calculation (10%)', 'dropshipzone-sync'); ?>
+                                        <?php _e('Enable GST calculation (10%)', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row"><?php _e('GST Mode', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('GST Mode', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="radio" name="gst_type" value="include" <?php checked($rules['gst_type'], 'include'); ?> />
-                                        <?php _e('Supplier price already includes GST', 'dropshipzone-sync'); ?>
+                                        <?php _e('Supplier price already includes GST', 'dropshipzone-price-stock-sync'); ?>
                                     </label><br/>
                                     <label>
                                         <input type="radio" name="gst_type" value="exclude" <?php checked($rules['gst_type'], 'exclude'); ?> />
-                                        <?php _e('Add GST to calculated price', 'dropshipzone-sync'); ?>
+                                        <?php _e('Add GST to calculated price', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
@@ -606,25 +606,25 @@ class Admin_UI {
                     </div>
 
                     <div class="dsz-form-section">
-                        <h2><?php _e('Price Rounding', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Price Rounding', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
-                                <th scope="row"><?php _e('Enable Rounding', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Enable Rounding', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="rounding_enabled" value="1" <?php checked($rules['rounding_enabled'], true); ?> />
-                                        <?php _e('Round prices for cleaner display', 'dropshipzone-sync'); ?>
+                                        <?php _e('Round prices for cleaner display', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row"><?php _e('Rounding Style', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Rounding Style', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <select name="rounding_type">
-                                        <option value="99" <?php selected($rules['rounding_type'], '99'); ?>><?php _e('.99 (e.g., $29.99)', 'dropshipzone-sync'); ?></option>
-                                        <option value="95" <?php selected($rules['rounding_type'], '95'); ?>><?php _e('.95 (e.g., $29.95)', 'dropshipzone-sync'); ?></option>
-                                        <option value="nearest" <?php selected($rules['rounding_type'], 'nearest'); ?>><?php _e('Nearest dollar (e.g., $30)', 'dropshipzone-sync'); ?></option>
+                                        <option value="99" <?php selected($rules['rounding_type'], '99'); ?>><?php _e('.99 (e.g., $29.99)', 'dropshipzone-price-stock-sync'); ?></option>
+                                        <option value="95" <?php selected($rules['rounding_type'], '95'); ?>><?php _e('.95 (e.g., $29.95)', 'dropshipzone-price-stock-sync'); ?></option>
+                                        <option value="nearest" <?php selected($rules['rounding_type'], 'nearest'); ?>><?php _e('Nearest dollar (e.g., $30)', 'dropshipzone-price-stock-sync'); ?></option>
                                     </select>
                                 </td>
                             </tr>
@@ -633,16 +633,16 @@ class Admin_UI {
 
                     <!-- Price Preview -->
                     <div class="dsz-form-section dsz-preview-section">
-                        <h2><?php _e('Price Preview', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Price Preview', 'dropshipzone-price-stock-sync'); ?></h2>
                         <div class="dsz-price-preview">
                             <div class="dsz-preview-input">
-                                <label for="preview_price"><?php _e('Supplier Price:', 'dropshipzone-sync'); ?></label>
+                                <label for="preview_price"><?php _e('Supplier Price:', 'dropshipzone-price-stock-sync'); ?></label>
                                 <input type="number" id="preview_price" value="100" step="0.01" min="0" />
                             </div>
                             <div class="dsz-preview-result">
                                 <span class="dsz-preview-arrow">→</span>
                                 <div class="dsz-preview-final">
-                                    <label><?php _e('Final Price:', 'dropshipzone-sync'); ?></label>
+                                    <label><?php _e('Final Price:', 'dropshipzone-price-stock-sync'); ?></label>
                                     <strong id="calculated_price">$0.00</strong>
                                 </div>
                             </div>
@@ -652,7 +652,7 @@ class Admin_UI {
                     <div class="dsz-form-actions">
                         <button type="submit" class="button button-primary">
                             <span class="dashicons dashicons-saved"></span>
-                            <?php _e('Save Price Rules', 'dropshipzone-sync'); ?>
+                            <?php _e('Save Price Rules', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                     </div>
 
@@ -668,74 +668,74 @@ class Admin_UI {
      */
     public function render_stock_rules() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $rules = $this->stock_sync->get_rules();
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Stock Rules', 'dropshipzone-sync'), __('Configure how stock quantities are synced', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Stock Rules', 'dropshipzone-price-stock-sync'), __('Configure how stock quantities are synced', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <form id="dsz-stock-form" class="dsz-form" data-type="stock_rules">
                     <?php wp_nonce_field('dsz_stock_settings', 'dsz_nonce'); ?>
                     
                     <div class="dsz-form-section">
-                        <h2><?php _e('Stock Buffer', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Stock Buffer', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
-                                <th scope="row"><?php _e('Enable Stock Buffer', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Enable Stock Buffer', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="buffer_enabled" value="1" <?php checked($rules['buffer_enabled'], true); ?> />
-                                        <?php _e('Subtract a buffer amount from supplier stock', 'dropshipzone-sync'); ?>
+                                        <?php _e('Subtract a buffer amount from supplier stock', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
-                                    <p class="description"><?php _e('Useful to prevent overselling', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('Useful to prevent overselling', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <label for="buffer_amount"><?php _e('Buffer Amount', 'dropshipzone-sync'); ?></label>
+                                    <label for="buffer_amount"><?php _e('Buffer Amount', 'dropshipzone-price-stock-sync'); ?></label>
                                 </th>
                                 <td>
                                     <input type="number" id="buffer_amount" name="buffer_amount" value="<?php echo esc_attr($rules['buffer_amount']); ?>" min="0" step="1" class="small-text" />
-                                    <p class="description"><?php _e('Number of units to subtract from supplier stock (e.g., 2 means if supplier has 10, your store shows 8)', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('Number of units to subtract from supplier stock (e.g., 2 means if supplier has 10, your store shows 8)', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                         </table>
                     </div>
 
                     <div class="dsz-form-section">
-                        <h2><?php _e('Out of Stock Handling', 'dropshipzone-sync'); ?></h2>
+                        <h2><?php _e('Out of Stock Handling', 'dropshipzone-price-stock-sync'); ?></h2>
                         
                         <table class="form-table">
                             <tr>
-                                <th scope="row"><?php _e('Zero Stock on Unavailable', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Zero Stock on Unavailable', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="zero_on_unavailable" value="1" <?php checked($rules['zero_on_unavailable'], true); ?> />
-                                        <?php _e('Set stock to 0 if product is marked unavailable by supplier', 'dropshipzone-sync'); ?>
+                                        <?php _e('Set stock to 0 if product is marked unavailable by supplier', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row"><?php _e('Auto Out of Stock', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Auto Out of Stock', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="auto_out_of_stock" value="1" <?php checked($rules['auto_out_of_stock'], true); ?> />
-                                        <?php _e('Automatically set product status to "Out of Stock" when quantity is 0', 'dropshipzone-sync'); ?>
+                                        <?php _e('Automatically set product status to "Out of Stock" when quantity is 0', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row"><?php _e('Deactivate Missing Products', 'dropshipzone-sync'); ?></th>
+                                <th scope="row"><?php _e('Deactivate Missing Products', 'dropshipzone-price-stock-sync'); ?></th>
                                 <td>
                                     <label>
                                         <input type="checkbox" name="deactivate_if_not_found" value="1" <?php checked(isset($rules['deactivate_if_not_found']) ? $rules['deactivate_if_not_found'] : true, true); ?> />
-                                        <?php _e('Set products to Draft if not found in Dropshipzone API (discontinued products)', 'dropshipzone-sync'); ?>
+                                        <?php _e('Set products to Draft if not found in Dropshipzone API (discontinued products)', 'dropshipzone-price-stock-sync'); ?>
                                     </label>
-                                    <p class="description"><?php _e('When a product SKU is no longer available in Dropshipzone, the product will be set to Draft status and stock set to 0.', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('When a product SKU is no longer available in Dropshipzone, the product will be set to Draft status and stock set to 0.', 'dropshipzone-price-stock-sync'); ?></p>
                                 </td>
                             </tr>
                         </table>
@@ -744,7 +744,7 @@ class Admin_UI {
                     <div class="dsz-form-actions">
                         <button type="submit" class="button button-primary">
                             <span class="dashicons dashicons-saved"></span>
-                            <?php _e('Save Stock Rules', 'dropshipzone-sync'); ?>
+                            <?php _e('Save Stock Rules', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                     </div>
 
@@ -760,7 +760,7 @@ class Admin_UI {
      */
     public function render_sync_control() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $sync_status = $this->cron->get_sync_status();
@@ -769,7 +769,7 @@ class Admin_UI {
         $in_progress = !empty($sync_status['in_progress']);
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Sync Control', 'dropshipzone-sync'), __('Manage sync schedule and run manual syncs', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Sync Control', 'dropshipzone-price-stock-sync'), __('Manage sync schedule and run manual syncs', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-sync-dashboard">
                 <!-- Status Cards Grid -->
@@ -780,15 +780,15 @@ class Admin_UI {
                             <span class="dashicons <?php echo $in_progress ? 'dashicons-update-alt dsz-spin' : 'dashicons- PERFORMANCE'; ?>"></span>
                         </div>
                         <div class="dsz-sync-card-content">
-                            <h3><?php _e('Sync State', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Sync State', 'dropshipzone-price-stock-sync'); ?></h3>
                             <div class="dsz-sync-card-value" id="sync-status-text">
-                                <?php echo $in_progress ? __('Syncing...', 'dropshipzone-sync') : __('System Idle', 'dropshipzone-sync'); ?>
+                                <?php echo $in_progress ? __('Syncing...', 'dropshipzone-price-stock-sync') : __('System Idle', 'dropshipzone-price-stock-sync'); ?>
                             </div>
                             <div class="dsz-sync-card-meta">
                                 <?php if ($in_progress): ?>
-                                    <span class="dsz-pulse-dot"></span> <?php _e('Processing batch...', 'dropshipzone-sync'); ?>
+                                    <span class="dsz-pulse-dot"></span> <?php _e('Processing batch...', 'dropshipzone-price-stock-sync'); ?>
                                 <?php else: ?>
-                                    <?php _e('Standing by for next task', 'dropshipzone-sync'); ?>
+                                    <?php _e('Standing by for next task', 'dropshipzone-price-stock-sync'); ?>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -800,15 +800,15 @@ class Admin_UI {
                             <span class="dashicons dashicons-calendar-alt"></span>
                         </div>
                         <div class="dsz-sync-card-content">
-                            <h3><?php _e('Last Sync', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Last Sync', 'dropshipzone-price-stock-sync'); ?></h3>
                             <div class="dsz-sync-card-value">
-                                <?php echo $sync_status['last_sync'] ? dsz_format_datetime($sync_status['last_sync']) : __('Never', 'dropshipzone-sync'); ?>
+                                <?php echo $sync_status['last_sync'] ? dsz_format_datetime($sync_status['last_sync']) : __('Never', 'dropshipzone-price-stock-sync'); ?>
                             </div>
                             <div class="dsz-sync-card-meta">
-                                <span class="dsz-text-success"><?php echo intval($sync_status['last_products_updated']); ?> <?php _e('Updated', 'dropshipzone-sync'); ?></span>
+                                <span class="dsz-text-success"><?php echo intval($sync_status['last_products_updated']); ?> <?php _e('Updated', 'dropshipzone-price-stock-sync'); ?></span>
                                 <span class="dsz-divider">|</span>
                                 <span class="<?php echo intval($sync_status['last_errors_count']) > 0 ? 'dsz-text-error' : 'dsz-text-success'; ?>">
-                                    <?php echo intval($sync_status['last_errors_count']); ?> <?php _e('Errors', 'dropshipzone-sync'); ?>
+                                    <?php echo intval($sync_status['last_errors_count']); ?> <?php _e('Errors', 'dropshipzone-price-stock-sync'); ?>
                                 </span>
                             </div>
                         </div>
@@ -820,18 +820,18 @@ class Admin_UI {
                             <span class="dashicons dashicons-clock"></span>
                         </div>
                         <div class="dsz-sync-card-content">
-                            <h3><?php _e('Next Schedule', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Next Schedule', 'dropshipzone-price-stock-sync'); ?></h3>
                             <div class="dsz-sync-card-value">
-                                <?php echo $sync_status['next_scheduled'] ? dsz_format_datetime($sync_status['next_scheduled']) : __('Not Scheduled', 'dropshipzone-sync'); ?>
+                                <?php echo $sync_status['next_scheduled'] ? dsz_format_datetime($sync_status['next_scheduled']) : __('Not Scheduled', 'dropshipzone-price-stock-sync'); ?>
                             </div>
                             <div class="dsz-sync-card-meta">
                                 <?php 
                                 $freq_labels = [
-                                    'hourly' => __('Every Hour', 'dropshipzone-sync'),
-                                    'every_six_hours' => __('Every 6 Hours', 'dropshipzone-sync'),
-                                    'twicedaily' => __('Twice Daily', 'dropshipzone-sync'),
-                                    'daily' => __('Daily', 'dropshipzone-sync'),
-                                    'disabled' => __('Disabled', 'dropshipzone-sync'),
+                                    'hourly' => __('Every Hour', 'dropshipzone-price-stock-sync'),
+                                    'every_six_hours' => __('Every 6 Hours', 'dropshipzone-price-stock-sync'),
+                                    'twicedaily' => __('Twice Daily', 'dropshipzone-price-stock-sync'),
+                                    'daily' => __('Daily', 'dropshipzone-price-stock-sync'),
+                                    'disabled' => __('Disabled', 'dropshipzone-price-stock-sync'),
                                 ];
                                 echo isset($freq_labels[$sync_status['frequency']]) ? $freq_labels[$sync_status['frequency']] : ucfirst($sync_status['frequency']);
                                 ?>
@@ -845,12 +845,12 @@ class Admin_UI {
                             <span class="dashicons dashicons-database"></span>
                         </div>
                         <div class="dsz-sync-card-content">
-                            <h3><?php _e('Catalog Size', 'dropshipzone-sync'); ?></h3>
+                            <h3><?php _e('Catalog Size', 'dropshipzone-price-stock-sync'); ?></h3>
                             <div class="dsz-sync-card-value">
-                                <?php echo number_format($total_mapped); ?> <?php _e('Products', 'dropshipzone-sync'); ?>
+                                <?php echo number_format($total_mapped); ?> <?php _e('Products', 'dropshipzone-price-stock-sync'); ?>
                             </div>
                             <div class="dsz-sync-card-meta">
-                                <?php _e('Actively being synced', 'dropshipzone-sync'); ?>
+                                <?php _e('Actively being synced', 'dropshipzone-price-stock-sync'); ?>
                             </div>
                         </div>
                     </div>
@@ -862,25 +862,25 @@ class Admin_UI {
                     <div class="dsz-content dsz-sync-console">
                         <div class="dsz-form-section">
                             <div class="dsz-section-header">
-                                <h2><?php _e('Sync Console', 'dropshipzone-sync'); ?></h2>
-                                <p class="description"><?php _e('Run a manual synchronization of your entire mapped catalog.', 'dropshipzone-sync'); ?></p>
+                                <h2><?php _e('Sync Console', 'dropshipzone-price-stock-sync'); ?></h2>
+                                <p class="description"><?php _e('Run a manual synchronization of your entire mapped catalog.', 'dropshipzone-price-stock-sync'); ?></p>
                             </div>
 
                             <div class="dsz-console-actions">
                                 <button type="button" id="dsz-run-sync" class="button button-primary button-hero dsz-btn-sync" <?php echo $in_progress ? 'disabled' : ''; ?>>
                                     <span class="dashicons dashicons-update-alt"></span>
-                                    <?php _e('Run Manual Sync', 'dropshipzone-sync'); ?>
+                                    <?php _e('Run Manual Sync', 'dropshipzone-price-stock-sync'); ?>
                                 </button>
                                 
                                 <p id="dsz-sync-hint" class="dsz-sync-hint <?php echo $in_progress ? 'hidden' : ''; ?>">
-                                    <?php _e('Manual sync processes products in batches to prevent server timeouts.', 'dropshipzone-sync'); ?>
+                                    <?php _e('Manual sync processes products in batches to prevent server timeouts.', 'dropshipzone-price-stock-sync'); ?>
                                 </p>
                             </div>
 
                             <!-- Animated Progress Section -->
                             <div id="dsz-progress-container" class="dsz-progress-console <?php echo $in_progress ? '' : 'hidden'; ?>">
                                 <div class="dsz-progress-stats">
-                                    <span class="dsz-progress-label"><?php _e('Current Progress', 'dropshipzone-sync'); ?></span>
+                                    <span class="dsz-progress-label"><?php _e('Current Progress', 'dropshipzone-price-stock-sync'); ?></span>
                                     <span id="dsz-progress-percent" class="dsz-progress-value"><?php echo $this->cron->get_progress(); ?>%</span>
                                 </div>
                                 <div class="dsz-progress-bar-wrapper">
@@ -889,7 +889,7 @@ class Admin_UI {
                                     </div>
                                 </div>
                                 <div id="dsz-progress-text" class="dsz-progress-status-text">
-                                    <?php printf(__('Syncing batch %d of %d...', 'dropshipzone-sync'), ceil($sync_status['current_offset'] / $sync_status['batch_size']) + 1, ceil($total_mapped / $sync_status['batch_size'])); ?>
+                                    <?php printf(__('Syncing batch %d of %d...', 'dropshipzone-price-stock-sync'), ceil($sync_status['current_offset'] / $sync_status['batch_size']) + 1, ceil($total_mapped / $sync_status['batch_size'])); ?>
                                 </div>
                             </div>
 
@@ -904,11 +904,11 @@ class Admin_UI {
                             
                             <div class="dsz-form-section">
                                 <div class="dsz-section-header">
-                                    <h2><?php _e('Schedule Config', 'dropshipzone-sync'); ?></h2>
+                                    <h2><?php _e('Schedule Config', 'dropshipzone-price-stock-sync'); ?></h2>
                                 </div>
                                 
                                 <div class="dsz-form-group">
-                                    <label for="frequency"><?php _e('Auto-Sync Interval', 'dropshipzone-sync'); ?></label>
+                                    <label for="frequency"><?php _e('Auto-Sync Interval', 'dropshipzone-price-stock-sync'); ?></label>
                                     <select id="frequency" name="frequency" class="dsz-select">
                                         <?php foreach ($frequencies as $value => $label): ?>
                                             <option value="<?php echo esc_attr($value); ?>" <?php selected($sync_status['frequency'], $value); ?>>
@@ -916,23 +916,23 @@ class Admin_UI {
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <p class="description"><?php _e('How often to automatically sync price and stock.', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('How often to automatically sync price and stock.', 'dropshipzone-price-stock-sync'); ?></p>
                                 </div>
 
                                 <div class="dsz-form-group">
-                                    <label for="batch_size"><?php _e('Batch Processing Size', 'dropshipzone-sync'); ?></label>
+                                    <label for="batch_size"><?php _e('Batch Processing Size', 'dropshipzone-price-stock-sync'); ?></label>
                                     <div class="dsz-input-with-label">
                                         <input type="number" id="batch_size" name="batch_size" value="<?php echo esc_attr($sync_status['batch_size']); ?>" min="10" max="200" step="10" />
-                                        <span><?php _e('products', 'dropshipzone-sync'); ?></span>
+                                        <span><?php _e('products', 'dropshipzone-price-stock-sync'); ?></span>
                                     </div>
-                                    <p class="description"><?php _e('100 is recommended for most servers.', 'dropshipzone-sync'); ?></p>
+                                    <p class="description"><?php _e('100 is recommended for most servers.', 'dropshipzone-price-stock-sync'); ?></p>
                                 </div>
                             </div>
 
                             <div class="dsz-form-actions">
                                 <button type="submit" class="button button-primary">
                                     <span class="dashicons dashicons-saved"></span>
-                                    <?php _e('Save Schedule', 'dropshipzone-sync'); ?>
+                                    <?php _e('Save Schedule', 'dropshipzone-price-stock-sync'); ?>
                                 </button>
                                 <div id="dsz-schedule-message" class="dsz-message hidden"></div>
                             </div>
@@ -949,7 +949,7 @@ class Admin_UI {
      */
     public function render_logs() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         $level = isset($_GET['level']) ? sanitize_text_field($_GET['level']) : '';
@@ -966,33 +966,33 @@ class Admin_UI {
         $total_pages = ceil($total / $per_page);
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Sync Logs', 'dropshipzone-sync'), __('View sync activity and error logs', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Sync Logs', 'dropshipzone-price-stock-sync'), __('View sync activity and error logs', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <!-- Filters -->
                 <div class="dsz-logs-toolbar">
                     <div class="dsz-logs-filters">
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs'); ?>" class="button <?php echo empty($level) ? 'button-primary' : ''; ?>">
-                            <?php _e('All', 'dropshipzone-sync'); ?>
+                            <?php _e('All', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs&level=info'); ?>" class="button <?php echo $level === 'info' ? 'button-primary' : ''; ?>">
-                            <?php _e('Info', 'dropshipzone-sync'); ?>
+                            <?php _e('Info', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs&level=warning'); ?>" class="button <?php echo $level === 'warning' ? 'button-primary' : ''; ?>">
-                            <?php _e('Warnings', 'dropshipzone-sync'); ?>
+                            <?php _e('Warnings', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                         <a href="<?php echo admin_url('admin.php?page=dsz-sync-logs&level=error'); ?>" class="button <?php echo $level === 'error' ? 'button-primary' : ''; ?>">
-                            <?php _e('Errors', 'dropshipzone-sync'); ?>
+                            <?php _e('Errors', 'dropshipzone-price-stock-sync'); ?>
                         </a>
                     </div>
                     <div class="dsz-logs-actions">
                         <button type="button" id="dsz-export-logs" class="button">
                             <span class="dashicons dashicons-download"></span>
-                            <?php _e('Export CSV', 'dropshipzone-sync'); ?>
+                            <?php _e('Export CSV', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                         <button type="button" id="dsz-clear-logs" class="button button-link-delete">
                             <span class="dashicons dashicons-trash"></span>
-                            <?php _e('Clear All', 'dropshipzone-sync'); ?>
+                            <?php _e('Clear All', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                     </div>
                 </div>
@@ -1001,16 +1001,16 @@ class Admin_UI {
                 <table class="wp-list-table widefat fixed striped dsz-logs-table">
                     <thead>
                         <tr>
-                            <th class="column-level"><?php _e('Level', 'dropshipzone-sync'); ?></th>
-                            <th class="column-message"><?php _e('Message', 'dropshipzone-sync'); ?></th>
-                            <th class="column-context"><?php _e('Context', 'dropshipzone-sync'); ?></th>
-                            <th class="column-date"><?php _e('Date', 'dropshipzone-sync'); ?></th>
+                            <th class="column-level"><?php _e('Level', 'dropshipzone-price-stock-sync'); ?></th>
+                            <th class="column-message"><?php _e('Message', 'dropshipzone-price-stock-sync'); ?></th>
+                            <th class="column-context"><?php _e('Context', 'dropshipzone-price-stock-sync'); ?></th>
+                            <th class="column-date"><?php _e('Date', 'dropshipzone-price-stock-sync'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($logs)): ?>
                             <tr>
-                                <td colspan="4" class="dsz-no-logs"><?php _e('No logs found.', 'dropshipzone-sync'); ?></td>
+                                <td colspan="4" class="dsz-no-logs"><?php _e('No logs found.', 'dropshipzone-price-stock-sync'); ?></td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($logs as $log): ?>
@@ -1036,15 +1036,15 @@ class Admin_UI {
                         $base_url = admin_url('admin.php?page=dsz-sync-logs' . ($level ? '&level=' . $level : ''));
                         
                         if ($page > 1): ?>
-                            <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php _e('Previous', 'dropshipzone-sync'); ?></a>
+                            <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php _e('Previous', 'dropshipzone-price-stock-sync'); ?></a>
                         <?php endif; ?>
                         
                         <span class="dsz-pagination-info">
-                            <?php printf(__('Page %d of %d', 'dropshipzone-sync'), $page, $total_pages); ?>
+                            <?php printf(__('Page %d of %d', 'dropshipzone-price-stock-sync'), $page, $total_pages); ?>
                         </span>
                         
                         <?php if ($page < $total_pages): ?>
-                            <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="button"><?php _e('Next', 'dropshipzone-sync'); ?> &raquo;</a>
+                            <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="button"><?php _e('Next', 'dropshipzone-price-stock-sync'); ?> &raquo;</a>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -1060,7 +1060,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
@@ -1091,7 +1091,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $type = isset($_POST['type']) ? sanitize_text_field($_POST['type']) : '';
@@ -1152,10 +1152,10 @@ class Admin_UI {
                 break;
 
             default:
-                wp_send_json_error(['message' => __('Invalid settings type', 'dropshipzone-sync')]);
+                wp_send_json_error(['message' => __('Invalid settings type', 'dropshipzone-price-stock-sync')]);
         }
 
-        wp_send_json_success(['message' => __('Settings saved successfully', 'dropshipzone-sync')]);
+        wp_send_json_success(['message' => __('Settings saved successfully', 'dropshipzone-price-stock-sync')]);
     }
 
     /**
@@ -1165,7 +1165,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $result = $this->cron->manual_sync();
@@ -1180,7 +1180,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $status = $this->cron->get_sync_status();
@@ -1196,7 +1196,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $result = $this->cron->continue_batch();
@@ -1211,12 +1211,12 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $this->logger->clear_logs();
 
-        wp_send_json_success(['message' => __('Logs cleared successfully', 'dropshipzone-sync')]);
+        wp_send_json_success(['message' => __('Logs cleared successfully', 'dropshipzone-price-stock-sync')]);
     }
 
     /**
@@ -1226,7 +1226,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $level = isset($_POST['level']) ? sanitize_text_field($_POST['level']) : '';
@@ -1243,11 +1243,11 @@ class Admin_UI {
      */
     public function render_mapping() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
 
         if (!$this->product_mapper) {
-            echo '<div class="notice notice-error"><p>' . __('Product Mapper not initialized.', 'dropshipzone-sync') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . __('Product Mapper not initialized.', 'dropshipzone-price-stock-sync') . '</p></div>';
             return;
         }
 
@@ -1266,7 +1266,7 @@ class Admin_UI {
         $unmapped_count = $this->product_mapper->get_unmapped_count();
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Product Mapping', 'dropshipzone-sync'), __('Map your WooCommerce products to Dropshipzone SKUs', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Product Mapping', 'dropshipzone-price-stock-sync'), __('Map your WooCommerce products to Dropshipzone SKUs', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <!-- Mapping Stats -->
@@ -1274,33 +1274,33 @@ class Admin_UI {
                     <div class="dsz-mapping-stats">
                         <div class="dsz-stat">
                             <strong><?php echo intval($total); ?></strong>
-                            <span><?php _e('Mapped Products', 'dropshipzone-sync'); ?></span>
+                            <span><?php _e('Mapped Products', 'dropshipzone-price-stock-sync'); ?></span>
                         </div>
                         <div class="dsz-stat dsz-stat-warning">
                             <strong><?php echo intval($unmapped_count); ?></strong>
-                            <span><?php _e('Unmapped Products', 'dropshipzone-sync'); ?></span>
+                            <span><?php _e('Unmapped Products', 'dropshipzone-price-stock-sync'); ?></span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Quick Actions -->
                 <div class="dsz-form-section">
-                    <h2><?php _e('Quick Actions', 'dropshipzone-sync'); ?></h2>
+                    <h2><?php _e('Quick Actions', 'dropshipzone-price-stock-sync'); ?></h2>
                     <div class="dsz-mapping-actions">
                         <button type="button" id="dsz-auto-map" class="button button-primary">
                             <span class="dashicons dashicons-admin-links"></span>
-                            <?php _e('Auto-Map by SKU', 'dropshipzone-sync'); ?>
+                            <?php _e('Auto-Map by SKU', 'dropshipzone-price-stock-sync'); ?>
                         </button>
-                        <p class="description"><?php _e('Automatically creates mappings for WooCommerce products that have SKUs matching their product SKU.', 'dropshipzone-sync'); ?></p>
+                        <p class="description"><?php _e('Automatically creates mappings for WooCommerce products that have SKUs matching their product SKU.', 'dropshipzone-price-stock-sync'); ?></p>
                     </div>
                     <div id="dsz-automap-message" class="dsz-message hidden"></div>
                     
                     <div class="dsz-mapping-actions" style="margin-top: 15px;">
                         <button type="button" id="dsz-resync-all" class="button button-secondary">
                             <span class="dashicons dashicons-update"></span>
-                            <?php _e('Resync All Products', 'dropshipzone-sync'); ?>
+                            <?php _e('Resync All Products', 'dropshipzone-price-stock-sync'); ?>
                         </button>
-                        <p class="description"><?php _e('Resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.).', 'dropshipzone-sync'); ?></p>
+                        <p class="description"><?php _e('Resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.).', 'dropshipzone-price-stock-sync'); ?></p>
                     </div>
                     <div id="dsz-resync-all-message" class="dsz-message hidden"></div>
                     <div id="dsz-resync-all-progress" class="dsz-progress-wrapper hidden">
@@ -1313,22 +1313,22 @@ class Admin_UI {
 
                 <!-- Search and Add New -->
                 <div class="dsz-form-section">
-                    <h2><?php _e('Add New Mapping', 'dropshipzone-sync'); ?></h2>
+                    <h2><?php _e('Add New Mapping', 'dropshipzone-price-stock-sync'); ?></h2>
                     <div class="dsz-mapping-add">
                         <div class="dsz-mapping-field">
-                            <label><?php _e('WooCommerce Product:', 'dropshipzone-sync'); ?></label>
-                            <input type="text" id="dsz-wc-search" placeholder="<?php _e('Search by name or SKU...', 'dropshipzone-sync'); ?>" />
+                            <label><?php _e('WooCommerce Product:', 'dropshipzone-price-stock-sync'); ?></label>
+                            <input type="text" id="dsz-wc-search" placeholder="<?php _e('Search by name or SKU...', 'dropshipzone-price-stock-sync'); ?>" />
                             <div id="dsz-wc-results" class="dsz-search-results hidden"></div>
                             <input type="hidden" id="dsz-wc-product-id" value="" />
                         </div>
                         <div class="dsz-mapping-arrow">→</div>
                         <div class="dsz-mapping-field">
-                            <label><?php _e('Dropshipzone SKU:', 'dropshipzone-sync'); ?></label>
-                            <input type="text" id="dsz-dsz-sku" placeholder="<?php _e('Enter DSZ SKU or search...', 'dropshipzone-sync'); ?>" />
+                            <label><?php _e('Dropshipzone SKU:', 'dropshipzone-price-stock-sync'); ?></label>
+                            <input type="text" id="dsz-dsz-sku" placeholder="<?php _e('Enter DSZ SKU or search...', 'dropshipzone-price-stock-sync'); ?>" />
                             <div id="dsz-dsz-results" class="dsz-search-results hidden"></div>
                         </div>
                         <button type="button" id="dsz-create-mapping" class="button button-primary" disabled>
-                            <?php _e('Create Mapping', 'dropshipzone-sync'); ?>
+                            <?php _e('Create Mapping', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                     </div>
                     <div id="dsz-mapping-message" class="dsz-message hidden"></div>
@@ -1336,15 +1336,15 @@ class Admin_UI {
 
                 <!-- Existing Mappings -->
                 <div class="dsz-form-section">
-                    <h2><?php _e('Existing Mappings', 'dropshipzone-sync'); ?></h2>
+                    <h2><?php _e('Existing Mappings', 'dropshipzone-price-stock-sync'); ?></h2>
                     
                     <!-- Search -->
                     <form method="get" class="dsz-mapping-search">
                         <input type="hidden" name="page" value="dsz-sync-mapping" />
-                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php _e('Search mappings...', 'dropshipzone-sync'); ?>" />
-                        <button type="submit" class="button"><?php _e('Search', 'dropshipzone-sync'); ?></button>
+                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php _e('Search mappings...', 'dropshipzone-price-stock-sync'); ?>" />
+                        <button type="submit" class="button"><?php _e('Search', 'dropshipzone-price-stock-sync'); ?></button>
                         <?php if ($search): ?>
-                            <a href="<?php echo admin_url('admin.php?page=dsz-sync-mapping'); ?>" class="button"><?php _e('Clear', 'dropshipzone-sync'); ?></a>
+                            <a href="<?php echo admin_url('admin.php?page=dsz-sync-mapping'); ?>" class="button"><?php _e('Clear', 'dropshipzone-price-stock-sync'); ?></a>
                         <?php endif; ?>
                     </form>
 
@@ -1352,16 +1352,16 @@ class Admin_UI {
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th><?php _e('WooCommerce Product', 'dropshipzone-sync'); ?></th>
-                                <th><?php _e('Dropshipzone SKU', 'dropshipzone-sync'); ?></th>
-                                <th><?php _e('Last Synced', 'dropshipzone-sync'); ?></th>
-                                <th class="column-actions"><?php _e('Actions', 'dropshipzone-sync'); ?></th>
+                                <th><?php _e('WooCommerce Product', 'dropshipzone-price-stock-sync'); ?></th>
+                                <th><?php _e('Dropshipzone SKU', 'dropshipzone-price-stock-sync'); ?></th>
+                                <th><?php _e('Last Synced', 'dropshipzone-price-stock-sync'); ?></th>
+                                <th class="column-actions"><?php _e('Actions', 'dropshipzone-price-stock-sync'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($mappings)): ?>
                                 <tr>
-                                    <td colspan="4" class="dsz-no-logs"><?php _e('No mappings found.', 'dropshipzone-sync'); ?></td>
+                                    <td colspan="4" class="dsz-no-logs"><?php _e('No mappings found.', 'dropshipzone-price-stock-sync'); ?></td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($mappings as $mapping): ?>
@@ -1372,15 +1372,15 @@ class Admin_UI {
                                             </a>
                                         </td>
                                         <td><code><?php echo esc_html($mapping['dsz_sku']); ?></code></td>
-                                        <td><?php echo $mapping['last_synced'] ? dsz_format_datetime($mapping['last_synced']) : __('Never', 'dropshipzone-sync'); ?></td>
+                                        <td><?php echo $mapping['last_synced'] ? dsz_format_datetime($mapping['last_synced']) : __('Never', 'dropshipzone-price-stock-sync'); ?></td>
                                         <td class="column-actions">
                                             <button type="button" class="button button-small dsz-resync-btn" data-product-id="<?php echo esc_attr($mapping['wc_product_id']); ?>" data-sku="<?php echo esc_attr($mapping['dsz_sku']); ?>">
                                                 <span class="dashicons dashicons-update"></span>
-                                                <?php _e('Resync', 'dropshipzone-sync'); ?>
+                                                <?php _e('Resync', 'dropshipzone-price-stock-sync'); ?>
                                             </button>
                                             <button type="button" class="button button-small dsz-unmap-btn" data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
                                                 <span class="dashicons dashicons-no-alt"></span>
-                                                <?php _e('Unmap', 'dropshipzone-sync'); ?>
+                                                <?php _e('Unmap', 'dropshipzone-price-stock-sync'); ?>
                                             </button>
                                         </td>
                                     </tr>
@@ -1396,15 +1396,15 @@ class Admin_UI {
                             $base_url = admin_url('admin.php?page=dsz-sync-mapping' . ($search ? '&search=' . urlencode($search) : ''));
                             
                             if ($page > 1): ?>
-                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php _e('Previous', 'dropshipzone-sync'); ?></a>
+                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php _e('Previous', 'dropshipzone-price-stock-sync'); ?></a>
                             <?php endif; ?>
                             
                             <span class="dsz-pagination-info">
-                                <?php printf(__('Page %d of %d', 'dropshipzone-sync'), $page, $total_pages); ?>
+                                <?php printf(__('Page %d of %d', 'dropshipzone-price-stock-sync'), $page, $total_pages); ?>
                             </span>
                             
                             <?php if ($page < $total_pages): ?>
-                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="button"><?php _e('Next', 'dropshipzone-sync'); ?> &raquo;</a>
+                                <a href="<?php echo esc_url($base_url . '&paged=' . ($page + 1)); ?>" class="button"><?php _e('Next', 'dropshipzone-price-stock-sync'); ?> &raquo;</a>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
@@ -1421,7 +1421,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
@@ -1441,7 +1441,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
@@ -1468,22 +1468,22 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
         $dsz_sku = isset($_POST['dsz_sku']) ? sanitize_text_field($_POST['dsz_sku']) : '';
 
         if (!$wc_product_id || !$dsz_sku) {
-            wp_send_json_error(['message' => __('Product ID and SKU are required', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Product ID and SKU are required', 'dropshipzone-price-stock-sync')]);
         }
 
         $result = $this->product_mapper->map($wc_product_id, $dsz_sku);
 
         if ($result) {
-            wp_send_json_success(['message' => __('Mapping created successfully', 'dropshipzone-sync')]);
+            wp_send_json_success(['message' => __('Mapping created successfully', 'dropshipzone-price-stock-sync')]);
         } else {
-            wp_send_json_error(['message' => __('Failed to create mapping', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Failed to create mapping', 'dropshipzone-price-stock-sync')]);
         }
     }
 
@@ -1494,21 +1494,21 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
 
         if (!$wc_product_id) {
-            wp_send_json_error(['message' => __('Product ID is required', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Product ID is required', 'dropshipzone-price-stock-sync')]);
         }
 
         $result = $this->product_mapper->unmap($wc_product_id);
 
         if ($result) {
-            wp_send_json_success(['message' => __('Mapping removed successfully', 'dropshipzone-sync')]);
+            wp_send_json_success(['message' => __('Mapping removed successfully', 'dropshipzone-price-stock-sync')]);
         } else {
-            wp_send_json_error(['message' => __('Failed to remove mapping', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Failed to remove mapping', 'dropshipzone-price-stock-sync')]);
         }
     }
 
@@ -1519,14 +1519,14 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $results = $this->product_mapper->auto_map_by_sku();
 
         wp_send_json_success([
             'message' => sprintf(
-                __('Auto-mapping complete! %d products mapped, %d skipped.', 'dropshipzone-sync'),
+                __('Auto-mapping complete! %d products mapped, %d skipped.', 'dropshipzone-price-stock-sync'),
                 $results['mapped'],
                 $results['skipped']
             ),
@@ -1540,20 +1540,20 @@ class Admin_UI {
      */
     public function render_import() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone-sync'));
+            wp_die(__('You do not have permission to access this page.', 'dropshipzone-price-stock-sync'));
         }
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Product Import', 'dropshipzone-sync'), __('Search and import new products from Dropshipzone', 'dropshipzone-sync')); ?>
+            <?php $this->render_header(__('Product Import', 'dropshipzone-price-stock-sync'), __('Search and import new products from Dropshipzone', 'dropshipzone-price-stock-sync')); ?>
 
             <div class="dsz-content">
                 <div class="dsz-form-section">
                     <!-- Advanced Search Bar -->
                     <div class="dsz-import-search-bar">
-                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Enter keywords or SKU...', 'dropshipzone-sync'); ?>" />
+                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Enter keywords or SKU...', 'dropshipzone-price-stock-sync'); ?>" />
                         <button type="button" id="dsz-import-search-btn" class="button button-primary">
                             <span class="dashicons dashicons-search"></span>
-                            <?php _e('Search', 'dropshipzone-sync'); ?>
+                            <?php _e('Search', 'dropshipzone-price-stock-sync'); ?>
                         </button>
                     </div>
 
@@ -1561,7 +1561,7 @@ class Admin_UI {
                     <div class="dsz-import-filters">
                         <button type="button" id="dsz-toggle-filters" class="button button-secondary dsz-toggle-filters-btn">
                             <span class="dashicons dashicons-filter"></span>
-                            <?php _e('Advanced Filters', 'dropshipzone-sync'); ?>
+                            <?php _e('Advanced Filters', 'dropshipzone-price-stock-sync'); ?>
                             <span class="dashicons dashicons-arrow-down-alt2"></span>
                         </button>
                         
@@ -1569,50 +1569,50 @@ class Admin_UI {
                             <div class="dsz-filters-grid">
                                 <!-- Category Filter -->
                                 <div class="dsz-filter-item">
-                                    <label for="dsz-filter-category"><?php _e('Category', 'dropshipzone-sync'); ?></label>
+                                    <label for="dsz-filter-category"><?php _e('Category', 'dropshipzone-price-stock-sync'); ?></label>
                                     <select id="dsz-filter-category">
-                                        <option value=""><?php _e('All Categories', 'dropshipzone-sync'); ?></option>
+                                        <option value=""><?php _e('All Categories', 'dropshipzone-price-stock-sync'); ?></option>
                                     </select>
-                                    <button type="button" id="dsz-load-categories" class="button button-small" title="<?php _e('Load categories from API', 'dropshipzone-sync'); ?>">
+                                    <button type="button" id="dsz-load-categories" class="button button-small" title="<?php _e('Load categories from API', 'dropshipzone-price-stock-sync'); ?>">
                                         <span class="dashicons dashicons-update"></span>
                                     </button>
                                 </div>
 
                                 <!-- Stock Filter -->
                                 <div class="dsz-filter-item">
-                                    <label><?php _e('Stock Status', 'dropshipzone-sync'); ?></label>
+                                    <label><?php _e('Stock Status', 'dropshipzone-price-stock-sync'); ?></label>
                                     <div class="dsz-filter-checkbox">
                                         <input type="checkbox" id="dsz-filter-instock" value="1">
-                                        <label for="dsz-filter-instock"><?php _e('In Stock Only', 'dropshipzone-sync'); ?></label>
+                                        <label for="dsz-filter-instock"><?php _e('In Stock Only', 'dropshipzone-price-stock-sync'); ?></label>
                                     </div>
                                 </div>
 
                                 <!-- Quick Filters -->
                                 <div class="dsz-filter-item">
-                                    <label><?php _e('Quick Filters', 'dropshipzone-sync'); ?></label>
+                                    <label><?php _e('Quick Filters', 'dropshipzone-price-stock-sync'); ?></label>
                                     <div class="dsz-filter-checkboxes">
                                         <div class="dsz-filter-checkbox">
                                             <input type="checkbox" id="dsz-filter-freeship" value="1">
-                                            <label for="dsz-filter-freeship"><?php _e('Free Shipping', 'dropshipzone-sync'); ?></label>
+                                            <label for="dsz-filter-freeship"><?php _e('Free Shipping', 'dropshipzone-price-stock-sync'); ?></label>
                                         </div>
                                         <div class="dsz-filter-checkbox">
                                             <input type="checkbox" id="dsz-filter-promotion" value="1">
-                                            <label for="dsz-filter-promotion"><?php _e('On Promotion', 'dropshipzone-sync'); ?></label>
+                                            <label for="dsz-filter-promotion"><?php _e('On Promotion', 'dropshipzone-price-stock-sync'); ?></label>
                                         </div>
                                         <div class="dsz-filter-checkbox">
                                             <input type="checkbox" id="dsz-filter-newarrivals" value="1">
-                                            <label for="dsz-filter-newarrivals"><?php _e('New Arrivals', 'dropshipzone-sync'); ?></label>
+                                            <label for="dsz-filter-newarrivals"><?php _e('New Arrivals', 'dropshipzone-price-stock-sync'); ?></label>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Sort Options -->
                                 <div class="dsz-filter-item">
-                                    <label for="dsz-filter-sort"><?php _e('Sort By', 'dropshipzone-sync'); ?></label>
+                                    <label for="dsz-filter-sort"><?php _e('Sort By', 'dropshipzone-price-stock-sync'); ?></label>
                                     <select id="dsz-filter-sort">
-                                        <option value=""><?php _e('Default', 'dropshipzone-sync'); ?></option>
-                                        <option value="price_asc"><?php _e('Price: Low to High', 'dropshipzone-sync'); ?></option>
-                                        <option value="price_desc"><?php _e('Price: High to Low', 'dropshipzone-sync'); ?></option>
+                                        <option value=""><?php _e('Default', 'dropshipzone-price-stock-sync'); ?></option>
+                                        <option value="price_asc"><?php _e('Price: Low to High', 'dropshipzone-price-stock-sync'); ?></option>
+                                        <option value="price_desc"><?php _e('Price: High to Low', 'dropshipzone-price-stock-sync'); ?></option>
                                     </select>
                                 </div>
                             </div>
@@ -1620,11 +1620,11 @@ class Admin_UI {
                             <div class="dsz-filters-actions">
                                 <button type="button" id="dsz-apply-filters" class="button button-primary">
                                     <span class="dashicons dashicons-yes"></span>
-                                    <?php _e('Apply Filters', 'dropshipzone-sync'); ?>
+                                    <?php _e('Apply Filters', 'dropshipzone-price-stock-sync'); ?>
                                 </button>
                                 <button type="button" id="dsz-clear-filters" class="button button-secondary">
                                     <span class="dashicons dashicons-no-alt"></span>
-                                    <?php _e('Clear All', 'dropshipzone-sync'); ?>
+                                    <?php _e('Clear All', 'dropshipzone-price-stock-sync'); ?>
                                 </button>
                             </div>
                         </div>
@@ -1640,8 +1640,8 @@ class Admin_UI {
                 <div id="dsz-import-results" class="dsz-import-results-container">
                     <div class="dsz-import-empty">
                         <span class="dashicons dashicons-search"></span>
-                        <p><?php _e('Search for products using keywords, SKU, or browse by category.', 'dropshipzone-sync'); ?></p>
-                        <p class="dsz-import-empty-hint"><?php _e('Use Advanced Filters to narrow down results by stock status, promotions, or new arrivals.', 'dropshipzone-sync'); ?></p>
+                        <p><?php _e('Search for products using keywords, SKU, or browse by category.', 'dropshipzone-price-stock-sync'); ?></p>
+                        <p class="dsz-import-empty-hint"><?php _e('Use Advanced Filters to narrow down results by stock status, promotions, or new arrivals.', 'dropshipzone-price-stock-sync'); ?></p>
                     </div>
                 </div>
             </div>
@@ -1665,7 +1665,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         // Get search parameters
@@ -1680,7 +1680,7 @@ class Admin_UI {
         // Validate: need at least a search term, category, or one filter
         $has_filters = $category_id > 0 || $in_stock || $free_shipping || $on_promotion || $new_arrival;
         if (strlen($search) < 2 && !$has_filters) {
-            wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone-price-stock-sync')]);
         }
 
         // Build API query parameters
@@ -1748,11 +1748,11 @@ class Admin_UI {
                 wp_send_json_error(['message' => $last_error->get_error_message()]);
             }
             
-            $message = __('No products found.', 'dropshipzone-sync');
+            $message = __('No products found.', 'dropshipzone-price-stock-sync');
             if (!empty($search)) {
-                $message .= ' ' . __('Try different keywords or adjust filters.', 'dropshipzone-sync');
+                $message .= ' ' . __('Try different keywords or adjust filters.', 'dropshipzone-price-stock-sync');
             } else {
-                $message .= ' ' . __('Try adjusting your filters.', 'dropshipzone-sync');
+                $message .= ' ' . __('Try adjusting your filters.', 'dropshipzone-price-stock-sync');
             }
             wp_send_json_error(['message' => $message]);
         }
@@ -1789,7 +1789,7 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $response = $this->api_client->make_request('GET', '/v2/categories', [], true);
@@ -1799,7 +1799,7 @@ class Admin_UI {
         }
 
         if (empty($response)) {
-            wp_send_json_error(['message' => __('No categories found or API error.', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('No categories found or API error.', 'dropshipzone-price-stock-sync')]);
         }
 
         // Return the flat list of categories
@@ -1813,13 +1813,13 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
         
         if (!$sku) {
-            wp_send_json_error(['message' => __('SKU is required', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('SKU is required', 'dropshipzone-price-stock-sync')]);
         }
 
         // Check if product data was passed from search results
@@ -1840,7 +1840,7 @@ class Admin_UI {
         }
 
         wp_send_json_success([
-            'message' => __('Product imported successfully!', 'dropshipzone-sync'),
+            'message' => __('Product imported successfully!', 'dropshipzone-price-stock-sync'),
             'product_id' => $result,
             'edit_url' => get_edit_post_link($result, 'url')
         ]);
@@ -1853,21 +1853,21 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
         $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
         
         if (!$product_id && !$sku) {
-            wp_send_json_error(['message' => __('Product ID or SKU is required', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Product ID or SKU is required', 'dropshipzone-price-stock-sync')]);
         }
 
         // If we only have SKU, try to find the product ID
         if (!$product_id && $sku) {
             $product_id = wc_get_product_id_by_sku($sku);
             if (!$product_id) {
-                wp_send_json_error(['message' => __('Product not found in WooCommerce', 'dropshipzone-sync')]);
+                wp_send_json_error(['message' => __('Product not found in WooCommerce', 'dropshipzone-price-stock-sync')]);
             }
         }
 
@@ -1903,7 +1903,7 @@ class Admin_UI {
         }
 
         wp_send_json_success([
-            'message' => __('Product resynced successfully!', 'dropshipzone-sync'),
+            'message' => __('Product resynced successfully!', 'dropshipzone-price-stock-sync'),
             'product_id' => $result,
             'edit_url' => get_edit_post_link($result, 'url')
         ]);
@@ -1916,14 +1916,14 @@ class Admin_UI {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
 
         if (!dsz_current_user_can_manage()) {
-            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone-price-stock-sync')]);
         }
 
         // Get all mappings
         $mappings = $this->product_mapper->get_mappings(['limit' => 1000]);
         
         if (empty($mappings)) {
-            wp_send_json_error(['message' => __('No mapped products found to resync.', 'dropshipzone-sync')]);
+            wp_send_json_error(['message' => __('No mapped products found to resync.', 'dropshipzone-price-stock-sync')]);
         }
 
         $total = count($mappings);
@@ -1954,13 +1954,13 @@ class Admin_UI {
         }
 
         $message = sprintf(
-            __('Resync complete! %d of %d products resynced successfully.', 'dropshipzone-sync'),
+            __('Resync complete! %d of %d products resynced successfully.', 'dropshipzone-price-stock-sync'),
             $success_count,
             $total
         );
 
         if ($error_count > 0) {
-            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone-sync'), $error_count);
+            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone-price-stock-sync'), $error_count);
         }
 
         wp_send_json_success([
