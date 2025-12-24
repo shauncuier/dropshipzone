@@ -1985,18 +1985,72 @@ class Admin_UI {
         $error_count = 0;
         $errors = [];
 
-        // Process each mapping
+        // Build lookup: dsz_sku => wc_product_id
+        $sku_to_product = [];
+        $all_skus = [];
+        foreach ($mappings as $mapping) {
+            $sku = $mapping['dsz_sku'];
+            $product_id = $mapping['wc_product_id'];
+            $sku_to_product[$sku] = $product_id;
+            $all_skus[] = $sku;
+        }
+
+        // Batch fetch product data from API (100 SKUs per request)
+        $api_products = [];
+        $sku_chunks = array_chunk($all_skus, 100);
+        
+        $this->logger->info('Starting batch resync', [
+            'total_products' => $total,
+            'api_batches' => count($sku_chunks),
+        ]);
+
+        foreach ($sku_chunks as $chunk_index => $chunk) {
+            $response = $this->api_client->get_products_by_skus($chunk);
+            
+            if (is_wp_error($response)) {
+                $this->logger->error('Batch fetch failed', [
+                    'batch' => $chunk_index + 1,
+                    'error' => $response->get_error_message(),
+                ]);
+                continue;
+            }
+
+            if (!empty($response['result'])) {
+                foreach ($response['result'] as $product_data) {
+                    if (!empty($product_data['sku'])) {
+                        $api_products[$product_data['sku']] = $product_data;
+                    }
+                }
+            }
+        }
+
+        $this->logger->info('API batch fetch complete', [
+            'requested_skus' => count($all_skus),
+            'found_products' => count($api_products),
+        ]);
+
+        // Now process each mapping with pre-fetched data
         foreach ($mappings as $mapping) {
             $product_id = $mapping['wc_product_id'];
             $sku = $mapping['dsz_sku'];
 
-            // Resync the product
-            $result = $this->product_importer->resync_product($product_id, null, [
+            // Check if we have API data for this SKU
+            if (!isset($api_products[$sku])) {
+                $error_count++;
+                $errors[] = sprintf('%s: %s', $sku, __('Not found in Dropshipzone API', 'dropshipzone'));
+                continue;
+            }
+
+            $api_data = $api_products[$sku];
+
+            // Resync the product with pre-fetched data
+            $result = $this->product_importer->resync_product($product_id, $api_data, [
                 'update_price' => true,
                 'update_stock' => true,
                 'update_images' => true,
                 'update_description' => true,
                 'update_title' => true,
+                'update_categories' => true,
             ]);
 
             if (is_wp_error($result)) {
@@ -2005,11 +2059,20 @@ class Admin_UI {
             } else {
                 $success_count++;
             }
+
+            // Memory check
+            if (dsz_is_memory_near_limit(85)) {
+                $this->logger->warning('Memory limit approaching, stopping resync early', [
+                    'processed' => $success_count + $error_count,
+                    'total' => $total,
+                ]);
+                break;
+            }
         }
 
         $message = sprintf(
             /* translators: %1$d: success count, %2$d: total count */
-            __('Resync complete! %1$d of %2$d products resynced successfully.', 'dropshipzone'),
+            __('Resync complete! %1$d of %2$d products updated successfully.', 'dropshipzone'),
             $success_count,
             $total
         );
@@ -2018,6 +2081,12 @@ class Admin_UI {
             /* translators: %d: error count */
             $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone'), $error_count);
         }
+
+        $this->logger->info('Resync all complete', [
+            'total' => $total,
+            'success' => $success_count,
+            'errors' => $error_count,
+        ]);
 
         wp_send_json_success([
             'message' => $message,

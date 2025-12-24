@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,12 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.1.1 =
+* FIXED: "Refresh All Product Data" now batch-fetches from API for faster performance.
+* FIXED: Properly updates images, descriptions, prices, stock, and categories.
+* ADDED: Memory limit check to prevent server timeouts.
+* ADDED: Detailed logging for resync operations.
 
 = 2.1.0 =
 * NEW: Unified "Sync Center" page - all sync actions in one place.
