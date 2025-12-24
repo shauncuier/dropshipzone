@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.9
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,12 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.1.0 =
+* NEW: Unified "Sync Center" page - all sync actions in one place.
+* NEW: Three action cards: Link Products, Update Prices & Stock, Refresh Product Data.
+* IMPROVED: Cleaner Product Mapping page focused on manual mapping.
+* IMPROVED: Inline schedule settings on Sync Center page.
 
 = 2.0.9 =
 * IMPROVED: Clearer sync button labels ("Update Prices & Stock", "Link Products by SKU", "Refresh All Product Data").

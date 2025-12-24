@@ -2482,3 +2482,245 @@ select:focus-visible {
 .dsz-spin {
     animation: dsz-spin 2s linear infinite;
 }
+
+/* ========================================
+   Sync Center - Action Cards Grid
+   ======================================== */
+.dsz-sync-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 1200px) {
+    .dsz-sync-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .dsz-sync-actions-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dsz-action-card {
+    background: var(--dsz-glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--dsz-glass-border);
+    border-radius: var(--dsz-border-radius-lg);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: all var(--dsz-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.dsz-action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--dsz-gray-300), var(--dsz-gray-400));
+    transition: all var(--dsz-transition);
+}
+
+.dsz-action-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dsz-shadow-lg);
+    border-color: var(--dsz-primary);
+}
+
+.dsz-action-card:hover::before {
+    background: linear-gradient(90deg, var(--dsz-primary), var(--dsz-secondary));
+}
+
+/* Primary Action Card (Update Prices & Stock) */
+.dsz-action-card.dsz-action-card-primary {
+    border-color: rgba(102, 126, 234, 0.3);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.dsz-action-card.dsz-action-card-primary::before {
+    background: linear-gradient(90deg, var(--dsz-primary), var(--dsz-secondary));
+}
+
+.dsz-action-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dsz-action-card-header .dashicons {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: var(--dsz-primary);
+}
+
+.dsz-action-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--dsz-gray-800);
+}
+
+.dsz-action-card-desc {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--dsz-gray-500);
+    flex-grow: 1;
+}
+
+.dsz-action-card-footer {
+    margin-top: auto;
+    padding-top: 16px;
+}
+
+.dsz-action-card-footer .button {
+    width: 100%;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: var(--dsz-border-radius-sm);
+    font-weight: 500;
+    transition: all var(--dsz-transition);
+}
+
+.dsz-action-card-footer .button .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.dsz-action-card-footer .button-primary {
+    background: linear-gradient(135deg, var(--dsz-primary) 0%, var(--dsz-secondary) 100%);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.dsz-action-card-footer .button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.dsz-action-card-footer .button-secondary {
+    background: #fff;
+    border: 2px solid var(--dsz-gray-200);
+    color: var(--dsz-gray-700);
+}
+
+.dsz-action-card-footer .button-secondary:hover {
+    border-color: var(--dsz-primary);
+    color: var(--dsz-primary);
+    background: rgba(102, 126, 234, 0.05);
+}
+
+/* Schedule Settings Full Width */
+.dsz-sync-settings-full {
+    margin-top: 20px;
+}
+
+.dsz-sync-settings-full .dsz-form-section {
+    padding: 24px 30px;
+}
+
+.dsz-inline-settings {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.dsz-inline-settings .dsz-form-group {
+    margin-bottom: 0;
+}
+
+.dsz-inline-settings .dsz-form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--dsz-gray-700);
+    font-size: 13px;
+}
+
+.dsz-inline-settings select,
+.dsz-inline-settings input[type="number"] {
+    min-width: 140px;
+    height: 40px !important;
+}
+
+.dsz-inline-settings .button {
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Text color helpers */
+.dsz-text-warning {
+    color: var(--dsz-warning);
+}
+
+/* ========================================
+   Callout Box
+   ======================================== */
+.dsz-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 24px;
+    border-radius: var(--dsz-border-radius);
+    background: var(--dsz-gray-50);
+    border: 1px solid var(--dsz-gray-200);
+}
+
+.dsz-callout .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.dsz-callout strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--dsz-gray-800);
+}
+
+.dsz-callout p {
+    margin: 0;
+    color: var(--dsz-gray-600);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.dsz-callout p a {
+    color: var(--dsz-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.dsz-callout p a:hover {
+    text-decoration: underline;
+}
+
+.dsz-callout-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0.05) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dsz-callout-info .dashicons {
+    color: var(--dsz-info);
+}

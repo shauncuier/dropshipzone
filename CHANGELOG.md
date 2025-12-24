@@ -5,6 +5,19 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-12-25
+
+### Added
+- **Unified Sync Center**: Consolidated all sync actions into one page with three action cards.
+- **Action Cards UI**: New card-based layout for Link Products, Update Prices & Stock, and Refresh Product Data.
+- **Inline Schedule Settings**: Configure auto-sync interval and batch size directly on Sync Center page.
+
+### Changed
+- **Simplified Product Mapping**: Removed duplicate sync buttons, focused on manual mapping table.
+- **Renamed Menu**: "Sync Control" is now "Sync Center".
+
+---
+
 ## [2.0.9] - 2025-12-25
 
 ### Improved
