@@ -5,6 +5,18 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2025-12-25
+
+### Improved
+- **Clearer Sync Labels**: Renamed confusing buttons for better user understanding:
+  - "Auto-Map by SKU" → "Link Products by SKU"
+  - "Resync All Products" → "Refresh All Product Data"
+  - "Run Manual Sync" → "Update Prices & Stock"
+- **Better Descriptions**: Added clearer helper text explaining what each action does.
+- **Reorganized Mapping Page**: Separated "Link Products" and "Maintenance" sections for clearer workflow.
+
+---
+
 ## [2.0.8] - 2025-12-24
 
 ### Improved

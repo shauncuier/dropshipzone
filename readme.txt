@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.0.8
+Stable tag: 2.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.0.9 =
+* IMPROVED: Clearer sync button labels ("Update Prices & Stock", "Link Products by SKU", "Refresh All Product Data").
+* IMPROVED: Better descriptions explaining what each action does.
+* IMPROVED: Reorganized Product Mapping page with separate "Link" and "Maintenance" sections.
 
 = 2.0.8 =
 * IMPROVED: Full WordPress.org plugin repository compatibility.

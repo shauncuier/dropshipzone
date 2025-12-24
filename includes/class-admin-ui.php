@@ -898,11 +898,11 @@ class Admin_UI {
                             <div class="dsz-console-actions">
                                 <button type="button" id="dsz-run-sync" class="button button-primary button-hero dsz-btn-sync" <?php echo $in_progress ? 'disabled' : ''; ?>>
                                     <span class="dashicons dashicons-update-alt"></span>
-                                    <?php esc_html_e('Run Manual Sync', 'dropshipzone'); ?>
+                                    <?php esc_html_e('Update Prices & Stock', 'dropshipzone'); ?>
                                 </button>
                                 
                                 <p id="dsz-sync-hint" class="dsz-sync-hint <?php echo $in_progress ? 'hidden' : ''; ?>">
-                                    <?php esc_html_e('Manual sync processes products in batches to prevent server timeouts.', 'dropshipzone'); ?>
+                                    <?php esc_html_e('Updates prices and stock levels for all linked products using Dropshipzone data. Runs automatically on schedule.', 'dropshipzone'); ?>
                                 </p>
                             </div>
 
@@ -1316,24 +1316,28 @@ class Admin_UI {
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
+                <!-- Link Products Section -->
                 <div class="dsz-form-section">
-                    <h2><?php esc_html_e('Quick Actions', 'dropshipzone'); ?></h2>
+                    <h2><?php esc_html_e('Link Products', 'dropshipzone'); ?></h2>
                     <div class="dsz-mapping-actions">
                         <button type="button" id="dsz-auto-map" class="button button-primary">
                             <span class="dashicons dashicons-admin-links"></span>
-                            <?php esc_html_e('Auto-Map by SKU', 'dropshipzone'); ?>
+                            <?php esc_html_e('Link Products by SKU', 'dropshipzone'); ?>
                         </button>
-                        <p class="description"><?php esc_html_e('Automatically creates mappings for WooCommerce products that have SKUs matching their product SKU.', 'dropshipzone'); ?></p>
+                        <p class="description"><?php esc_html_e('Scans your WooCommerce catalog and links products to Dropshipzone using matching SKUs. This creates the connection needed for syncing.', 'dropshipzone'); ?></p>
                     </div>
                     <div id="dsz-automap-message" class="dsz-message hidden"></div>
-                    
-                    <div class="dsz-mapping-actions" style="margin-top: 15px;">
+                </div>
+
+                <!-- Maintenance Section -->
+                <div class="dsz-form-section">
+                    <h2><?php esc_html_e('Maintenance', 'dropshipzone'); ?></h2>
+                    <div class="dsz-mapping-actions">
                         <button type="button" id="dsz-resync-all" class="button button-secondary">
-                            <span class="dashicons dashicons-update"></span>
-                            <?php esc_html_e('Resync All Products', 'dropshipzone'); ?>
+                            <span class="dashicons dashicons-download"></span>
+                            <?php esc_html_e('Refresh All Product Data', 'dropshipzone'); ?>
                         </button>
-                        <p class="description"><?php esc_html_e('Resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.).', 'dropshipzone'); ?></p>
+                        <p class="description"><?php esc_html_e('Re-downloads images, descriptions, prices, and stock from Dropshipzone for all linked products. Use after major catalog updates.', 'dropshipzone'); ?></p>
                     </div>
                     <div id="dsz-resync-all-message" class="dsz-message hidden"></div>
                     <div id="dsz-resync-all-progress" class="dsz-progress-wrapper hidden">
