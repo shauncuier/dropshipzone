@@ -5,6 +5,17 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2025-12-25
+
+### Improved
+- **Redesigned Logs Page**: Modern card-based layout with stats cards and improved UX.
+- **Clickable Filter Cards**: Stats cards show counts per level (Total, Info, Warning, Error) and act as filters.
+- **Color-Coded Log Items**: Visual indicators for each log type with hover effects.
+- **Collapsible Context**: Click "View details" to expand JSON context instead of showing everything.
+- **Relative Timestamps**: Show "5 minutes ago" instead of full datetime.
+
+---
+
 ## [2.1.1] - 2025-12-25
 
 ### Fixed

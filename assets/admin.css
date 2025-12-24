@@ -2724,3 +2724,237 @@ select:focus-visible {
 .dsz-callout-info .dashicons {
     color: var(--dsz-info);
 }
+
+/* ========================================
+   Logs Page - Stats Cards
+   ======================================== */
+.dsz-log-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+    .dsz-log-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.dsz-log-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    background: var(--dsz-glass-bg);
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--dsz-glass-border);
+    border-radius: var(--dsz-border-radius);
+    text-decoration: none;
+    transition: all var(--dsz-transition);
+    cursor: pointer;
+}
+
+.dsz-log-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--dsz-shadow-lg);
+    border-color: var(--dsz-primary);
+}
+
+.dsz-log-stat-card.active {
+    border-color: var(--dsz-primary);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.dsz-log-stat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: var(--dsz-gray-400);
+}
+
+.dsz-log-stat-card.active .dsz-log-stat-icon,
+.dsz-log-stat-card:hover .dsz-log-stat-icon {
+    color: var(--dsz-primary);
+}
+
+.dsz-log-stat-info .dsz-log-stat-icon {
+    color: var(--dsz-info);
+}
+
+.dsz-log-stat-warning .dsz-log-stat-icon {
+    color: var(--dsz-warning);
+}
+
+.dsz-log-stat-error .dsz-log-stat-icon {
+    color: var(--dsz-error);
+}
+
+.dsz-log-stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.dsz-log-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--dsz-gray-800);
+    line-height: 1.2;
+}
+
+.dsz-log-stat-label {
+    font-size: 13px;
+    color: var(--dsz-gray-500);
+}
+
+/* Logs Toolbar */
+.dsz-logs-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--dsz-gray-200);
+    background: var(--dsz-gray-50);
+}
+
+.dsz-logs-summary {
+    font-size: 14px;
+    color: var(--dsz-gray-600);
+}
+
+.dsz-clear-filter {
+    margin-left: 12px;
+    color: var(--dsz-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.dsz-clear-filter:hover {
+    text-decoration: underline;
+}
+
+.dsz-logs-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Logs Empty State */
+.dsz-logs-empty {
+    padding: 60px 40px;
+    text-align: center;
+    color: var(--dsz-gray-500);
+}
+
+.dsz-logs-empty .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--dsz-success);
+    margin-bottom: 16px;
+}
+
+.dsz-logs-empty h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: var(--dsz-gray-700);
+}
+
+.dsz-logs-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Logs List */
+.dsz-logs-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.dsz-log-item {
+    display: flex;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--dsz-gray-100);
+    transition: background var(--dsz-transition-fast);
+}
+
+.dsz-log-item:hover {
+    background: var(--dsz-gray-50);
+}
+
+.dsz-log-item:last-child {
+    border-bottom: none;
+}
+
+.dsz-log-indicator {
+    width: 4px;
+    border-radius: 2px;
+    margin-right: 16px;
+    flex-shrink: 0;
+}
+
+.dsz-log-info .dsz-log-indicator {
+    background: var(--dsz-info);
+}
+
+.dsz-log-warning .dsz-log-indicator {
+    background: var(--dsz-warning);
+}
+
+.dsz-log-error .dsz-log-indicator {
+    background: var(--dsz-error);
+}
+
+.dsz-log-debug .dsz-log-indicator {
+    background: var(--dsz-gray-400);
+}
+
+.dsz-log-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.dsz-log-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.dsz-log-time {
+    font-size: 12px;
+    color: var(--dsz-gray-400);
+    margin-left: auto;
+}
+
+.dsz-log-message {
+    font-size: 14px;
+    color: var(--dsz-gray-700);
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.dsz-log-context {
+    margin-top: 10px;
+}
+
+.dsz-log-context summary {
+    font-size: 12px;
+    color: var(--dsz-primary);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.dsz-log-context summary:hover {
+    text-decoration: underline;
+}
+
+.dsz-log-context pre {
+    margin: 10px 0 0;
+    padding: 12px;
+    background: var(--dsz-gray-100);
+    border-radius: var(--dsz-border-radius-sm);
+    font-size: 12px;
+    color: var(--dsz-gray-700);
+    overflow-x: auto;
+    max-height: 200px;
+}

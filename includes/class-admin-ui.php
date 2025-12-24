@@ -1022,26 +1022,66 @@ class Admin_UI {
 
         $total = $this->logger->get_count($level);
         $total_pages = ceil($total / $per_page);
+
+        // Get counts by level for stats cards
+        $total_all = $this->logger->get_count('');
+        $total_info = $this->logger->get_count('info');
+        $total_warning = $this->logger->get_count('warning');
+        $total_error = $this->logger->get_count('error');
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Sync Logs', 'dropshipzone'), __('View sync activity and error logs', 'dropshipzone')); ?>
+            <?php $this->render_header(__('Activity Logs', 'dropshipzone'), __('Monitor sync activity and troubleshoot issues', 'dropshipzone')); ?>
+
+            <!-- Log Stats Cards -->
+            <div class="dsz-log-stats">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs')); ?>" class="dsz-log-stat-card <?php echo empty($level) ? 'active' : ''; ?>">
+                    <span class="dsz-log-stat-icon dashicons dashicons-list-view"></span>
+                    <div class="dsz-log-stat-content">
+                        <span class="dsz-log-stat-value"><?php echo number_format($total_all); ?></span>
+                        <span class="dsz-log-stat-label"><?php esc_html_e('Total Logs', 'dropshipzone'); ?></span>
+                    </div>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=info')); ?>" class="dsz-log-stat-card dsz-log-stat-info <?php echo $level === 'info' ? 'active' : ''; ?>">
+                    <span class="dsz-log-stat-icon dashicons dashicons-info"></span>
+                    <div class="dsz-log-stat-content">
+                        <span class="dsz-log-stat-value"><?php echo number_format($total_info); ?></span>
+                        <span class="dsz-log-stat-label"><?php esc_html_e('Info', 'dropshipzone'); ?></span>
+                    </div>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=warning')); ?>" class="dsz-log-stat-card dsz-log-stat-warning <?php echo $level === 'warning' ? 'active' : ''; ?>">
+                    <span class="dsz-log-stat-icon dashicons dashicons-warning"></span>
+                    <div class="dsz-log-stat-content">
+                        <span class="dsz-log-stat-value"><?php echo number_format($total_warning); ?></span>
+                        <span class="dsz-log-stat-label"><?php esc_html_e('Warnings', 'dropshipzone'); ?></span>
+                    </div>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=error')); ?>" class="dsz-log-stat-card dsz-log-stat-error <?php echo $level === 'error' ? 'active' : ''; ?>">
+                    <span class="dsz-log-stat-icon dashicons dashicons-dismiss"></span>
+                    <div class="dsz-log-stat-content">
+                        <span class="dsz-log-stat-value"><?php echo number_format($total_error); ?></span>
+                        <span class="dsz-log-stat-label"><?php esc_html_e('Errors', 'dropshipzone'); ?></span>
+                    </div>
+                </a>
+            </div>
 
             <div class="dsz-content">
-                <!-- Filters -->
+                <!-- Toolbar -->
                 <div class="dsz-logs-toolbar">
-                    <div class="dsz-logs-filters">
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs')); ?>" class="button <?php echo empty($level) ? 'button-primary' : ''; ?>">
-                            <?php esc_html_e('All', 'dropshipzone'); ?>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=info')); ?>" class="button <?php echo $level === 'info' ? 'button-primary' : ''; ?>">
-                            <?php esc_html_e('Info', 'dropshipzone'); ?>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=warning')); ?>" class="button <?php echo $level === 'warning' ? 'button-primary' : ''; ?>">
-                            <?php esc_html_e('Warnings', 'dropshipzone'); ?>
-                        </a>
-                        <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=error')); ?>" class="button <?php echo $level === 'error' ? 'button-primary' : ''; ?>">
-                            <?php esc_html_e('Errors', 'dropshipzone'); ?>
-                        </a>
+                    <div class="dsz-logs-summary">
+                        <?php if ($level): ?>
+                            <?php 
+                            /* translators: %1$d: count, %2$s: level type */
+                            printf(esc_html__('Showing %1$d %2$s logs', 'dropshipzone'), $total, ucfirst($level)); 
+                            ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs')); ?>" class="dsz-clear-filter">
+                                <?php esc_html_e('Clear filter', 'dropshipzone'); ?>
+                            </a>
+                        <?php else: ?>
+                            <?php 
+                            /* translators: %d: total log count */
+                            printf(esc_html__('Showing all %d logs', 'dropshipzone'), $total); 
+                            ?>
+                        <?php endif; ?>
                     </div>
                     <div class="dsz-logs-actions">
                         <button type="button" id="dsz-export-logs" class="button">
@@ -1055,37 +1095,37 @@ class Admin_UI {
                     </div>
                 </div>
 
-                <!-- Logs Table -->
-                <table class="wp-list-table widefat fixed striped dsz-logs-table">
-                    <thead>
-                        <tr>
-                            <th class="column-level"><?php esc_html_e('Level', 'dropshipzone'); ?></th>
-                            <th class="column-message"><?php esc_html_e('Message', 'dropshipzone'); ?></th>
-                            <th class="column-context"><?php esc_html_e('Context', 'dropshipzone'); ?></th>
-                            <th class="column-date"><?php esc_html_e('Date', 'dropshipzone'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($logs)): ?>
-                            <tr>
-                                <td colspan="4" class="dsz-no-logs"><?php esc_html_e('No logs found.', 'dropshipzone'); ?></td>
-                            </tr>
-                        <?php else: ?>
-                            <?php foreach ($logs as $log): ?>
-                                <tr>
-                                    <td class="column-level"><?php echo wp_kses_post(Logger::get_level_badge($log['level'])); ?></td>
-                                    <td class="column-message"><?php echo esc_html($log['message']); ?></td>
-                                    <td class="column-context">
-                                        <?php if (!empty($log['context'])): ?>
-                                            <code class="dsz-context-code"><?php echo esc_html(wp_json_encode($log['context'], JSON_PRETTY_PRINT)); ?></code>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="column-date"><?php echo esc_html(dsz_format_datetime($log['created_at'])); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                <!-- Logs List -->
+                <?php if (empty($logs)): ?>
+                    <div class="dsz-logs-empty">
+                        <span class="dashicons dashicons-yes-alt"></span>
+                        <h3><?php esc_html_e('No logs found', 'dropshipzone'); ?></h3>
+                        <p><?php esc_html_e('Activity logs will appear here as sync operations run.', 'dropshipzone'); ?></p>
+                    </div>
+                <?php else: ?>
+                    <div class="dsz-logs-list">
+                        <?php foreach ($logs as $log): ?>
+                            <div class="dsz-log-item dsz-log-<?php echo esc_attr($log['level']); ?>">
+                                <div class="dsz-log-indicator"></div>
+                                <div class="dsz-log-content">
+                                    <div class="dsz-log-header">
+                                        <?php echo wp_kses_post(Logger::get_level_badge($log['level'])); ?>
+                                        <span class="dsz-log-time" title="<?php echo esc_attr(dsz_format_datetime($log['created_at'])); ?>">
+                                            <?php echo esc_html(dsz_time_ago($log['created_at'])); ?>
+                                        </span>
+                                    </div>
+                                    <div class="dsz-log-message"><?php echo esc_html($log['message']); ?></div>
+                                    <?php if (!empty($log['context'])): ?>
+                                        <details class="dsz-log-context">
+                                            <summary><?php esc_html_e('View details', 'dropshipzone'); ?></summary>
+                                            <pre><?php echo esc_html(wp_json_encode($log['context'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                                        </details>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Pagination -->
                 <?php if ($total_pages > 1): ?>
