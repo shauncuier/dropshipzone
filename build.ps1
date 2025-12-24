@@ -27,7 +27,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Define paths
-$PluginName = "dropshipzone-price-stock-sync"
+$PluginName = "dropshipzone"
 $BuildDir = Join-Path $ScriptDir "build"
 $DistDir = Join-Path $BuildDir $PluginName
 $ZipFile = Join-Path $BuildDir "$PluginName-v$Version.zip"

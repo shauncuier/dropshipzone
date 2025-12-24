@@ -72,6 +72,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
+                /* translators: %s: product SKU */
                 return new \WP_Error('product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
@@ -88,7 +89,8 @@ class Product_Importer {
         // Check if product already exists by SKU
         $existing_id = wc_get_product_id_by_sku($sku);
         if ($existing_id) {
-            return new \WP_Error('product_exists', sprintf(__('Product with SKU %s already exists in WooCommerce (ID: %d).', 'dropshipzone'), $sku, $existing_id));
+            /* translators: %1$s: product SKU, %2$d: WooCommerce product ID */
+            return new \WP_Error('product_exists', sprintf(__('Product with SKU %1$s already exists in WooCommerce (ID: %2$d).', 'dropshipzone'), $sku, $existing_id));
         }
 
         $this->logger->info('Starting product import', [
@@ -321,6 +323,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
+                /* translators: %s: product SKU */
                 return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
@@ -337,6 +340,7 @@ class Product_Importer {
             }
 
             if (empty($response['result'])) {
+                /* translators: %s: product SKU */
                 return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', 'dropshipzone'), $sku));
             }
 
@@ -555,7 +559,7 @@ class Product_Importer {
         $id = media_handle_sideload($file_array, $product_id);
 
         if (is_wp_error($id)) {
-            @unlink($file_array['tmp_name']);
+            wp_delete_file($file_array['tmp_name']);
             $this->logger->warning('Failed to sideload product image', [
                 'url' => $url,
                 'error' => $id->get_error_message()

@@ -2,7 +2,7 @@
 Contributors: 3s-Soft, dropshipzone
 Tags: woocommerce, dropshipzone, price sync, stock sync, dropshipping
 Requires at least: 6.0
-Tested up to: 6.7
+Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4

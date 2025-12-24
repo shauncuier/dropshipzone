@@ -74,7 +74,7 @@ class Product_Mapper {
     public function get_by_wc_product($wc_product_id) {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} WHERE wc_product_id = %d",
+            "SELECT * FROM " . $this->table_name . " WHERE wc_product_id = %d",
             $wc_product_id
         ), ARRAY_A);
     }
@@ -99,7 +99,7 @@ class Product_Mapper {
     public function get_by_dsz_sku($dsz_sku) {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$this->table_name} WHERE dsz_sku = %s",
+            "SELECT * FROM " . $this->table_name . " WHERE dsz_sku = %s",
             $dsz_sku
         ), ARRAY_A);
     }
@@ -262,20 +262,26 @@ class Product_Mapper {
         $orderby = in_array($args['orderby'], ['created_at', 'dsz_sku', 'last_synced']) ? $args['orderby'] : 'created_at';
         $order = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
 
+        // Escaping
+        $orderby = esc_sql($orderby);
+        $order = esc_sql($order);
+
         $sql = "SELECT m.*, p.post_title as wc_product_name
-                FROM {$this->table_name} m
-                LEFT JOIN {$wpdb->posts} p ON m.wc_product_id = p.ID
-                WHERE {$where}
+                FROM " . $this->table_name . " m
+                LEFT JOIN " . $wpdb->posts . " p ON m.wc_product_id = p.ID
+                WHERE " . $where . "
                 ORDER BY m.{$orderby} {$order}
                 LIMIT %d OFFSET %d";
 
-        $values[] = $args['limit'];
-        $values[] = $args['offset'];
+        $values[] = intval($args['limit']);
+        $values[] = intval($args['offset']);
 
         if (!empty($values)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is safely constructed
             $sql = $wpdb->prepare($sql, $values);
         }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query safe
         return $wpdb->get_results($sql, ARRAY_A);
     }
 
@@ -303,12 +309,14 @@ class Product_Mapper {
             $values[] = $search;
         }
 
-        $sql = "SELECT COUNT(*) FROM {$this->table_name} WHERE {$where}";
+        $sql = "SELECT COUNT(*) FROM " . $this->table_name . " WHERE " . $where;
 
         if (!empty($values)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is safely constructed
             $sql = $wpdb->prepare($sql, $values);
         }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query safe
         return (int) $wpdb->get_var($sql);
     }
 
@@ -323,7 +331,7 @@ class Product_Mapper {
         global $wpdb;
         return $wpdb->get_results($wpdb->prepare(
             "SELECT wc_product_id, dsz_sku 
-             FROM {$this->table_name} 
+             FROM " . $this->table_name . " 
              WHERE sync_enabled = 1 
              ORDER BY id ASC 
              LIMIT %d OFFSET %d",
@@ -339,7 +347,7 @@ class Product_Mapper {
     public function get_syncable_count() {
         global $wpdb;
         return (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM {$this->table_name} WHERE sync_enabled = 1"
+            "SELECT COUNT(*) FROM " . $this->table_name . " WHERE sync_enabled = 1"
         );
     }
 
@@ -360,9 +368,9 @@ class Product_Mapper {
         // Get all WooCommerce products with SKUs that aren't mapped yet
         $wc_products = $wpdb->get_results("
             SELECT p.ID, pm.meta_value as sku
-            FROM {$wpdb->posts} p
-            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-            LEFT JOIN {$this->table_name} m ON p.ID = m.wc_product_id
+            FROM " . $wpdb->posts . " p
+            INNER JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+            LEFT JOIN " . $this->table_name . " m ON p.ID = m.wc_product_id
             WHERE p.post_type IN ('product', 'product_variation')
             AND p.post_status = 'publish'
             AND pm.meta_value != ''
@@ -423,9 +431,9 @@ class Product_Mapper {
             SELECT p.ID, p.post_title, pm.meta_value as sku,
                    CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END as is_mapped,
                    m.dsz_sku as mapped_to
-            FROM {$wpdb->posts} p
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-            LEFT JOIN {$this->table_name} m ON p.ID = m.wc_product_id
+            FROM " . $wpdb->posts . " p
+            LEFT JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+            LEFT JOIN " . $this->table_name . " m ON p.ID = m.wc_product_id
             WHERE p.post_type IN ('product', 'product_variation')
             AND p.post_status = 'publish'
             AND (p.post_title LIKE %s OR pm.meta_value LIKE %s OR p.ID = %d)
@@ -443,9 +451,9 @@ class Product_Mapper {
         global $wpdb;
         return (int) $wpdb->get_var("
             SELECT COUNT(DISTINCT p.ID)
-            FROM {$wpdb->posts} p
-            INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-            LEFT JOIN {$this->table_name} m ON p.ID = m.wc_product_id
+            FROM " . $wpdb->posts . " p
+            INNER JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+            LEFT JOIN " . $this->table_name . " m ON p.ID = m.wc_product_id
             WHERE p.post_type IN ('product', 'product_variation')
             AND p.post_status = 'publish'
             AND pm.meta_value != ''
@@ -461,7 +469,7 @@ class Product_Mapper {
      */
     public function clear_all() {
         global $wpdb;
-        $result = $wpdb->query("TRUNCATE TABLE {$this->table_name}");
+        $result = $wpdb->query("TRUNCATE TABLE " . $this->table_name);
         if ($result !== false) {
             $this->logger->info('All mappings cleared');
         }

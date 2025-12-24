@@ -127,8 +127,8 @@ final class Dropshipzone_Sync {
         // Initialize components after plugins loaded
         add_action('plugins_loaded', [$this, 'init_components'], 20);
         
-        // Load text domain
-        add_action('init', [$this, 'load_textdomain']);
+        // Text domain is loaded automatically for WordPress.org plugins
+        // add_action('init', [$this, 'load_textdomain']);
         
         // Declare HPOS compatibility
         add_action('before_woocommerce_init', [$this, 'declare_hpos_compatibility']);
@@ -316,7 +316,7 @@ final class Dropshipzone_Sync {
      * Load plugin text domain
      */
     public function load_textdomain() {
-        load_plugin_textdomain('dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
+        // load_plugin_textdomain('dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
     }
 
     /**

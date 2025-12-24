@@ -422,7 +422,8 @@ class Cron {
 
         return [
             'status' => 'processing',
-            'message' => sprintf(__('Processing batch %d of %d', 'dropshipzone'), $current_batch, $total_batches),
+            /* translators: %1$d: current batch number, %2$d: total batches */
+            'message' => sprintf(__('Processing batch %1$d of %2$d', 'dropshipzone'), $current_batch, $total_batches),
             'progress' => $progress,
             'products_updated' => $settings['products_updated'],
             'errors_count' => $settings['errors_count'],

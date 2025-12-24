@@ -140,7 +140,7 @@ class API_Client {
             update_option('dsz_sync_token_expiry', $this->token_expiry);
 
             $this->logger->info('Authentication successful', [
-                'expires_at' => date('Y-m-d H:i:s', $this->token_expiry),
+                'expires_at' => gmdate('Y-m-d H:i:s', $this->token_expiry),
             ]);
 
             return [
@@ -173,7 +173,7 @@ class API_Client {
         // Token expired or missing, need to refresh
         $this->logger->info('Token expired or missing, refreshing...', [
             'had_token' => !empty($this->token),
-            'expiry_was' => $this->token_expiry > 0 ? date('Y-m-d H:i:s', $this->token_expiry) : 'never set',
+            'expiry_was' => $this->token_expiry > 0 ? gmdate('Y-m-d H:i:s', $this->token_expiry) : 'never set',
         ]);
         
         // Try to refresh token
@@ -187,7 +187,7 @@ class API_Client {
         }
 
         $this->logger->info('Token refreshed successfully', [
-            'expires_at' => date('Y-m-d H:i:s', $this->token_expiry),
+            'expires_at' => gmdate('Y-m-d H:i:s', $this->token_expiry),
             'expires_in' => $this->token_expiry - time(),
         ]);
 
@@ -327,10 +327,10 @@ class API_Client {
 
         // Default time range (last 10 days - API max)
         if (empty($start_time)) {
-            $start_time = date('Y-m-d H:i:s', strtotime('-9 days'));
+            $start_time = gmdate('Y-m-d H:i:s', strtotime('-9 days'));
         }
         if (empty($end_time)) {
-            $end_time = date('Y-m-d H:i:s');
+            $end_time = gmdate('Y-m-d H:i:s');
         }
 
         $body = [
@@ -424,6 +424,7 @@ class API_Client {
                 return new \WP_Error(
                     'rate_limit_exceeded',
                     sprintf(
+                        /* translators: %d: minutes to wait */
                         __('API rate limit exceeded. Please wait %d minutes before trying again.', 'dropshipzone'),
                         ceil($wait_time / 60)
                     ),

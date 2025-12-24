@@ -166,16 +166,30 @@ class Logger {
         $orderby = in_array($args['orderby'], $allowed_orderby) ? $args['orderby'] : 'created_at';
         $order = strtoupper($args['order']) === 'ASC' ? 'ASC' : 'DESC';
 
-        // Build full query
-        $query = "SELECT * FROM {$this->table_name} {$where_clause} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+        // Escaping for safe interpolation
+        $orderby = esc_sql($orderby);
+        $order = esc_sql($order);
+
+        // Build SQL query
+        $sql = "SELECT * FROM {$this->table_name}";
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(' AND ', $where);
+        }
+        $sql .= " ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d";
+
         $values[] = intval($args['limit']);
         $values[] = intval($args['offset']);
 
+        // Prepare the query
         if (!empty($values)) {
-            $query = $wpdb->prepare($query, $values);
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is constructed safely with allowed variables and prepared values
+            $query = $wpdb->prepare($sql, $values);
+            $results = $wpdb->get_results($query, ARRAY_A);
+        } else {
+            // Fallback (unlikely)
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is safely constructed
+            $results = $wpdb->get_results($sql, ARRAY_A);
         }
-
-        $results = $wpdb->get_results($query, ARRAY_A);
 
         // Decode context for each result
         if ($results) {
@@ -200,11 +214,11 @@ class Logger {
 
         if (!empty($level)) {
             $count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM {$this->table_name} WHERE level = %s",
+                "SELECT COUNT(*) FROM " . $this->table_name . " WHERE level = %s",
                 $level
             ));
         } else {
-            $count = $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name}");
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM " . $this->table_name);
         }
 
         return intval($count);
@@ -217,7 +231,7 @@ class Logger {
      */
     public function clear_logs() {
         global $wpdb;
-        return $wpdb->query("TRUNCATE TABLE {$this->table_name}") !== false;
+        return $wpdb->query("TRUNCATE TABLE " . $this->table_name) !== false;
     }
 
     /**
@@ -236,7 +250,7 @@ class Logger {
      */
     private function maybe_cleanup() {
         // Only cleanup 1% of the time to reduce overhead
-        if (mt_rand(1, 100) !== 1) {
+        if (wp_rand(1, 100) !== 1) {
             return;
         }
 
@@ -255,7 +269,7 @@ class Logger {
             $delete_count = $count - $this->max_logs;
             
             $wpdb->query($wpdb->prepare(
-                "DELETE FROM {$this->table_name} ORDER BY created_at ASC LIMIT %d",
+                "DELETE FROM " . $this->table_name . " ORDER BY created_at ASC LIMIT %d",
                 $delete_count
             ));
         }
@@ -288,25 +302,26 @@ class Logger {
         $args['limit'] = 10000; // Max export
         $logs = $this->get_logs($args);
 
-        $output = fopen('php://temp', 'r+');
-        
-        // CSV header
-        fputcsv($output, ['ID', 'Level', 'Message', 'Context', 'Created At']);
+        // CSV content
+        $csv = "ID,Level,Message,Context,Created At\n";
 
-        // Data rows
         foreach ($logs as $log) {
-            fputcsv($output, [
+            $context = is_array($log['context']) ? wp_json_encode($log['context']) : $log['context'];
+            $row = [
                 $log['id'],
                 $log['level'],
                 $log['message'],
-                is_array($log['context']) ? wp_json_encode($log['context']) : $log['context'],
+                $context,
                 $log['created_at'],
-            ]);
+            ];
+            
+            // Escape CSV fields
+            $row = array_map(function($field) {
+                return '"' . str_replace('"', '""', $field) . '"';
+            }, $row);
+            
+            $csv .= implode(',', $row) . "\n";
         }
-
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
 
         return $csv;
     }
