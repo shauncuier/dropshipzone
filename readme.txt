@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.2
+Stable tag: 2.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.3 =
+* FIXED: In Stock filter now works correctly.
+* IMPROVED: Cleaner Product Import page UI.
+* IMPROVED: Better quick filter card styling.
 
 = 2.2.2 =
 * FIXED: Category loading from API now handles different response formats.
