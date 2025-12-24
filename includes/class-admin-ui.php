@@ -767,6 +767,16 @@ class Admin_UI {
                                     <p class="description"><?php esc_html_e('When a product SKU is no longer available in Dropshipzone, the product will be set to Draft status and stock set to 0.', 'dropshipzone'); ?></p>
                                 </td>
                             </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Auto-Republish on Restock', 'dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="republish_on_restock" value="1" <?php checked(isset($rules['republish_on_restock']) ? $rules['republish_on_restock'] : true, true); ?> />
+                                        <?php esc_html_e('Automatically republish Draft products when they come back in stock', 'dropshipzone'); ?>
+                                    </label>
+                                    <p class="description"><?php esc_html_e('When a product that was set to Draft (due to being out of stock or discontinued) gets stock again, it will be automatically set back to Published.', 'dropshipzone'); ?></p>
+                                </td>
+                            </tr>
                         </table>
                     </div>
 
@@ -1230,6 +1240,7 @@ class Admin_UI {
                     'zero_on_unavailable' => !empty($settings['zero_on_unavailable']),
                     'auto_out_of_stock' => !empty($settings['auto_out_of_stock']),
                     'deactivate_if_not_found' => !empty($settings['deactivate_if_not_found']),
+                    'republish_on_restock' => !empty($settings['republish_on_restock']),
                 ];
                 update_option('dsz_sync_stock_rules', $rules);
                 $this->stock_sync->reload_rules();

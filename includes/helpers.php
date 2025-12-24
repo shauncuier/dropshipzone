@@ -159,11 +159,23 @@ function dsz_format_datetime($timestamp) {
 /**
  * Get human-readable time difference
  *
- * @param int $timestamp Unix timestamp
+ * @param string|int $datetime DateTime string or Unix timestamp
  * @return string Human-readable time difference
  */
-function dsz_time_ago($timestamp) {
-    if (empty($timestamp)) {
+function dsz_time_ago($datetime) {
+    if (empty($datetime)) {
+        return __('Never', 'dropshipzone');
+    }
+    
+    // Convert datetime string to Unix timestamp if needed
+    if (is_string($datetime) && !is_numeric($datetime)) {
+        $timestamp = strtotime($datetime);
+    } else {
+        $timestamp = (int) $datetime;
+    }
+    
+    // Check for invalid timestamp
+    if (!$timestamp || $timestamp <= 0) {
         return __('Never', 'dropshipzone');
     }
     

@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.1.2
+Stable tag: 2.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.0 =
+* NEW: Auto-Republish on Restock - Draft products automatically republish when stock is restored.
+* NEW: Stock Rules setting to enable/disable auto-republish behavior.
+* IMPROVED: Logging for republish events.
 
 = 2.1.2 =
 * IMPROVED: Redesigned Logs page with stats cards and modern list view.

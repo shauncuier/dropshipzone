@@ -5,6 +5,14 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-25
+
+### Added
+- **Auto-Republish on Restock**: Products that were set to Draft (because they went out of stock or were discontinued) are now automatically republished when stock is restored.
+- **Stock Rules Setting**: New "Auto-Republish on Restock" toggle in Stock Rules page to enable/disable this behavior.
+
+---
+
 ## [2.1.2] - 2025-12-25
 
 ### Improved

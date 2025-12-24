@@ -56,6 +56,7 @@ class Stock_Sync {
             'zero_on_unavailable' => true,
             'auto_out_of_stock' => true,
             'deactivate_if_not_found' => true, // Set products to draft if not found in Dropshipzone API
+            'republish_on_restock' => true, // Re-publish draft products when they come back in stock
         ];
 
         $this->stock_rules = wp_parse_args(
@@ -229,6 +230,22 @@ class Stock_Sync {
                 $product->set_stock_status($new_status);
             }
 
+            // Auto-republish: if product was draft and now has stock, republish it
+            $product_status = $product->get_status();
+            $was_republished = false;
+            
+            if ($this->stock_rules['republish_on_restock'] && $product_status === 'draft' && $final_stock > 0) {
+                $product->set_status('publish');
+                $was_republished = true;
+                
+                $this->logger->info('Product republished - back in stock', [
+                    'sku' => $sku,
+                    'product_id' => $product_id,
+                    'product_name' => $product->get_name(),
+                    'new_stock' => $final_stock,
+                ]);
+            }
+
             // Save product
             $product->save();
 
@@ -244,10 +261,11 @@ class Stock_Sync {
                 'status' => 'updated',
                 'sku' => $sku,
                 'product_id' => $product_id,
-                'message' => 'Stock updated successfully',
+                'message' => $was_republished ? 'Stock updated & republished' : 'Stock updated successfully',
                 'old_stock' => $current_stock,
                 'new_stock' => $final_stock,
                 'stock_status' => $new_status,
+                'republished' => $was_republished,
             ];
 
         } catch (\Exception $e) {
