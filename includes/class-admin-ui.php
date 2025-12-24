@@ -1649,91 +1649,100 @@ class Admin_UI {
         }
         ?>
         <div class="wrap dsz-wrap">
-            <?php $this->render_header(__('Product Import', 'dropshipzone'), __('Search and import new products from Dropshipzone', 'dropshipzone')); ?>
+            <?php $this->render_header(__('Product Import', 'dropshipzone'), __('Discover and import products from Dropshipzone catalog', 'dropshipzone')); ?>
+
+            <!-- Hero Search Section -->
+            <div class="dsz-import-hero">
+                <div class="dsz-import-hero-content">
+                    <h2><?php esc_html_e('Find Products to Import', 'dropshipzone'); ?></h2>
+                    <p><?php esc_html_e('Search by keywords, SKU, or browse categories to find products for your store.', 'dropshipzone'); ?></p>
+                    
+                    <div class="dsz-import-search-wrapper">
+                        <div class="dsz-import-search-box">
+                            <span class="dashicons dashicons-search"></span>
+                            <input type="text" id="dsz-import-search" placeholder="<?php esc_attr_e('Enter keywords, SKU, or product name...', 'dropshipzone'); ?>" />
+                            <button type="button" id="dsz-import-search-btn" class="button button-primary button-hero">
+                                <?php esc_html_e('Search Products', 'dropshipzone'); ?>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Filter Cards -->
+            <div class="dsz-import-quick-filters">
+                <div class="dsz-quick-filter-card" data-filter="in_stock">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                    <span class="dsz-quick-filter-label"><?php esc_html_e('In Stock', 'dropshipzone'); ?></span>
+                </div>
+                <div class="dsz-quick-filter-card" data-filter="on_promotion">
+                    <span class="dashicons dashicons-tag"></span>
+                    <span class="dsz-quick-filter-label"><?php esc_html_e('On Sale', 'dropshipzone'); ?></span>
+                </div>
+                <div class="dsz-quick-filter-card" data-filter="free_shipping">
+                    <span class="dashicons dashicons-car"></span>
+                    <span class="dsz-quick-filter-label"><?php esc_html_e('Free Shipping', 'dropshipzone'); ?></span>
+                </div>
+                <div class="dsz-quick-filter-card" data-filter="new_arrival">
+                    <span class="dashicons dashicons-star-filled"></span>
+                    <span class="dsz-quick-filter-label"><?php esc_html_e('New Arrivals', 'dropshipzone'); ?></span>
+                </div>
+            </div>
 
             <div class="dsz-content">
-                <div class="dsz-form-section">
-                    <!-- Advanced Search Bar -->
-                    <div class="dsz-import-search-bar">
-                        <input type="text" id="dsz-import-search" placeholder="<?php _e('Enter keywords or SKU...', 'dropshipzone'); ?>" />
-                        <button type="button" id="dsz-import-search-btn" class="button button-primary">
-                            <span class="dashicons dashicons-search"></span>
-                            <?php _e('Search', 'dropshipzone'); ?>
-                        </button>
-                    </div>
-
-                    <!-- Advanced Filters (Collapsible) -->
-                    <div class="dsz-import-filters">
-                        <button type="button" id="dsz-toggle-filters" class="button button-secondary dsz-toggle-filters-btn">
-                            <span class="dashicons dashicons-filter"></span>
-                            <?php _e('Advanced Filters', 'dropshipzone'); ?>
-                            <span class="dashicons dashicons-arrow-down-alt2"></span>
-                        </button>
-                        
-                        <div id="dsz-filters-panel" class="dsz-filters-panel hidden">
-                            <div class="dsz-filters-grid">
-                                <!-- Category Filter -->
-                                <div class="dsz-filter-item">
-                                    <label for="dsz-filter-category"><?php _e('Category', 'dropshipzone'); ?></label>
+                <!-- Advanced Filters (Collapsible) -->
+                <div class="dsz-import-filters-section">
+                    <button type="button" id="dsz-toggle-filters" class="dsz-toggle-filters-btn">
+                        <span class="dashicons dashicons-filter"></span>
+                        <?php esc_html_e('Advanced Filters', 'dropshipzone'); ?>
+                        <span class="dashicons dashicons-arrow-down-alt2 dsz-toggle-arrow"></span>
+                    </button>
+                    
+                    <div id="dsz-filters-panel" class="dsz-filters-panel hidden">
+                        <div class="dsz-filters-grid">
+                            <!-- Category Filter -->
+                            <div class="dsz-filter-item">
+                                <label for="dsz-filter-category"><?php esc_html_e('Category', 'dropshipzone'); ?></label>
+                                <div class="dsz-filter-select-wrapper">
                                     <select id="dsz-filter-category">
-                                        <option value=""><?php _e('All Categories', 'dropshipzone'); ?></option>
+                                        <option value=""><?php esc_html_e('All Categories', 'dropshipzone'); ?></option>
                                     </select>
-                                    <button type="button" id="dsz-load-categories" class="button button-small" title="<?php _e('Load categories from API', 'dropshipzone'); ?>">
+                                    <button type="button" id="dsz-load-categories" class="button button-small" title="<?php esc_attr_e('Load categories from API', 'dropshipzone'); ?>">
                                         <span class="dashicons dashicons-update"></span>
                                     </button>
                                 </div>
-
-                                <!-- Stock Filter -->
-                                <div class="dsz-filter-item">
-                                    <label><?php _e('Stock Status', 'dropshipzone'); ?></label>
-                                    <div class="dsz-filter-checkbox">
-                                        <input type="checkbox" id="dsz-filter-instock" value="1">
-                                        <label for="dsz-filter-instock"><?php _e('In Stock Only', 'dropshipzone'); ?></label>
-                                    </div>
-                                </div>
-
-                                <!-- Quick Filters -->
-                                <div class="dsz-filter-item">
-                                    <label><?php _e('Quick Filters', 'dropshipzone'); ?></label>
-                                    <div class="dsz-filter-checkboxes">
-                                        <div class="dsz-filter-checkbox">
-                                            <input type="checkbox" id="dsz-filter-freeship" value="1">
-                                            <label for="dsz-filter-freeship"><?php _e('Free Shipping', 'dropshipzone'); ?></label>
-                                        </div>
-                                        <div class="dsz-filter-checkbox">
-                                            <input type="checkbox" id="dsz-filter-promotion" value="1">
-                                            <label for="dsz-filter-promotion"><?php _e('On Promotion', 'dropshipzone'); ?></label>
-                                        </div>
-                                        <div class="dsz-filter-checkbox">
-                                            <input type="checkbox" id="dsz-filter-newarrivals" value="1">
-                                            <label for="dsz-filter-newarrivals"><?php _e('New Arrivals', 'dropshipzone'); ?></label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Sort Options -->
-                                <div class="dsz-filter-item">
-                                    <label for="dsz-filter-sort"><?php _e('Sort By', 'dropshipzone'); ?></label>
-                                    <select id="dsz-filter-sort">
-                                        <option value=""><?php _e('Default', 'dropshipzone'); ?></option>
-                                        <option value="price_asc"><?php _e('Price: Low to High', 'dropshipzone'); ?></option>
-                                        <option value="price_desc"><?php _e('Price: High to Low', 'dropshipzone'); ?></option>
-                                    </select>
-                                </div>
                             </div>
 
-                            <div class="dsz-filters-actions">
-                                <button type="button" id="dsz-apply-filters" class="button button-primary">
-                                    <span class="dashicons dashicons-yes"></span>
-                                    <?php _e('Apply Filters', 'dropshipzone'); ?>
-                                </button>
-                                <button type="button" id="dsz-clear-filters" class="button button-secondary">
-                                    <span class="dashicons dashicons-no-alt"></span>
-                                    <?php _e('Clear All', 'dropshipzone'); ?>
-                                </button>
+                            <!-- Sort Options -->
+                            <div class="dsz-filter-item">
+                                <label for="dsz-filter-sort"><?php esc_html_e('Sort By', 'dropshipzone'); ?></label>
+                                <select id="dsz-filter-sort">
+                                    <option value=""><?php esc_html_e('Default', 'dropshipzone'); ?></option>
+                                    <option value="price_asc"><?php esc_html_e('Price: Low to High', 'dropshipzone'); ?></option>
+                                    <option value="price_desc"><?php esc_html_e('Price: High to Low', 'dropshipzone'); ?></option>
+                                </select>
                             </div>
                         </div>
+
+                        <div class="dsz-filters-actions">
+                            <button type="button" id="dsz-apply-filters" class="button button-primary">
+                                <span class="dashicons dashicons-yes"></span>
+                                <?php esc_html_e('Apply Filters', 'dropshipzone'); ?>
+                            </button>
+                            <button type="button" id="dsz-clear-filters" class="button button-secondary">
+                                <span class="dashicons dashicons-no-alt"></span>
+                                <?php esc_html_e('Clear All', 'dropshipzone'); ?>
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Hidden checkboxes for quick filters (JS interacts with these) -->
+                <div style="display:none;">
+                    <input type="checkbox" id="dsz-filter-instock" value="1">
+                    <input type="checkbox" id="dsz-filter-freeship" value="1">
+                    <input type="checkbox" id="dsz-filter-promotion" value="1">
+                    <input type="checkbox" id="dsz-filter-newarrivals" value="1">
                 </div>
 
                 <!-- Search Results Info -->
@@ -1744,19 +1753,11 @@ class Admin_UI {
 
                 <div id="dsz-import-results" class="dsz-import-results-container">
                     <div class="dsz-import-empty">
-                        <span class="dashicons dashicons-search"></span>
-                        <p><?php _e('Search for products using keywords, SKU, or browse by category.', 'dropshipzone'); ?></p>
-                        <p class="dsz-import-empty-hint"><?php _e('Use Advanced Filters to narrow down results by stock status, promotions, or new arrivals.', 'dropshipzone'); ?></p>
+                        <span class="dashicons dashicons-products"></span>
+                        <h3><?php esc_html_e('Ready to Import', 'dropshipzone'); ?></h3>
+                        <p><?php esc_html_e('Search for products or click a quick filter above to browse the Dropshipzone catalog.', 'dropshipzone'); ?></p>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Import Modal (Optional, but simple message is enough for now) -->
-        <div id="dsz-import-modal" class="dsz-modal hidden">
-            <div class="dsz-modal-content">
-                <span class="dsz-modal-close">&times;</span>
-                <div id="dsz-import-modal-body"></div>
             </div>
         </div>
         <?php
@@ -1795,10 +1796,10 @@ class Admin_UI {
 
         // Add filters
         if ($category_id > 0) $api_params['category_id'] = $category_id;
-        if ($in_stock) $api_params['in_stock'] = true;
-        if ($free_shipping) $api_params['au_free_shipping'] = true;
-        if ($on_promotion) $api_params['on_promotion'] = true;
-        if ($new_arrival) $api_params['new_arrival'] = true;
+        if ($in_stock) $api_params['in_stock'] = 1;
+        if ($free_shipping) $api_params['au_free_shipping'] = 1;
+        if ($on_promotion) $api_params['on_promotion'] = 1;
+        if ($new_arrival) $api_params['new_arrival'] = 1;
         if (!empty($sort)) {
             if ($sort === 'price_asc') {
                 $api_params['sort_by'] = 'price';
@@ -1900,15 +1901,34 @@ class Admin_UI {
         $response = $this->api_client->make_request('GET', '/v2/categories', [], true);
 
         if (is_wp_error($response)) {
+            $this->logger->error('Failed to fetch categories', [
+                'error' => $response->get_error_message(),
+            ]);
             wp_send_json_error(['message' => $response->get_error_message()]);
         }
 
-        if (empty($response)) {
-            wp_send_json_error(['message' => __('No categories found or API error.', 'dropshipzone')]);
+        // Handle both direct array and result-wrapped response
+        $categories = [];
+        if (is_array($response)) {
+            if (isset($response['result']) && is_array($response['result'])) {
+                $categories = $response['result'];
+            } elseif (isset($response['categories']) && is_array($response['categories'])) {
+                $categories = $response['categories'];
+            } elseif (!isset($response['result']) && !isset($response['categories'])) {
+                // Response might be the categories array directly
+                $categories = $response;
+            }
         }
 
+        if (empty($categories)) {
+            $this->logger->warning('No categories returned from API');
+            wp_send_json_error(['message' => __('No categories found from API.', 'dropshipzone')]);
+        }
+
+        $this->logger->info('Categories loaded', ['count' => count($categories)]);
+
         // Return the flat list of categories
-        wp_send_json_success(['categories' => $response]);
+        wp_send_json_success(['categories' => $categories]);
     }
 
     /**

@@ -1948,16 +1948,200 @@ select:focus-visible {
     }
 }
 
+/* ===== Import Page Hero ===== */
+.dsz-import-hero {
+    background: #fff;
+    border-radius: var(--dsz-border-radius-lg);
+    padding: 40px;
+    margin-bottom: 24px;
+    border: 1px solid var(--dsz-gray-200);
+    box-shadow: var(--dsz-shadow);
+}
+
+.dsz-import-hero-content {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.dsz-import-hero h2 {
+    color: var(--dsz-gray-800);
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+
+.dsz-import-hero p {
+    color: var(--dsz-gray-500);
+    font-size: 14px;
+    margin: 0 0 24px;
+}
+
+.dsz-import-search-wrapper {
+    max-width: 100%;
+}
+
+.dsz-import-search-box {
+    display: flex;
+    align-items: center;
+    background: var(--dsz-gray-50);
+    border: 2px solid var(--dsz-gray-200);
+    border-radius: var(--dsz-border-radius);
+    padding: 4px;
+    transition: all var(--dsz-transition);
+}
+
+.dsz-import-search-box:focus-within {
+    border-color: var(--dsz-primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.dsz-import-search-box>.dashicons-search {
+    color: var(--dsz-gray-400);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin: 0 12px;
+}
+
+.dsz-import-search-box input {
+    flex: 1;
+    border: none;
+    font-size: 15px;
+    padding: 12px 0;
+    outline: none;
+    background: transparent;
+    color: var(--dsz-gray-800);
+}
+
+.dsz-import-search-box input::placeholder {
+    color: var(--dsz-gray-400);
+}
+
+.dsz-import-search-box .button-hero {
+    padding: 12px 24px;
+    border-radius: var(--dsz-border-radius);
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* ===== Quick Filter Cards ===== */
+.dsz-import-quick-filters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.dsz-quick-filter-card {
+    background: #fff;
+    border: 1px solid var(--dsz-gray-200);
+    border-radius: var(--dsz-border-radius);
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--dsz-transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.dsz-quick-filter-card:hover {
+    border-color: var(--dsz-primary);
+    background: rgba(102, 126, 234, 0.04);
+}
+
+.dsz-quick-filter-card.active {
+    background: var(--dsz-primary);
+    border-color: var(--dsz-primary);
+    color: #fff;
+}
+
+.dsz-quick-filter-card .dashicons {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: var(--dsz-primary);
+}
+
+.dsz-quick-filter-card.active .dashicons {
+    color: #fff;
+}
+
+.dsz-quick-filter-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dsz-gray-700);
+}
+
+.dsz-quick-filter-card.active .dsz-quick-filter-label {
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .dsz-import-quick-filters {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===== Advanced Filters Section ===== */
+.dsz-import-filters-section {
+    margin-bottom: 20px;
+}
+
+.dsz-toggle-filters-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--dsz-gray-100);
+    border: 1px solid var(--dsz-gray-300);
+    border-radius: var(--dsz-border-radius);
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dsz-gray-600);
+    cursor: pointer;
+    transition: all var(--dsz-transition);
+}
+
+.dsz-toggle-filters-btn:hover {
+    background: var(--dsz-gray-200);
+    border-color: var(--dsz-gray-400);
+}
+
+.dsz-toggle-arrow {
+    transition: transform var(--dsz-transition);
+}
+
+.dsz-toggle-filters-btn.open .dsz-toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.dsz-filter-select-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dsz-filter-select-wrapper select {
+    flex: 1;
+}
+
 .dsz-import-results-container {
-    margin-top: 40px;
+    margin-top: 30px;
     min-height: 300px;
-    padding: 0 30px 30px;
 }
 
 .dsz-import-empty {
     text-align: center;
-    padding: 60px 0;
+    padding: 80px 40px;
     color: var(--dsz-gray-400);
+    background: var(--dsz-gray-50);
+    border-radius: var(--dsz-border-radius-lg);
+    border: 2px dashed var(--dsz-gray-200);
 }
 
 .dsz-import-empty .dashicons {
