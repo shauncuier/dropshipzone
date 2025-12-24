@@ -2,7 +2,7 @@
 Contributors: 3s-Soft, dropshipzone
 Tags: woocommerce, dropshipzone, price sync, stock sync, dropshipping
 Requires at least: 6.0
-Tested up to: 6.9
+Tested up to: 6.7
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
@@ -40,8 +40,8 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 = Requirements =
 
-* WordPress 5.8 or higher
-* WooCommerce 5.0 or higher
+* WordPress 6.0 or higher
+* WooCommerce 8.0 or higher
 * PHP 7.4 or higher
 * Dropshipzone API account
 
