@@ -698,4 +698,69 @@ class API_Client {
 
         return $this->make_request('GET', '/orders', $params);
     }
+
+    /**
+     * Get all categories from Dropshipzone
+     *
+     * @return array|WP_Error Categories data or error
+     */
+    public function get_categories() {
+        $this->logger->debug('Fetching categories from Dropshipzone');
+
+        return $this->make_request('GET', '/v2/categories');
+    }
+
+    /**
+     * Get zone mapping for postcodes (V2)
+     * 
+     * Maps Australian postcodes to shipping zones (standard, defined, advanced)
+     *
+     * @param string|array $postcodes Postcode(s) to map
+     * @param array        $params    Additional params (page_no, limit)
+     * @return array|WP_Error Zone mapping data or error
+     */
+    public function get_zone_mapping($postcodes, $params = []) {
+        $defaults = [
+            'page_no' => 1,
+            'limit' => 40,
+        ];
+        $params = wp_parse_args($params, $defaults);
+
+        $data = [
+            'postcode' => is_array($postcodes) ? implode(',', $postcodes) : $postcodes,
+            'page_no' => $params['page_no'],
+            'limit' => $params['limit'],
+        ];
+
+        $this->logger->debug('Fetching zone mapping from Dropshipzone', ['postcodes' => $data['postcode']]);
+
+        return $this->make_request('POST', '/v2/get_zone_mapping', $data);
+    }
+
+    /**
+     * Get zone rates for SKUs (V2)
+     * 
+     * Returns shipping rates per zone for specified product SKUs
+     *
+     * @param string|array $skus   SKU(s) to get rates for
+     * @param array        $params Additional params (page_no, limit)
+     * @return array|WP_Error Zone rates data or error
+     */
+    public function get_zone_rates($skus, $params = []) {
+        $defaults = [
+            'page_no' => 1,
+            'limit' => 40,
+        ];
+        $params = wp_parse_args($params, $defaults);
+
+        $data = [
+            'skus' => is_array($skus) ? implode(',', $skus) : $skus,
+            'page_no' => $params['page_no'],
+            'limit' => $params['limit'],
+        ];
+
+        $this->logger->debug('Fetching zone rates from Dropshipzone', ['skus' => $data['skus']]);
+
+        return $this->make_request('POST', '/v2/get_zone_rates', $data);
+    }
 }

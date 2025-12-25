@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.6
+Stable tag: 2.2.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,12 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 9. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.7 =
+* ADDED: Complete API integration - all Dropshipzone endpoints now implemented.
+* ADDED: get_categories() - Fetch all DSZ product categories.
+* ADDED: get_zone_mapping() - Map postcodes to shipping zones.
+* ADDED: get_zone_rates() - Get shipping rates per SKU per zone.
 
 = 2.2.6 =
 * ADDED: Submit orders to Dropshipzone API for fulfillment.
