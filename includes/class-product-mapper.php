@@ -52,6 +52,7 @@ class Product_Mapper {
             dsz_sku varchar(100) NOT NULL,
             dsz_product_name varchar(255) DEFAULT '',
             last_synced datetime DEFAULT NULL,
+            last_resynced datetime DEFAULT NULL,
             sync_enabled tinyint(1) DEFAULT 1,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -63,6 +64,29 @@ class Product_Mapper {
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        
+        // Add last_resynced column if it doesn't exist (for upgrades)
+        self::maybe_add_last_resynced_column();
+    }
+    
+    /**
+     * Add last_resynced column if it doesn't exist (for database upgrades)
+     */
+    public static function maybe_add_last_resynced_column() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'dsz_product_mapping';
+        
+        // Check if column exists
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $column = $wpdb->get_results($wpdb->prepare(
+            "SHOW COLUMNS FROM {$table_name} LIKE %s",
+            'last_resynced'
+        ));
+        
+        if (empty($column)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+            $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN last_resynced datetime DEFAULT NULL AFTER last_synced");
+        }
     }
 
     /**
@@ -238,6 +262,7 @@ class Product_Mapper {
             'offset' => 0,
             'search' => '',
             'sync_enabled' => null,
+            'resync_filter' => '', // Filter by last_resynced status: never, today, week, month, older
             'orderby' => 'created_at',
             'order' => 'DESC',
         ];
@@ -249,6 +274,31 @@ class Product_Mapper {
         if ($args['sync_enabled'] !== null) {
             $where .= " AND m.sync_enabled = %d";
             $values[] = $args['sync_enabled'] ? 1 : 0;
+        }
+
+        // Filter by last_resynced status (full data resync)
+        if (!empty($args['resync_filter'])) {
+            switch ($args['resync_filter']) {
+                case 'never':
+                    $where .= " AND m.last_resynced IS NULL";
+                    break;
+                case 'today':
+                    $where .= " AND m.last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00');
+                    break;
+                case 'week':
+                    $where .= " AND m.last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-7 days'));
+                    break;
+                case 'month':
+                    $where .= " AND m.last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-30 days'));
+                    break;
+                case 'older':
+                    $where .= " AND m.last_resynced < %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-30 days'));
+                    break;
+            }
         }
 
         if (!empty($args['search'])) {
@@ -300,6 +350,31 @@ class Product_Mapper {
         if (isset($args['sync_enabled'])) {
             $where .= " AND sync_enabled = %d";
             $values[] = $args['sync_enabled'] ? 1 : 0;
+        }
+
+        // Filter by last_resynced status (full data resync)
+        if (!empty($args['resync_filter'])) {
+            switch ($args['resync_filter']) {
+                case 'never':
+                    $where .= " AND last_resynced IS NULL";
+                    break;
+                case 'today':
+                    $where .= " AND last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00');
+                    break;
+                case 'week':
+                    $where .= " AND last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-7 days'));
+                    break;
+                case 'month':
+                    $where .= " AND last_resynced >= %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-30 days'));
+                    break;
+                case 'older':
+                    $where .= " AND last_resynced < %s";
+                    $values[] = gmdate('Y-m-d 00:00:00', strtotime('-30 days'));
+                    break;
+            }
         }
 
         if (!empty($args['search'])) {
@@ -399,7 +474,7 @@ class Product_Mapper {
     }
 
     /**
-     * Update last synced timestamp
+     * Update last synced timestamp (for price/stock sync)
      *
      * @param int $wc_product_id WooCommerce product ID
      * @return bool Success
@@ -409,6 +484,23 @@ class Product_Mapper {
         return $wpdb->update(
             $this->table_name,
             ['last_synced' => current_time('mysql')],
+            ['wc_product_id' => $wc_product_id],
+            ['%s'],
+            ['%d']
+        ) !== false;
+    }
+    
+    /**
+     * Update last resynced timestamp (for full data resync)
+     *
+     * @param int $wc_product_id WooCommerce product ID
+     * @return bool Success
+     */
+    public function update_last_resynced($wc_product_id) {
+        global $wpdb;
+        return $wpdb->update(
+            $this->table_name,
+            ['last_resynced' => current_time('mysql')],
             ['wc_product_id' => $wc_product_id],
             ['%s'],
             ['%d']

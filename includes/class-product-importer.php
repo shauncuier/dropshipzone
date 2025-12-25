@@ -506,8 +506,8 @@ class Product_Importer {
             }
         }
 
-        // Update mapping last synced time
-        $this->product_mapper->update_last_synced($product_id);
+        // Update mapping last resynced time (full data resync)
+        $this->product_mapper->update_last_resynced($product_id);
 
         $this->logger->info('Product resynced successfully', [
             'product_id' => $product_id,

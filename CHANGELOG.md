@@ -5,6 +5,18 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.5] - 2025-12-25
+
+### Added
+- **Last Resynced Column**: Product Mapping page now shows when each product was last fully resynced (separate from price/stock sync).
+- **Resync Filter**: Filter mappings by resync status (Never, Today, Last 7 Days, Last 30 Days, Older).
+- **Database Upgrade**: Added `last_resynced` column to track full data resyncs separately.
+
+### Changed
+- Column renamed from "Last Synced" to "Last Resynced" to clarify it tracks full data resync (images, description, title, etc).
+
+---
+
 ## [2.2.4] - 2025-12-25
 
 ### Added

@@ -1364,16 +1364,18 @@ class Admin_UI {
         }
 
         $search = isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '';
+        $resync_filter = isset($_GET['resync_filter']) ? sanitize_text_field(wp_unslash($_GET['resync_filter'])) : '';
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 30;
 
         $mappings = $this->product_mapper->get_mappings([
             'search' => $search,
+            'resync_filter' => $resync_filter,
             'limit' => $per_page,
             'offset' => ($page - 1) * $per_page,
         ]);
 
-        $total = $this->product_mapper->get_count(['search' => $search]);
+        $total = $this->product_mapper->get_count(['search' => $search, 'resync_filter' => $resync_filter]);
         $total_pages = ceil($total / $per_page);
         $unmapped_count = $this->product_mapper->get_unmapped_count();
         ?>
@@ -1439,12 +1441,20 @@ class Admin_UI {
                 <div class="dsz-form-section">
                     <h2><?php esc_html_e('Existing Mappings', 'dropshipzone'); ?></h2>
                     
-                    <!-- Search -->
-                    <form method="get" class="dsz-mapping-search">
+                    <!-- Search and Filter -->
+                    <form method="get" class="dsz-mapping-search" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <input type="hidden" name="page" value="dsz-sync-mapping" />
-                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search mappings...', 'dropshipzone'); ?>" />
-                        <button type="submit" class="button"><?php esc_html_e('Search', 'dropshipzone'); ?></button>
-                        <?php if ($search): ?>
+                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search mappings...', 'dropshipzone'); ?>" style="min-width: 200px;" />
+                        <select name="resync_filter" style="min-width: 150px;">
+                            <option value=""><?php esc_html_e('All Resync Status', 'dropshipzone'); ?></option>
+                            <option value="never" <?php selected($resync_filter, 'never'); ?>><?php esc_html_e('Never Resynced', 'dropshipzone'); ?></option>
+                            <option value="today" <?php selected($resync_filter, 'today'); ?>><?php esc_html_e('Resynced Today', 'dropshipzone'); ?></option>
+                            <option value="week" <?php selected($resync_filter, 'week'); ?>><?php esc_html_e('Last 7 Days', 'dropshipzone'); ?></option>
+                            <option value="month" <?php selected($resync_filter, 'month'); ?>><?php esc_html_e('Last 30 Days', 'dropshipzone'); ?></option>
+                            <option value="older" <?php selected($resync_filter, 'older'); ?>><?php esc_html_e('Older than 30 Days', 'dropshipzone'); ?></option>
+                        </select>
+                        <button type="submit" class="button"><?php esc_html_e('Filter', 'dropshipzone'); ?></button>
+                        <?php if ($search || $resync_filter): ?>
                             <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-mapping')); ?>" class="button"><?php esc_html_e('Clear', 'dropshipzone'); ?></a>
                         <?php endif; ?>
                     </form>
@@ -1455,7 +1465,7 @@ class Admin_UI {
                             <tr>
                                 <th><?php esc_html_e('WooCommerce Product', 'dropshipzone'); ?></th>
                                 <th><?php esc_html_e('Dropshipzone SKU', 'dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Last Synced', 'dropshipzone'); ?></th>
+                                <th><?php esc_html_e('Last Resynced', 'dropshipzone'); ?></th>
                                 <th class="column-actions"><?php esc_html_e('Actions', 'dropshipzone'); ?></th>
                             </tr>
                         </thead>
@@ -1473,7 +1483,7 @@ class Admin_UI {
                                             </a>
                                         </td>
                                         <td><code><?php echo esc_html($mapping['dsz_sku']); ?></code></td>
-                                        <td><?php echo $mapping['last_synced'] ? esc_html(dsz_format_datetime($mapping['last_synced'])) : esc_html__('Never', 'dropshipzone'); ?></td>
+                                        <td><?php echo isset($mapping['last_resynced']) && $mapping['last_resynced'] ? esc_html(dsz_format_datetime($mapping['last_resynced'])) : esc_html__('Never', 'dropshipzone'); ?></td>
                                         <td class="column-actions">
                                             <button type="button" class="button button-small dsz-resync-btn" data-product-id="<?php echo esc_attr($mapping['wc_product_id']); ?>" data-sku="<?php echo esc_attr($mapping['dsz_sku']); ?>">
                                                 <span class="dashicons dashicons-update"></span>
@@ -1494,7 +1504,7 @@ class Admin_UI {
                     <?php if ($total_pages > 1): ?>
                         <div class="dsz-pagination">
                             <?php
-                            $base_url = admin_url('admin.php?page=dsz-sync-mapping' . ($search ? '&search=' . urlencode($search) : ''));
+                            $base_url = admin_url('admin.php?page=dsz-sync-mapping' . ($search ? '&search=' . urlencode($search) : '') . ($resync_filter ? '&resync_filter=' . urlencode($resync_filter) : ''));
                             
                             if ($page > 1): ?>
                                 <a href="<?php echo esc_url($base_url . '&paged=' . ($page - 1)); ?>" class="button">&laquo; <?php esc_html_e('Previous', 'dropshipzone'); ?></a>

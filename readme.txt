@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.4
+Stable tag: 2.2.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,11 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.5 =
+* ADDED: Last Resynced column on Product Mapping page (tracks full data resync separately from price/stock sync).
+* ADDED: Resync filter dropdown (Never, Today, Last 7 Days, Last 30 Days, Older).
+* ADDED: Database upgrade to add `last_resynced` column.
 
 = 2.2.4 =
 * ADDED: API Load Balancer with smart adaptive delays.
