@@ -498,13 +498,22 @@ class Product_Mapper {
      */
     public function update_last_resynced($wc_product_id) {
         global $wpdb;
-        return $wpdb->update(
+        
+        $result = $wpdb->update(
             $this->table_name,
             ['last_resynced' => current_time('mysql')],
             ['wc_product_id' => $wc_product_id],
             ['%s'],
             ['%d']
-        ) !== false;
+        );
+        
+        $this->logger->debug('update_last_resynced called', [
+            'wc_product_id' => $wc_product_id,
+            'rows_updated' => $result,
+            'last_error' => $wpdb->last_error,
+        ]);
+        
+        return $result !== false && $result > 0;
     }
 
     /**
