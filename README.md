@@ -4,7 +4,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-2.0.8-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![WordPress Plugin Version](https://img.shields.io/badge/version-2.2.6-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
@@ -21,11 +21,12 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 
 ---
 
-## 🚀 What's New in v2.0.7
+## 🚀 What's New in v2.2.6
 
-- **📊 Modern Sync Dashboard** - Reimagined Sync Control with glassmorphism cards and real-time progress visualization.
-- **🛑 Auto-Deactivation** - Discontinued products (not found in API) are now automatically set to Draft status and zero stock.
-- **🔍 Advanced Search** - Filter products by Category, Stock, Promotion, and more directly from the API.
+- **� Order Submission** - Submit WooCommerce orders to Dropshipzone for fulfillment directly from order page.
+- **� Last Resynced Tracking** - See when each product was last fully resynced with filter options.
+- **⚡ API Load Balancer** - Smart adaptive delays prevent rate limit errors and maximize throughput.
+- **� Resync Optimization** - Inactive products (draft + out of stock) are skipped during bulk resync.
 
 ---
 
@@ -35,7 +36,6 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 
 | Priority | Feature | Description | Status |
 |----------|---------|-------------|--------|
-| 🔴 High | **Order Auto-Fulfillment** | Automatically submit orders to Dropshipzone for fulfillment | 📋 Planned |
 | 🔴 High | **Tracking Number Sync** | Auto-import tracking numbers and update WooCommerce orders | 📋 Planned |
 | 🟡 Medium | **Category Mapping** | Map Dropshipzone categories to WooCommerce categories | 📋 Planned |
 | 🟡 Medium | **Bulk Product Actions** | Select multiple products for bulk import/sync operations | 📋 Planned |
@@ -45,6 +45,7 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 | 🟢 Low | **Performance Analytics** | Dashboard with sales analytics for dropship products | 💭 Considering |
 
 ### Legend
+- ✅ **Complete** - Feature is available now
 - 📋 **Planned** - Feature is in our development roadmap
 - 🚧 **In Progress** - Currently being developed
 - 💭 **Considering** - Under evaluation based on user feedback
@@ -60,6 +61,8 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 | 🔄 **Price Sync** | Automatically update regular and sale prices from supplier |
 | 📦 **Stock Sync** | Keep stock quantities accurate in real-time |
 | 🛍️ **Product Import** | Import products directly from Dropshipzone catalog |
+| 📤 **Order Submission** | Submit orders to Dropshipzone for fulfillment |
+| 🗺️ **Product Mapping** | Link WooCommerce products to Dropshipzone SKUs |
 | 🏷️ **SKU Matching** | Products matched by SKU for accuracy |
 | 💰 **Flexible Pricing** | Percentage or fixed markup options |
 | 🧮 **GST Support** | Include or exclude 10% Australian GST |
@@ -68,8 +71,8 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 | ⏰ **Scheduled Sync** | Hourly, twice daily, or daily options |
 | ▶️ **Manual Sync** | Run sync anytime with one click |
 | 📊 **Batch Processing** | Handles 10,000+ products efficiently |
+| ⚡ **API Load Balancer** | Smart throttling with adaptive delays |
 | 📝 **Detailed Logging** | Track all sync activity and errors |
-| ⚡ **Rate Limiting** | Smart API throttling to prevent limits |
 | 🎨 **Modern UI** | Beautiful, responsive admin interface |
 
 ---
