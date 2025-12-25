@@ -20,6 +20,9 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 * **Price Sync** - Automatically update regular and sale prices
 * **Stock Sync** - Keep stock quantities accurate in real-time
+* **Product Import** - Import products directly from Dropshipzone catalog
+* **Order Submission** - Submit orders to Dropshipzone for fulfillment
+* **Product Mapping** - Link WooCommerce products to Dropshipzone SKUs
 * **SKU Matching** - Products matched by SKU for accuracy
 * **Flexible Pricing** - Percentage or fixed markup options
 * **GST Support** - Include or exclude 10% Australian GST
@@ -28,15 +31,14 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 * **Scheduled Sync** - Hourly, twice daily, or daily options
 * **Manual Sync** - Run sync anytime with one click
 * **Batch Processing** - Handles 10,000+ products efficiently
+* **API Load Balancer** - Smart rate limiting prevents API errors
 * **Detailed Logging** - Track all sync activity and errors
 
 = Important Notes =
 
-* This plugin ONLY syncs price and stock
-* Does NOT create or import new products
-* Does NOT modify titles, descriptions, images, or categories
 * Requires WooCommerce to be installed and active
 * Requires Dropshipzone API credentials
+* Orders created as "Not Submitted" - login to Dropshipzone to pay
 
 = Requirements =
 
@@ -87,10 +89,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 
 1. Dashboard - Overview of sync status and quick actions
 2. API Settings - Configure Dropshipzone credentials
-3. Price Rules - Set markup, GST, and rounding preferences
+3. Price Rules - Set markup, GST, and rounding preferences  
 4. Stock Rules - Configure buffer and out-of-stock handling
 5. Sync Control - Manual sync and scheduling options
-6. Logs - View detailed sync activity and errors
+6. Product Import - Browse and import products from Dropshipzone
+7. Product Mapping - Link WC products to Dropshipzone SKUs
+8. Order Submission - Submit orders to Dropshipzone for fulfillment
+9. Logs - View detailed sync activity and errors
 
 == Changelog ==
 
