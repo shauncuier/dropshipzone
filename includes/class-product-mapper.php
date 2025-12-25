@@ -76,16 +76,34 @@ class Product_Mapper {
         global $wpdb;
         $table_name = $wpdb->prefix . 'dsz_product_mapping';
         
-        // Check if column exists
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $column = $wpdb->get_results($wpdb->prepare(
-            "SHOW COLUMNS FROM {$table_name} LIKE %s",
+        // First check if table exists
+        $table_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
+            DB_NAME,
+            $table_name
+        ));
+        
+        if (!$table_exists) {
+            return; // Table doesn't exist yet, will be created with column
+        }
+        
+        // Check if column exists using information_schema (more reliable)
+        $column_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(1) FROM information_schema.columns WHERE table_schema = %s AND table_name = %s AND column_name = %s",
+            DB_NAME,
+            $table_name,
             'last_resynced'
         ));
         
-        if (empty($column)) {
+        if (!$column_exists) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-            $wpdb->query("ALTER TABLE {$table_name} ADD COLUMN last_resynced datetime DEFAULT NULL AFTER last_synced");
+            $result = $wpdb->query("ALTER TABLE `{$table_name}` ADD COLUMN `last_resynced` datetime DEFAULT NULL AFTER `last_synced`");
+            
+            if ($result === false) {
+                error_log('DSZ Sync: Failed to add last_resynced column. Error: ' . $wpdb->last_error);
+            } else {
+                error_log('DSZ Sync: Successfully added last_resynced column to ' . $table_name);
+            }
         }
     }
 
