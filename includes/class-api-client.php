@@ -385,7 +385,7 @@ class API_Client {
     }
 
     /**
-     * Make API request with rate limit protection
+     * Make API request with load balancing and rate limit protection
      *
      * @param string $method   HTTP method
      * @param string $endpoint API endpoint
@@ -395,13 +395,29 @@ class API_Client {
      * @return array|WP_Error Response data or error
      */
     private function make_request($method, $endpoint, $data = [], $use_auth = true, $retry = 0) {
-        // Check rate limits before making request
+        // Apply smart load balancing - this handles:
+        // 1. Hard rate limit enforcement (waits if limits hit)
+        // 2. Adaptive delay based on current usage (proactive throttling)
+        // 3. Minimum delay between requests (prevents bursting)
+        $wait_info = $this->rate_limiter->smart_wait();
+        
+        // Log if we had to wait significantly
+        if ($wait_info['waited'] > 1) {
+            $this->logger->info('Load balancer delay applied', [
+                'endpoint' => $endpoint,
+                'waited' => round($wait_info['waited'], 2),
+                'reason' => $wait_info['reason'],
+                'usage' => $wait_info['usage'],
+            ]);
+        }
+        
+        // Double-check: If we still can't make a request after waiting, something is wrong
         if (!$this->rate_limiter->can_make_request()) {
             $wait_time = $this->rate_limiter->get_wait_time();
             
             // If wait time is reasonable, wait and proceed
             if ($wait_time <= 120) {
-                $this->logger->info('Rate limit: Waiting before request', [
+                $this->logger->info('Rate limit: Additional wait needed', [
                     'endpoint' => $endpoint,
                     'wait_seconds' => $wait_time,
                     'status' => $this->rate_limiter->get_status(),

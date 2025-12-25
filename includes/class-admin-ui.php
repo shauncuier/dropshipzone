@@ -2036,6 +2036,9 @@ class Admin_UI {
 
     /**
      * AJAX: Resync all mapped products
+     * 
+     * Skips products that are already inactive (draft + out of stock)
+     * to optimize performance and avoid unnecessary updates.
      */
     public function ajax_resync_all() {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
@@ -2054,28 +2057,95 @@ class Admin_UI {
         $total = count($mappings);
         $success_count = 0;
         $error_count = 0;
+        $skipped_inactive = 0;
         $errors = [];
 
-        // Build lookup: dsz_sku => wc_product_id
-        $sku_to_product = [];
+        // First pass: Filter out inactive products (draft + out of stock)
+        // and build list of SKUs that actually need syncing
+        $active_mappings = [];
         $all_skus = [];
+        
         foreach ($mappings as $mapping) {
+            $product_id = intval($mapping['wc_product_id']);
             $sku = $mapping['dsz_sku'];
-            $product_id = $mapping['wc_product_id'];
-            $sku_to_product[$sku] = $product_id;
+            
+            // Load the WooCommerce product to check its status
+            $product = wc_get_product($product_id);
+            
+            if (!$product) {
+                // Product doesn't exist in WooCommerce, skip
+                $this->logger->debug('Skipped resync - product not found in WooCommerce', [
+                    'wc_product_id' => $product_id,
+                    'dsz_sku' => $sku,
+                ]);
+                continue;
+            }
+            
+            $product_status = $product->get_status();
+            $stock_qty = $product->get_stock_quantity();
+            $stock_status = $product->get_stock_status();
+            
+            // Skip products that are already inactive (draft + out of stock)
+            // These products don't need updating since they're already inactive
+            if ($product_status === 'draft' && ($stock_qty <= 0 || $stock_status === 'outofstock')) {
+                $skipped_inactive++;
+                $this->logger->debug('Skipped resync - product already inactive (draft + out of stock)', [
+                    'wc_product_id' => $product_id,
+                    'dsz_sku' => $sku,
+                    'product_name' => $product->get_name(),
+                    'status' => $product_status,
+                    'stock_qty' => $stock_qty,
+                ]);
+                continue;
+            }
+            
+            // This product needs syncing
+            $active_mappings[] = $mapping;
             $all_skus[] = $sku;
         }
+        
+        // Log the filtering results
+        $this->logger->info('Resync filtering complete', [
+            'total_mapped' => $total,
+            'active_to_sync' => count($active_mappings),
+            'skipped_inactive' => $skipped_inactive,
+        ]);
+        
+        // If no active products to sync, return early
+        if (empty($active_mappings)) {
+            $message = sprintf(
+                /* translators: %d: number of skipped products */
+                __('No products need resyncing. %d products skipped (already draft + out of stock).', 'dropshipzone'),
+                $skipped_inactive
+            );
+            wp_send_json_success([
+                'message' => $message,
+                'total' => $total,
+                'success' => 0,
+                'errors' => 0,
+                'skipped_inactive' => $skipped_inactive,
+                'error_details' => [],
+            ]);
+        }
 
-        // Batch fetch product data from API (100 SKUs per request)
+        // Batch fetch product data from API (100 SKUs per request, processed sequentially)
         $api_products = [];
         $sku_chunks = array_chunk($all_skus, 100);
         
-        $this->logger->info('Starting batch resync', [
-            'total_products' => $total,
+        $this->logger->info('Starting batch resync - API fetch', [
+            'products_to_sync' => count($active_mappings),
             'api_batches' => count($sku_chunks),
+            'skipped_inactive' => $skipped_inactive,
         ]);
 
+        // Process API requests SEQUENTIALLY (one batch at a time)
         foreach ($sku_chunks as $chunk_index => $chunk) {
+            $this->logger->debug('Fetching API batch', [
+                'batch' => $chunk_index + 1,
+                'total_batches' => count($sku_chunks),
+                'skus_in_batch' => count($chunk),
+            ]);
+            
             $response = $this->api_client->get_products_by_skus($chunk);
             
             if (is_wp_error($response)) {
@@ -2093,6 +2163,11 @@ class Admin_UI {
                     }
                 }
             }
+            
+            $this->logger->debug('API batch complete', [
+                'batch' => $chunk_index + 1,
+                'products_fetched' => isset($response['result']) ? count($response['result']) : 0,
+            ]);
         }
 
         $this->logger->info('API batch fetch complete', [
@@ -2100,8 +2175,8 @@ class Admin_UI {
             'found_products' => count($api_products),
         ]);
 
-        // Now process each mapping with pre-fetched data
-        foreach ($mappings as $mapping) {
+        // Now process each active mapping with pre-fetched data (sequentially)
+        foreach ($active_mappings as $mapping) {
             $product_id = $mapping['wc_product_id'];
             $sku = $mapping['dsz_sku'];
 
@@ -2135,18 +2210,24 @@ class Admin_UI {
             if (dsz_is_memory_near_limit(85)) {
                 $this->logger->warning('Memory limit approaching, stopping resync early', [
                     'processed' => $success_count + $error_count,
-                    'total' => $total,
+                    'total' => count($active_mappings),
                 ]);
                 break;
             }
         }
 
+        // Build success message
         $message = sprintf(
-            /* translators: %1$d: success count, %2$d: total count */
+            /* translators: %1$d: success count, %2$d: total active count */
             __('Resync complete! %1$d of %2$d products updated successfully.', 'dropshipzone'),
             $success_count,
-            $total
+            count($active_mappings)
         );
+
+        if ($skipped_inactive > 0) {
+            /* translators: %d: number of skipped products */
+            $message .= ' ' . sprintf(__('%d inactive products skipped.', 'dropshipzone'), $skipped_inactive);
+        }
 
         if ($error_count > 0) {
             /* translators: %d: error count */
@@ -2154,16 +2235,20 @@ class Admin_UI {
         }
 
         $this->logger->info('Resync all complete', [
-            'total' => $total,
+            'total_mapped' => $total,
+            'active_synced' => count($active_mappings),
             'success' => $success_count,
             'errors' => $error_count,
+            'skipped_inactive' => $skipped_inactive,
         ]);
 
         wp_send_json_success([
             'message' => $message,
             'total' => $total,
+            'active' => count($active_mappings),
             'success' => $success_count,
             'errors' => $error_count,
+            'skipped_inactive' => $skipped_inactive,
             'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
         ]);
     }

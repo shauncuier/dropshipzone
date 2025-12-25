@@ -5,6 +5,23 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] - 2025-12-25
+
+### Added
+- **API Load Balancer**: Enhanced rate limiting with smart adaptive delays that proactively slow requests before hitting API limits.
+- **Request Statistics**: Track total API requests, waits, and average wait times for monitoring.
+- **Usage Percentage Display**: Rate limit status now shows usage percentages for minute and hour quotas.
+- **Skipped Products Reporting**: Resync completion message now shows count of skipped inactive products.
+
+### Improved
+- **Resync Optimization**: "Refresh All Data" now skips products that are already inactive (draft + out of stock) since they don't need updating.
+- **Sequential API Processing**: API requests are explicitly processed one at a time (sequentially) to respect rate limits.
+- **Proactive Throttling**: Requests are now automatically delayed based on current API usage (40%→1.5s, 60%→2s, 80%→3s, 90%→5s).
+- **Burst Prevention**: Minimum 0.5 second delay between requests prevents API bursting.
+- **Enhanced Logging**: Added detailed debug logs for resync filtering and load balancer delays.
+
+---
+
 ## [2.2.3] - 2025-12-25
 
 ### Fixed

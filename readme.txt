@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.3
+Stable tag: 2.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,15 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.4 =
+* ADDED: API Load Balancer with smart adaptive delays.
+* ADDED: Request statistics tracking (total requests, waits, avg wait time).
+* ADDED: Skipped products count in resync completion message.
+* IMPROVED: Resync now skips products already inactive (draft + out of stock).
+* IMPROVED: API requests processed sequentially for rate limiting.
+* IMPROVED: Proactive throttling based on API usage percentage.
+* IMPROVED: Minimum 0.5s delay between requests prevents bursting.
 
 = 2.2.3 =
 * FIXED: In Stock filter now works correctly.
