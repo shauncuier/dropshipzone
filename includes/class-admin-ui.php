@@ -102,6 +102,7 @@ class Admin_UI {
         add_action('wp_ajax_dsz_import_product', [$this, 'ajax_import_product']);
         add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
         add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
+        add_action('wp_ajax_dsz_resync_never_synced', [$this, 'ajax_resync_never_synced']);
         add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
         
         // Order AJAX handlers
@@ -1392,6 +1393,7 @@ class Admin_UI {
         $total = $this->product_mapper->get_count(['search' => $search, 'resync_filter' => $resync_filter]);
         $total_pages = ceil($total / $per_page);
         $unmapped_count = $this->product_mapper->get_unmapped_count();
+        $never_synced_count = $this->product_mapper->get_count(['resync_filter' => 'never']);
         ?>
         <div class="wrap dsz-wrap">
             <?php $this->render_header(__('Product Mapping', 'dropshipzone'), __('Map your WooCommerce products to Dropshipzone SKUs', 'dropshipzone')); ?>
@@ -1408,7 +1410,61 @@ class Admin_UI {
                             <strong><?php echo intval($unmapped_count); ?></strong>
                             <span><?php esc_html_e('Unmapped Products', 'dropshipzone'); ?></span>
                         </div>
+                        <div class="dsz-stat dsz-stat-info">
+                            <strong><?php echo intval($never_synced_count); ?></strong>
+                            <span><?php esc_html_e('Never Resynced', 'dropshipzone'); ?></span>
+                        </div>
                     </div>
+                    
+                    <?php if ($never_synced_count > 0): ?>
+                    <div style="margin-top: 15px;">
+                        <button type="button" id="dsz-resync-never-synced" class="button button-primary">
+                            <span class="dashicons dashicons-update" style="line-height: 1.4;"></span>
+                            <?php 
+                            /* translators: %d: number of products */
+                            echo esc_html(sprintf(__('Resync %d Never Synced Products', 'dropshipzone'), $never_synced_count)); 
+                            ?>
+                        </button>
+                        <span id="dsz-resync-never-synced-status" style="margin-left: 10px;"></span>
+                    </div>
+                    <script>
+                    jQuery(function($) {
+                        $('#dsz-resync-never-synced').on('click', function() {
+                            var $btn = $(this);
+                            var $status = $('#dsz-resync-never-synced-status');
+                            
+                            if (!confirm('<?php echo esc_js(__('This will resync all never-synced products. Continue?', 'dropshipzone')); ?>')) {
+                                return;
+                            }
+                            
+                            $btn.prop('disabled', true);
+                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Processing...</span>');
+                            
+                            $.ajax({
+                                url: ajaxurl,
+                                type: 'POST',
+                                data: {
+                                    action: 'dsz_resync_never_synced',
+                                    nonce: dszAdmin.nonce
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        $status.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                                        setTimeout(function() { location.reload(); }, 2000);
+                                    } else {
+                                        $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                                        $btn.prop('disabled', false);
+                                    }
+                                },
+                                error: function() {
+                                    $status.html('<span style="color:red;">Request failed</span>');
+                                    $btn.prop('disabled', false);
+                                }
+                            });
+                        });
+                    });
+                    </script>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Sync Actions Callout -->
@@ -2274,6 +2330,77 @@ class Admin_UI {
             'errors' => $error_count,
             'skipped_inactive' => $skipped_inactive,
             'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
+        ]);
+    }
+
+    /**
+     * AJAX handler for resyncing products that have never been synced
+     */
+    public function ajax_resync_never_synced() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        // Get all mappings where last_resynced is NULL
+        $never_synced = $this->product_mapper->get_mappings([
+            'resync_filter' => 'never',
+            'limit' => 500,
+            'offset' => 0,
+        ]);
+
+        if (empty($never_synced)) {
+            wp_send_json_success([
+                'message' => __('No products to resync.', 'dropshipzone'),
+                'total' => 0,
+                'success' => 0,
+                'errors' => 0,
+            ]);
+        }
+
+        $success_count = 0;
+        $error_count = 0;
+        $errors = [];
+
+        foreach ($never_synced as $mapping) {
+            $product_id = $mapping['wc_product_id'];
+            $sku = $mapping['dsz_sku'];
+
+            $result = $this->product_importer->resync_product($product_id, null, [
+                'update_title' => false,
+                'update_description' => false,
+                'update_images' => false,
+                'update_price' => true,
+                'update_stock' => true,
+            ]);
+
+            if (is_wp_error($result)) {
+                $error_count++;
+                $errors[] = [
+                    'product_id' => $product_id,
+                    'sku' => $sku,
+                    'error' => $result->get_error_message(),
+                ];
+            } else {
+                $success_count++;
+            }
+        }
+
+        /* translators: %1$d: success count, %2$d: total count */
+        $message = sprintf(__('Resynced %1$d of %2$d never-synced products.', 'dropshipzone'), $success_count, count($never_synced));
+
+        if ($error_count > 0) {
+            /* translators: %d: error count */
+            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone'), $error_count);
+        }
+
+        wp_send_json_success([
+            'message' => $message,
+            'total' => count($never_synced),
+            'success' => $success_count,
+            'errors' => $error_count,
+            'error_details' => array_slice($errors, 0, 10),
         ]);
     }
 
