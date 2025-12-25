@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.2.5
+ * Version: 2.2.6
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.2.5');
+define('DSZ_SYNC_VERSION', '2.2.6');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -51,6 +51,7 @@ final class Dropshipzone_Sync {
     public $logger;
     public $product_mapper;
     public $product_importer;
+    public $order_handler;
 
     /**
      * Get single instance
@@ -109,6 +110,7 @@ final class Dropshipzone_Sync {
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-cron.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
         
         // Admin UI
         if (is_admin()) {
@@ -170,12 +172,13 @@ final class Dropshipzone_Sync {
         $this->cron = new Cron($this->price_sync, $this->stock_sync, $this->logger);
         $this->product_mapper = new Product_Mapper($this->logger);
         $this->product_importer = new Product_Importer($this->api_client, $this->price_sync, $this->stock_sync, $this->product_mapper, $this->logger);
+        $this->order_handler = new Order_Handler($this->api_client, $this->product_mapper, $this->logger);
         
         // Ensure mapping table exists (for upgrades from older versions)
         $this->maybe_create_mapping_table();
         
         if (is_admin()) {
-            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer);
+            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler);
         }
     }
 
@@ -207,6 +210,9 @@ final class Dropshipzone_Sync {
         
         // Create mapping table
         Product_Mapper::create_table();
+        
+        // Create orders table
+        Order_Handler::create_table();
         
         // Create sync status option
         $this->create_default_options();

@@ -610,4 +610,92 @@ class API_Client {
     public function reset_rate_limit() {
         $this->rate_limiter->reset();
     }
+
+    /**
+     * Place an order in Dropshipzone
+     * 
+     * Creates the order as "Not Submitted" status. User must login to DSZ to pay.
+     *
+     * @param array $order_data Order data with required fields
+     * @return array|WP_Error Response with serial_number or error
+     */
+    public function place_order($order_data) {
+        // Validate required fields
+        $required = ['your_order_no', 'first_name', 'last_name', 'address1', 'suburb', 'state', 'postcode', 'telephone', 'order_items'];
+        foreach ($required as $field) {
+            if (empty($order_data[$field])) {
+                return new \WP_Error(
+                    'missing_field',
+                    /* translators: %s: field name */
+                    sprintf(__('Missing required field: %s', 'dropshipzone'), $field)
+                );
+            }
+        }
+
+        // Validate order_items
+        if (!is_array($order_data['order_items']) || empty($order_data['order_items'])) {
+            return new \WP_Error('invalid_items', __('Order items must be a non-empty array', 'dropshipzone'));
+        }
+
+        foreach ($order_data['order_items'] as $item) {
+            if (empty($item['sku']) || !isset($item['qty'])) {
+                return new \WP_Error('invalid_item', __('Each order item must have sku and qty', 'dropshipzone'));
+            }
+        }
+
+        $this->logger->info('Placing order in Dropshipzone', [
+            'order_no' => $order_data['your_order_no'],
+            'items_count' => count($order_data['order_items']),
+        ]);
+
+        $response = $this->make_request('POST', '/placingOrder', $order_data);
+
+        if (is_wp_error($response)) {
+            $this->logger->error('Failed to place order', [
+                'order_no' => $order_data['your_order_no'],
+                'error' => $response->get_error_message(),
+            ]);
+            return $response;
+        }
+
+        // API returns array, check first element
+        if (is_array($response) && !empty($response[0])) {
+            $result = $response[0];
+            
+            if (isset($result['status']) && $result['status'] === 1) {
+                $this->logger->info('Order placed successfully', [
+                    'order_no' => $order_data['your_order_no'],
+                    'dsz_serial' => $result['serial_number'] ?? '',
+                ]);
+                return $result;
+            } else {
+                $error_msg = $result['errmsg'] ?? __('Unknown error', 'dropshipzone');
+                $this->logger->error('Order placement failed', [
+                    'order_no' => $order_data['your_order_no'],
+                    'error' => $error_msg,
+                ]);
+                return new \WP_Error('order_failed', $error_msg, $result);
+            }
+        }
+
+        return new \WP_Error('invalid_response', __('Invalid response from Dropshipzone API', 'dropshipzone'));
+    }
+
+    /**
+     * Get orders from Dropshipzone
+     *
+     * @param array $params Query parameters (order_ids, start_date, end_date, status, page_no, limit)
+     * @return array|WP_Error Orders data or error
+     */
+    public function get_orders($params = []) {
+        $defaults = [
+            'page_no' => 1,
+            'limit' => 40,
+        ];
+        $params = wp_parse_args($params, $defaults);
+
+        $this->logger->debug('Fetching orders from Dropshipzone', $params);
+
+        return $this->make_request('GET', '/orders', $params);
+    }
 }

@@ -5,6 +5,20 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.6] - 2025-12-25
+
+### Added
+- **Create Order**: Submit WooCommerce orders to Dropshipzone API for fulfillment.
+- **Order Meta Box**: "Dropshipzone Order" panel on WC order edit page with Submit button.
+- **Order Tracking**: Database table (`wp_dsz_orders`) to track DSZ serial numbers and status.
+- **Australian State Mapping**: Automatic conversion of state codes (NSW→New South Wales).
+- API methods: `place_order()` and `get_orders()`.
+
+### Notes
+- Orders are created as "Not Submitted" in Dropshipzone - user must login to DSZ to pay.
+
+---
+
 ## [2.2.5] - 2025-12-25
 
 ### Added

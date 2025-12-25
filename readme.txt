@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.5
+Stable tag: 2.2.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 6. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.6 =
+* ADDED: Submit orders to Dropshipzone API for fulfillment.
+* ADDED: "Dropshipzone Order" meta box on WC order edit page.
+* ADDED: Order tracking database table for DSZ serial numbers.
+* ADDED: Australian state code mapping (NSW→New South Wales).
+* NOTE: Orders created as "Not Submitted" - login to DSZ to pay.
 
 = 2.2.5 =
 * ADDED: Last Resynced column on Product Mapping page (tracks full data resync separately from price/stock sync).

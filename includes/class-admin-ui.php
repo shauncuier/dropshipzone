@@ -57,9 +57,16 @@ class Admin_UI {
     private $product_importer;
 
     /**
+     * Order Handler instance
+     * 
+     * @var Order_Handler
+     */
+    private $order_handler;
+
+    /**
      * Constructor
      */
-    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null) {
+    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null, Order_Handler $order_handler = null) {
         $this->api_client = $api_client;
         $this->price_sync = $price_sync;
         $this->stock_sync = $stock_sync;
@@ -67,6 +74,7 @@ class Admin_UI {
         $this->logger = $logger;
         $this->product_mapper = $product_mapper;
         $this->product_importer = $product_importer;
+        $this->order_handler = $order_handler;
 
         // Admin hooks
         add_action('admin_menu', [$this, 'register_menu']);
@@ -95,6 +103,12 @@ class Admin_UI {
         add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
         add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
         add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
+        
+        // Order AJAX handlers
+        add_action('wp_ajax_dsz_submit_order', [$this, 'ajax_submit_order']);
+        
+        // WooCommerce order integration
+        add_action('add_meta_boxes', [$this, 'add_order_meta_box']);
     }
 
     /**
@@ -2261,5 +2275,175 @@ class Admin_UI {
             'skipped_inactive' => $skipped_inactive,
             'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
         ]);
+    }
+
+    /**
+     * AJAX handler for submitting order to Dropshipzone
+     */
+    public function ajax_submit_order() {
+        check_ajax_referer('dsz_sync_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied.', 'dropshipzone')]);
+        }
+
+        $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
+
+        if (!$order_id) {
+            wp_send_json_error(['message' => __('Order ID required.', 'dropshipzone')]);
+        }
+
+        if (!$this->order_handler) {
+            wp_send_json_error(['message' => __('Order handler not initialized.', 'dropshipzone')]);
+        }
+
+        $result = $this->order_handler->submit_order($order_id);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
+        }
+
+        wp_send_json_success($result);
+    }
+
+    /**
+     * Add meta box to WooCommerce order page
+     */
+    public function add_order_meta_box() {
+        $screen = wc_get_container()->get(\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class)->custom_orders_table_usage_is_enabled()
+            ? wc_get_page_screen_id('shop-order')
+            : 'shop_order';
+
+        add_meta_box(
+            'dsz-order-meta-box',
+            __('Dropshipzone Order', 'dropshipzone'),
+            [$this, 'render_order_meta_box'],
+            $screen,
+            'side',
+            'high'
+        );
+    }
+
+    /**
+     * Render order meta box content
+     *
+     * @param WP_Post|WC_Order $post_or_order Post or Order object
+     */
+    public function render_order_meta_box($post_or_order) {
+        // Get order object (HPOS compatible)
+        $order = $post_or_order instanceof \WP_Post ? wc_get_order($post_or_order->ID) : $post_or_order;
+        
+        if (!$order) {
+            echo '<p>' . esc_html__('Order not found.', 'dropshipzone') . '</p>';
+            return;
+        }
+
+        $order_id = $order->get_id();
+
+        // Check if order has DSZ products
+        if (!$this->order_handler) {
+            echo '<p>' . esc_html__('Order handler not available.', 'dropshipzone') . '</p>';
+            return;
+        }
+
+        $has_dsz_products = $this->order_handler->order_has_dsz_products($order_id);
+
+        if (!$has_dsz_products) {
+            echo '<p style="color: #666;">' . esc_html__('No Dropshipzone products in this order.', 'dropshipzone') . '</p>';
+            return;
+        }
+
+        // Get DSZ order info
+        $dsz_order = $this->order_handler->get_dsz_order($order_id);
+        $dsz_serial = $order->get_meta('_dsz_serial_number');
+
+        wp_nonce_field('dsz_sync_nonce', 'dsz_order_nonce');
+        ?>
+        <div class="dsz-order-box">
+            <?php if ($dsz_serial || ($dsz_order && !empty($dsz_order['dsz_serial_number']))): 
+                $serial = $dsz_serial ?: $dsz_order['dsz_serial_number'];
+                $status = $dsz_order ? $dsz_order['dsz_status'] : 'not_submitted';
+            ?>
+                <p>
+                    <strong><?php esc_html_e('DSZ Serial:', 'dropshipzone'); ?></strong><br>
+                    <code><?php echo esc_html($serial); ?></code>
+                </p>
+                <p>
+                    <strong><?php esc_html_e('Status:', 'dropshipzone'); ?></strong><br>
+                    <span class="dsz-status dsz-status-<?php echo esc_attr($status); ?>">
+                        <?php echo esc_html(ucwords(str_replace('_', ' ', $status))); ?>
+                    </span>
+                </p>
+                <?php if ($dsz_order && !empty($dsz_order['submitted_at'])): ?>
+                <p>
+                    <strong><?php esc_html_e('Submitted:', 'dropshipzone'); ?></strong><br>
+                    <?php echo esc_html(dsz_format_datetime($dsz_order['submitted_at'])); ?>
+                </p>
+                <?php endif; ?>
+            <?php elseif ($dsz_order && !empty($dsz_order['error_message'])): ?>
+                <p class="dsz-error">
+                    <strong><?php esc_html_e('Last Error:', 'dropshipzone'); ?></strong><br>
+                    <?php echo esc_html($dsz_order['error_message']); ?>
+                </p>
+                <button type="button" class="button button-primary dsz-submit-order-btn" data-order-id="<?php echo esc_attr($order_id); ?>">
+                    <span class="dashicons dashicons-update"></span>
+                    <?php esc_html_e('Retry Submit', 'dropshipzone'); ?>
+                </button>
+            <?php else: ?>
+                <p><?php esc_html_e('This order has Dropshipzone products and can be submitted.', 'dropshipzone'); ?></p>
+                <button type="button" class="button button-primary dsz-submit-order-btn" data-order-id="<?php echo esc_attr($order_id); ?>">
+                    <span class="dashicons dashicons-upload"></span>
+                    <?php esc_html_e('Submit to Dropshipzone', 'dropshipzone'); ?>
+                </button>
+            <?php endif; ?>
+            <div class="dsz-order-message" style="margin-top: 10px;"></div>
+        </div>
+        <style>
+            .dsz-order-box { padding: 5px 0; }
+            .dsz-order-box p { margin: 8px 0; }
+            .dsz-status { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+            .dsz-status-not_submitted { background: #fff3cd; color: #856404; }
+            .dsz-status-processing { background: #cce5ff; color: #004085; }
+            .dsz-status-complete { background: #d4edda; color: #155724; }
+            .dsz-status-error { background: #f8d7da; color: #721c24; }
+            .dsz-error { color: #dc3545; }
+            .dsz-submit-order-btn .dashicons { vertical-align: middle; margin-right: 3px; }
+        </style>
+        <script>
+        jQuery(function($) {
+            $('.dsz-submit-order-btn').on('click', function() {
+                var $btn = $(this);
+                var orderId = $btn.data('order-id');
+                var $message = $btn.siblings('.dsz-order-message');
+                
+                $btn.prop('disabled', true).find('.dashicons').addClass('spin');
+                $message.html('<span style="color:#666;">Submitting...</span>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_submit_order',
+                        nonce: $('#dsz_order_nonce').val(),
+                        order_id: orderId
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $message.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                            setTimeout(function() { location.reload(); }, 1500);
+                        } else {
+                            $message.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                            $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                        }
+                    },
+                    error: function() {
+                        $message.html('<span style="color:red;">Request failed</span>');
+                        $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }
