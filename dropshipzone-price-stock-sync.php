@@ -183,7 +183,7 @@ final class Dropshipzone_Sync {
     }
 
     /**
-     * Create mapping table if it doesn't exist
+     * Create mapping table if it doesn't exist and run migrations
      */
     private function maybe_create_mapping_table() {
         global $wpdb;
@@ -198,6 +198,9 @@ final class Dropshipzone_Sync {
         
         if (!$table_exists) {
             Product_Mapper::create_table();
+        } else {
+            // Run column migration for existing installations
+            Product_Mapper::maybe_add_last_resynced_column();
         }
     }
 
