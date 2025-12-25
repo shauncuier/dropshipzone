@@ -4,7 +4,7 @@
 
 ![Plugin Banner](assets/banner-1544x500.png)
 
-[![WordPress Plugin Version](https://img.shields.io/badge/version-2.2.6-blue.svg)](https://github.com/shauncuier/dropshipzone/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/shauncuier/dropshipzone?label=version&color=blue)](https://github.com/shauncuier/dropshipzone/releases/latest)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
 [![PHP](https://img.shields.io/badge/PHP-7.4%2B-777BB4.svg?logo=php&logoColor=white)](https://php.net/)
@@ -15,18 +15,21 @@
 
 Automatically sync 10,000+ products with real-time pricing, stock levels, and seamless product imports.
 
-[📦 Download Latest Release](https://github.com/shauncuier/dropshipzone/releases) · [📖 Documentation](https://github.com/shauncuier/dropshipzone/wiki) · [🐛 Report Bug](https://github.com/shauncuier/dropshipzone/issues) · [✨ Request Feature](https://github.com/shauncuier/dropshipzone/discussions)
+[📦 Download Latest Release](https://github.com/shauncuier/dropshipzone/releases/latest) · [📖 Documentation](https://github.com/shauncuier/dropshipzone/wiki) · [🐛 Report Bug](https://github.com/shauncuier/dropshipzone/issues) · [✨ Request Feature](https://github.com/shauncuier/dropshipzone/discussions)
 
 </div>
 
 ---
 
-## 🚀 What's New in v2.2.6
+## 🚀 What's New
 
-- **� Order Submission** - Submit WooCommerce orders to Dropshipzone for fulfillment directly from order page.
-- **� Last Resynced Tracking** - See when each product was last fully resynced with filter options.
-- **⚡ API Load Balancer** - Smart adaptive delays prevent rate limit errors and maximize throughput.
-- **� Resync Optimization** - Inactive products (draft + out of stock) are skipped during bulk resync.
+See [CHANGELOG.md](CHANGELOG.md) for full release notes, or check the [latest release](https://github.com/shauncuier/dropshipzone/releases/latest).
+
+**Recent highlights:**
+- **Order Submission** - Submit WooCommerce orders to Dropshipzone for fulfillment
+- **Complete API Integration** - All Dropshipzone API endpoints implemented
+- **Resync Never Synced** - Bulk resync products that have never been synced
+- **API Load Balancer** - Smart adaptive delays prevent rate limit errors
 
 ---
 
