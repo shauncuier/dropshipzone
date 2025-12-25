@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.7
+Stable tag: 2.2.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,12 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 9. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.8 =
+* ADDED: Resync Never Synced button - bulk resync all never-synced products.
+* ADDED: Never Resynced stat box on Product Mapping page.
+* FIXED: Improved last_resynced column migration reliability.
+* FIXED: Migration now runs on plugin load, not just activation.
 
 = 2.2.7 =
 * ADDED: Complete API integration - all Dropshipzone endpoints now implemented.

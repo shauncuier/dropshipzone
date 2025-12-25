@@ -5,6 +5,19 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.8] - 2025-12-26
+
+### Added
+- **Resync Never Synced Button**: Bulk resync all products that have never been resynced.
+- **Never Resynced stat box**: Shows count of products with NULL last_resynced.
+- Debug logging for `update_last_resynced()` troubleshooting.
+
+### Fixed
+- Improved `last_resynced` column migration reliability using information_schema.
+- Migration now runs on plugin load, not just activation.
+
+---
+
 ## [2.2.7] - 2025-12-26
 
 ### Added
