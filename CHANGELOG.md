@@ -5,6 +5,19 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.9] - 2025-12-26
+
+### Fixed
+- **Missing Return Statement**: Fixed `ajax_resync_all()` to properly exit after early return when no products need resyncing.
+- **Batch API Fetching**: Refactored `ajax_resync_never_synced()` to batch fetch SKUs (100 at a time) instead of making individual API calls per product.
+- **Frontend Debouncing**: Added `resyncInProgress` flag to prevent overlapping resync operations in admin.js.
+
+### Improved
+- Added memory limit protection to never-synced resync.
+- Enhanced logging for batch operations in never-synced resync.
+
+---
+
 ## [2.2.8] - 2025-12-26
 
 ### Added

@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.8
+Stable tag: 2.2.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,13 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 9. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.2.9 =
+* FIXED: Missing return statement in ajax_resync_all() now properly exits after early return.
+* FIXED: ajax_resync_never_synced() now batch fetches SKUs (100 at a time) instead of individual API calls.
+* FIXED: Added frontend debouncing to prevent overlapping resync operations.
+* IMPROVED: Memory limit protection for never-synced resync.
+* IMPROVED: Enhanced logging for batch operations.
 
 = 2.2.8 =
 * ADDED: Resync Never Synced button - bulk resync all never-synced products.

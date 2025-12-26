@@ -11,6 +11,7 @@
     // Global namespace
     window.DSZAdmin = {
         syncInterval: null,
+        resyncInProgress: false, // Prevent overlapping resync operations
 
         /**
          * Initialize
@@ -1519,6 +1520,12 @@
         resyncAllProducts: function (e) {
             e.preventDefault();
 
+            // Prevent overlapping resync operations
+            if (this.resyncInProgress) {
+                DSZAdmin.showNotification('warning', 'A resync operation is already in progress. Please wait.');
+                return;
+            }
+
             var $btn = $('#dsz-resync-all');
             var $message = $('#dsz-resync-all-message');
             var $progress = $('#dsz-resync-all-progress');
@@ -1528,6 +1535,7 @@
             }
 
             // Show loading state and progress bar
+            this.resyncInProgress = true;
             $btn.addClass('dsz-loading').prop('disabled', true);
             $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Resyncing All...');
             $message.addClass('hidden').removeClass('dsz-message-success dsz-message-error');
@@ -1590,6 +1598,7 @@
                     DSZAdmin.showNotification('error', dsz_admin.strings.error);
                 },
                 complete: function () {
+                    DSZAdmin.resyncInProgress = false;
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                     $btn.html('<span class="dashicons dashicons-update"></span> Resync All Products');
 
@@ -1605,6 +1614,12 @@
          * Resync product with data from Dropshipzone API
          */
         resyncProduct: function (e) {
+            // Prevent overlapping resync operations
+            if (this.resyncInProgress) {
+                DSZAdmin.showNotification('warning', 'A resync operation is already in progress. Please wait.');
+                return;
+            }
+
             var $btn = $(e.currentTarget);
             var sku = $btn.data('sku');
             var productId = $btn.data('product-id');

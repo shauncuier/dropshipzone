@@ -2206,6 +2206,7 @@ class Admin_UI {
                 'skipped_inactive' => $skipped_inactive,
                 'error_details' => [],
             ]);
+            return; // Prevent further execution
         }
 
         // Batch fetch product data from API (100 SKUs per request, processed sequentially)
@@ -2335,6 +2336,8 @@ class Admin_UI {
 
     /**
      * AJAX handler for resyncing products that have never been synced
+     * 
+     * Uses batch API fetching to reduce API calls (similar to ajax_resync_all)
      */
     public function ajax_resync_never_synced() {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
@@ -2357,17 +2360,80 @@ class Admin_UI {
                 'success' => 0,
                 'errors' => 0,
             ]);
+            return; // Prevent further execution
         }
 
         $success_count = 0;
         $error_count = 0;
         $errors = [];
 
+        // Collect all SKUs for batch fetching
+        $all_skus = [];
+        foreach ($never_synced as $mapping) {
+            $all_skus[] = $mapping['dsz_sku'];
+        }
+
+        // Batch fetch product data from API (100 SKUs per request)
+        $api_products = [];
+        $sku_chunks = array_chunk($all_skus, 100);
+        
+        $this->logger->info('Starting batch resync for never-synced products - API fetch', [
+            'products_to_sync' => count($never_synced),
+            'api_batches' => count($sku_chunks),
+        ]);
+
+        // Process API requests sequentially (one batch at a time)
+        foreach ($sku_chunks as $chunk_index => $chunk) {
+            $this->logger->debug('Fetching API batch for never-synced', [
+                'batch' => $chunk_index + 1,
+                'total_batches' => count($sku_chunks),
+                'skus_in_batch' => count($chunk),
+            ]);
+            
+            $response = $this->api_client->get_products_by_skus($chunk);
+            
+            if (is_wp_error($response)) {
+                $this->logger->error('Batch fetch failed for never-synced', [
+                    'batch' => $chunk_index + 1,
+                    'error' => $response->get_error_message(),
+                ]);
+                continue;
+            }
+
+            if (!empty($response['result'])) {
+                foreach ($response['result'] as $product_data) {
+                    if (!empty($product_data['sku'])) {
+                        $api_products[$product_data['sku']] = $product_data;
+                    }
+                }
+            }
+        }
+
+        $this->logger->info('API batch fetch complete for never-synced', [
+            'requested_skus' => count($all_skus),
+            'found_products' => count($api_products),
+        ]);
+
+        // Now process each product with pre-fetched data
         foreach ($never_synced as $mapping) {
             $product_id = $mapping['wc_product_id'];
             $sku = $mapping['dsz_sku'];
 
-            $result = $this->product_importer->resync_product($product_id, null, [
+            // Check if we have API data for this SKU
+            if (!isset($api_products[$sku])) {
+                $error_count++;
+                $errors[] = [
+                    'product_id' => $product_id,
+                    'sku' => $sku,
+                    'error' => __('Not found in Dropshipzone API', 'dropshipzone'),
+                ];
+                continue;
+            }
+
+            $api_data = $api_products[$sku];
+
+            // Resync with pre-fetched data (price and stock only for never-synced)
+            $result = $this->product_importer->resync_product($product_id, $api_data, [
                 'update_title' => false,
                 'update_description' => false,
                 'update_images' => false,
@@ -2384,6 +2450,15 @@ class Admin_UI {
                 ];
             } else {
                 $success_count++;
+            }
+
+            // Memory check
+            if (dsz_is_memory_near_limit(85)) {
+                $this->logger->warning('Memory limit approaching, stopping never-synced resync early', [
+                    'processed' => $success_count + $error_count,
+                    'total' => count($never_synced),
+                ]);
+                break;
             }
         }
 
