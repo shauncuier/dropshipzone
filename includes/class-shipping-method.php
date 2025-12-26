@@ -66,9 +66,12 @@ class Shipping_Method extends \WC_Shipping_Method {
 
         $this->init();
 
-        // Get API client and logger
-        $this->api_client = dsz_get_api_client();
-        $this->logger = dsz_get_logger();
+        // Get API client and logger from main plugin instance
+        $plugin = \Dropshipzone\dsz_sync();
+        if ($plugin) {
+            $this->api_client = $plugin->api_client;
+            $this->logger = $plugin->logger;
+        }
     }
 
     /**
