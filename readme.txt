@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.2.9
+Stable tag: 2.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,10 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 9. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.3.0 =
+* NEW: Scan Unmapped Products - Check WC products against DSZ API, link found products, mark unfound as non-DSZ.
+* FIXED: Resync Never Synced button was not working (wrong JavaScript variable name).
 
 = 2.2.9 =
 * FIXED: Missing return statement in ajax_resync_all() now properly exits after early return.

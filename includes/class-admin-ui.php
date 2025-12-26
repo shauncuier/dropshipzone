@@ -103,6 +103,7 @@ class Admin_UI {
         add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
         add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
         add_action('wp_ajax_dsz_resync_never_synced', [$this, 'ajax_resync_never_synced']);
+        add_action('wp_ajax_dsz_scan_unmapped_products', [$this, 'ajax_scan_unmapped_products']);
         add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
         
         // Order AJAX handlers
@@ -1445,7 +1446,60 @@ class Admin_UI {
                                 type: 'POST',
                                 data: {
                                     action: 'dsz_resync_never_synced',
-                                    nonce: dszAdmin.nonce
+                                    nonce: dsz_admin.nonce
+                                },
+                                success: function(response) {
+                                    if (response.success) {
+                                        $status.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                                        setTimeout(function() { location.reload(); }, 2000);
+                                    } else {
+                                        $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                                        $btn.prop('disabled', false);
+                                    }
+                                },
+                                error: function() {
+                                    $status.html('<span style="color:red;">Request failed</span>');
+                                    $btn.prop('disabled', false);
+                                }
+                            });
+                        });
+                    });
+                    </script>
+                    <?php endif; ?>
+                    
+                    <?php if ($unmapped_count > 0): ?>
+                    <div style="margin-top: 15px;">
+                        <button type="button" id="dsz-scan-unmapped" class="button button-secondary">
+                            <span class="dashicons dashicons-search" style="line-height: 1.4;"></span>
+                            <?php 
+                            /* translators: %d: number of products */
+                            echo esc_html(sprintf(__('Scan %d Unmapped Products', 'dropshipzone'), $unmapped_count)); 
+                            ?>
+                        </button>
+                        <span id="dsz-scan-unmapped-status" style="margin-left: 10px;"></span>
+                        <p class="description" style="margin-top: 5px;">
+                            <?php esc_html_e('Checks if unmapped products exist in Dropshipzone. Found products will be linked; not-found products will be marked as Non-DSZ.', 'dropshipzone'); ?>
+                        </p>
+                    </div>
+                    <script>
+                    jQuery(function($) {
+                        $('#dsz-scan-unmapped').on('click', function() {
+                            var $btn = $(this);
+                            var $status = $('#dsz-scan-unmapped-status');
+                            
+                            if (!confirm('<?php echo esc_js(__('This will check all unmapped products against Dropshipzone API. Products found will be linked; products not found will be marked as Non-DSZ. Continue?', 'dropshipzone')); ?>')) {
+                                return;
+                            }
+                            
+                            $btn.prop('disabled', true);
+                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Scanning products...</span>');
+                            
+                            $.ajax({
+                                url: ajaxurl,
+                                type: 'POST',
+                                data: {
+                                    action: 'dsz_scan_unmapped_products',
+                                    nonce: dsz_admin.nonce
                                 },
                                 success: function(response) {
                                     if (response.success) {
@@ -2476,6 +2530,181 @@ class Admin_UI {
             'success' => $success_count,
             'errors' => $error_count,
             'error_details' => array_slice($errors, 0, 10),
+        ]);
+    }
+
+    /**
+     * AJAX handler for scanning unmapped products against Dropshipzone API
+     * 
+     * Checks if unmapped WC products exist in DSZ:
+     * - Found: creates mapping and resyncs
+     * - Not found: marks as non-DSZ product (_dsz_not_available meta)
+     */
+    public function ajax_scan_unmapped_products() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        // Get all WC products that are NOT in our mapping table
+        global $wpdb;
+        $mapping_table = $wpdb->prefix . 'dsz_product_mapping';
+        
+        // Get products with SKUs that are not already mapped
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $unmapped_products = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT p.ID, pm.meta_value as sku 
+                FROM {$wpdb->posts} p
+                INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+                LEFT JOIN {$mapping_table} m ON p.ID = m.wc_product_id
+                WHERE p.post_type IN ('product', 'product_variation')
+                AND p.post_status != 'trash'
+                AND pm.meta_value != ''
+                AND m.id IS NULL
+                ORDER BY p.ID DESC
+                LIMIT %d",
+                500
+            ),
+            ARRAY_A
+        );
+
+        if (empty($unmapped_products)) {
+            wp_send_json_success([
+                'message' => __('No unmapped products to scan.', 'dropshipzone'),
+                'found' => 0,
+                'not_found' => 0,
+            ]);
+            return;
+        }
+
+        $this->logger->info('Starting unmapped product scan', [
+            'products_to_scan' => count($unmapped_products),
+        ]);
+
+        // Collect all SKUs for batch API lookup
+        $all_skus = [];
+        $sku_to_product = [];
+        foreach ($unmapped_products as $product) {
+            $sku = trim($product['sku']);
+            if (!empty($sku)) {
+                $all_skus[] = $sku;
+                $sku_to_product[$sku] = intval($product['ID']);
+            }
+        }
+
+        // Batch fetch from API (100 SKUs at a time)
+        $api_products = [];
+        $sku_chunks = array_chunk($all_skus, 100);
+        
+        foreach ($sku_chunks as $chunk_index => $chunk) {
+            $this->logger->debug('Scanning API batch', [
+                'batch' => $chunk_index + 1,
+                'total_batches' => count($sku_chunks),
+                'skus_in_batch' => count($chunk),
+            ]);
+            
+            $response = $this->api_client->get_products_by_skus($chunk);
+            
+            if (is_wp_error($response)) {
+                $this->logger->error('Scan batch fetch failed', [
+                    'batch' => $chunk_index + 1,
+                    'error' => $response->get_error_message(),
+                ]);
+                continue;
+            }
+
+            if (!empty($response['result'])) {
+                foreach ($response['result'] as $product_data) {
+                    if (!empty($product_data['sku'])) {
+                        $api_products[$product_data['sku']] = $product_data;
+                    }
+                }
+            }
+        }
+
+        $this->logger->info('Scan API fetch complete', [
+            'requested_skus' => count($all_skus),
+            'found_in_dsz' => count($api_products),
+        ]);
+
+        $found_count = 0;
+        $not_found_count = 0;
+        $errors = [];
+
+        // Process each unmapped product
+        foreach ($all_skus as $sku) {
+            $product_id = $sku_to_product[$sku];
+            
+            if (isset($api_products[$sku])) {
+                // Product FOUND in Dropshipzone - create mapping and resync
+                $api_data = $api_products[$sku];
+                
+                // Create mapping
+                $title = isset($api_data['title']) ? $api_data['title'] : '';
+                $mapping_result = $this->product_mapper->map($product_id, $sku, $title);
+                
+                if ($mapping_result) {
+                    // Clear any previous "not available" flag
+                    delete_post_meta($product_id, '_dsz_not_available');
+                    
+                    // Resync the product with DSZ data
+                    $this->product_importer->resync_product($product_id, $api_data, [
+                        'update_price' => true,
+                        'update_stock' => true,
+                        'update_images' => false, // Don't replace user's images
+                        'update_description' => false, // Don't replace user's description
+                        'update_title' => false, // Don't replace user's title
+                    ]);
+                    
+                    $found_count++;
+                    $this->logger->info('Unmapped product linked to DSZ', [
+                        'product_id' => $product_id,
+                        'sku' => $sku,
+                    ]);
+                } else {
+                    $errors[] = sprintf('%s: %s', $sku, __('Failed to create mapping', 'dropshipzone'));
+                }
+            } else {
+                // Product NOT FOUND in Dropshipzone - mark as non-DSZ product
+                update_post_meta($product_id, '_dsz_not_available', '1');
+                $not_found_count++;
+                
+                $this->logger->debug('Product marked as non-DSZ', [
+                    'product_id' => $product_id,
+                    'sku' => $sku,
+                ]);
+            }
+
+            // Memory check
+            if (dsz_is_memory_near_limit(85)) {
+                $this->logger->warning('Memory limit approaching, stopping scan early', [
+                    'processed' => $found_count + $not_found_count,
+                    'total' => count($all_skus),
+                ]);
+                break;
+            }
+        }
+
+        /* translators: %1$d: found count, %2$d: not found count */
+        $message = sprintf(
+            __('Scan complete! %1$d products linked to Dropshipzone, %2$d marked as non-DSZ products.', 'dropshipzone'),
+            $found_count,
+            $not_found_count
+        );
+
+        $this->logger->info('Unmapped product scan complete', [
+            'total_scanned' => count($all_skus),
+            'found' => $found_count,
+            'not_found' => $not_found_count,
+        ]);
+
+        wp_send_json_success([
+            'message' => $message,
+            'found' => $found_count,
+            'not_found' => $not_found_count,
+            'errors' => array_slice($errors, 0, 10),
         ]);
     }
 
