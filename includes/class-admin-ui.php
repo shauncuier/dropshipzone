@@ -102,6 +102,8 @@ class Admin_UI {
         add_action('wp_ajax_dsz_import_product', [$this, 'ajax_import_product']);
         add_action('wp_ajax_dsz_resync_product', [$this, 'ajax_resync_product']);
         add_action('wp_ajax_dsz_resync_all', [$this, 'ajax_resync_all']);
+        add_action('wp_ajax_dsz_resync_images', [$this, 'ajax_resync_images']);
+        add_action('wp_ajax_dsz_resync_categories', [$this, 'ajax_resync_categories']);
         add_action('wp_ajax_dsz_resync_never_synced', [$this, 'ajax_resync_never_synced']);
         add_action('wp_ajax_dsz_scan_unmapped_products', [$this, 'ajax_scan_unmapped_products']);
         add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
@@ -961,14 +963,50 @@ class Admin_UI {
                         <div id="dsz-sync-message" class="dsz-message hidden"></div>
                     </div>
 
-                    <!-- Action Card 3: Refresh Product Data -->
+                    <!-- Action Card 3: Refresh Images -->
+                    <div class="dsz-action-card">
+                        <div class="dsz-action-card-header">
+                            <span class="dashicons dashicons-format-image"></span>
+                            <h3><?php esc_html_e('Refresh Images', 'dropshipzone'); ?></h3>
+                        </div>
+                        <p class="dsz-action-card-desc">
+                            <?php esc_html_e('Re-download product images and gallery from Dropshipzone for linked products.', 'dropshipzone'); ?>
+                        </p>
+                        <div class="dsz-action-card-footer">
+                            <button type="button" id="dsz-resync-images" class="button button-secondary">
+                                <span class="dashicons dashicons-format-image"></span>
+                                <?php esc_html_e('Refresh Images', 'dropshipzone'); ?>
+                            </button>
+                        </div>
+                        <div id="dsz-resync-images-message" class="dsz-message hidden"></div>
+                    </div>
+
+                    <!-- Action Card 4: Refresh Categories -->
+                    <div class="dsz-action-card">
+                        <div class="dsz-action-card-header">
+                            <span class="dashicons dashicons-category"></span>
+                            <h3><?php esc_html_e('Refresh Categories', 'dropshipzone'); ?></h3>
+                        </div>
+                        <p class="dsz-action-card-desc">
+                            <?php esc_html_e('Update product categories from Dropshipzone for linked products.', 'dropshipzone'); ?>
+                        </p>
+                        <div class="dsz-action-card-footer">
+                            <button type="button" id="dsz-resync-categories" class="button button-secondary">
+                                <span class="dashicons dashicons-category"></span>
+                                <?php esc_html_e('Refresh Categories', 'dropshipzone'); ?>
+                            </button>
+                        </div>
+                        <div id="dsz-resync-categories-message" class="dsz-message hidden"></div>
+                    </div>
+
+                    <!-- Action Card 5: Refresh All Product Data -->
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
                             <span class="dashicons dashicons-download"></span>
-                            <h3><?php esc_html_e('Refresh Product Data', 'dropshipzone'); ?></h3>
+                            <h3><?php esc_html_e('Refresh All Data', 'dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
-                            <?php esc_html_e('Re-download images, descriptions, and all product details from Dropshipzone for linked products.', 'dropshipzone'); ?>
+                            <?php esc_html_e('Re-download everything: images, descriptions, categories, price, stock for linked products.', 'dropshipzone'); ?>
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-resync-all" class="button button-secondary">
@@ -2385,6 +2423,148 @@ class Admin_UI {
             'errors' => $error_count,
             'skipped_inactive' => $skipped_inactive,
             'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
+        ]);
+    }
+
+    /**
+     * AJAX handler for resyncing ONLY product images
+     */
+    public function ajax_resync_images() {
+        $this->resync_specific('images');
+    }
+
+    /**
+     * AJAX handler for resyncing ONLY product categories
+     */
+    public function ajax_resync_categories() {
+        $this->resync_specific('categories');
+    }
+
+    /**
+     * Shared handler for specific resync types (images or categories)
+     * 
+     * @param string $type 'images' or 'categories'
+     */
+    private function resync_specific($type) {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        // Get all mappings
+        $mappings = $this->product_mapper->get_mappings(['limit' => 1000]);
+        
+        if (empty($mappings)) {
+            wp_send_json_error(['message' => __('No mapped products found.', 'dropshipzone')]);
+        }
+
+        $total = count($mappings);
+        $success_count = 0;
+        $error_count = 0;
+        $errors = [];
+
+        // Collect all SKUs for batch API lookup
+        $all_skus = [];
+        $sku_to_mapping = [];
+        foreach ($mappings as $mapping) {
+            $sku = $mapping['dsz_sku'];
+            $all_skus[] = $sku;
+            $sku_to_mapping[$sku] = $mapping;
+        }
+
+        // Batch fetch from API
+        $api_products = [];
+        $sku_chunks = array_chunk($all_skus, 100);
+        
+        $this->logger->info('Starting ' . $type . ' resync - API fetch', [
+            'products_to_sync' => count($mappings),
+            'api_batches' => count($sku_chunks),
+        ]);
+
+        foreach ($sku_chunks as $chunk_index => $chunk) {
+            $response = $this->api_client->get_products_by_skus($chunk);
+            
+            if (is_wp_error($response)) {
+                $this->logger->error($type . ' resync batch fetch failed', [
+                    'batch' => $chunk_index + 1,
+                    'error' => $response->get_error_message(),
+                ]);
+                continue;
+            }
+
+            if (!empty($response['result'])) {
+                foreach ($response['result'] as $product_data) {
+                    if (!empty($product_data['sku'])) {
+                        $api_products[$product_data['sku']] = $product_data;
+                    }
+                }
+            }
+        }
+
+        // Define which options to update based on type
+        $options = [
+            'update_images' => ($type === 'images'),
+            'update_categories' => ($type === 'categories'),
+            'update_description' => false,
+            'update_price' => false,
+            'update_stock' => false,
+            'update_title' => false,
+        ];
+
+        // Process each product
+        foreach ($mappings as $mapping) {
+            $product_id = $mapping['wc_product_id'];
+            $sku = $mapping['dsz_sku'];
+
+            if (!isset($api_products[$sku])) {
+                $error_count++;
+                $errors[] = sprintf('%s: %s', $sku, __('Not found in API', 'dropshipzone'));
+                continue;
+            }
+
+            $api_data = $api_products[$sku];
+            $result = $this->product_importer->resync_product($product_id, $api_data, $options);
+
+            if (is_wp_error($result)) {
+                $error_count++;
+                $errors[] = sprintf('%s: %s', $sku, $result->get_error_message());
+            } else {
+                $success_count++;
+            }
+
+            // Memory check
+            if (dsz_is_memory_near_limit(85)) {
+                $this->logger->warning($type . ' resync stopped early due to memory limit');
+                break;
+            }
+        }
+
+        $type_label = ($type === 'images') ? __('images', 'dropshipzone') : __('categories', 'dropshipzone');
+        
+        /* translators: %1$d: success count, %2$d: total count, %3$s: type label */
+        $message = sprintf(
+            __('Refreshed %3$s for %1$d of %2$d products.', 'dropshipzone'),
+            $success_count,
+            $total,
+            $type_label
+        );
+
+        if ($error_count > 0) {
+            /* translators: %d: error count */
+            $message .= ' ' . sprintf(__('%d errors.', 'dropshipzone'), $error_count);
+        }
+
+        $this->logger->info($type . ' resync complete', [
+            'success' => $success_count,
+            'errors' => $error_count,
+        ]);
+
+        wp_send_json_success([
+            'message' => $message,
+            'success' => $success_count,
+            'errors' => $error_count,
+            'error_details' => array_slice($errors, 0, 10),
         ]);
     }
 

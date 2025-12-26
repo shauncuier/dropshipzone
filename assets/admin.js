@@ -186,6 +186,12 @@
 
             // Resync All Products action
             $('#dsz-resync-all').on('click', this.resyncAllProducts.bind(this));
+
+            // Resync Images action
+            $('#dsz-resync-images').on('click', this.resyncImages.bind(this));
+
+            // Resync Categories action
+            $('#dsz-resync-categories').on('click', this.resyncCategories.bind(this));
         },
 
         /**
@@ -1606,6 +1612,80 @@
                     setTimeout(function () {
                         $progress.addClass('hidden');
                     }, 3000);
+                }
+            });
+        },
+
+        /**
+         * Resync only product images
+         */
+        resyncImages: function (e) {
+            e.preventDefault();
+            this.resyncSpecific('images', '#dsz-resync-images', '#dsz-resync-images-message');
+        },
+
+        /**
+         * Resync only product categories
+         */
+        resyncCategories: function (e) {
+            e.preventDefault();
+            this.resyncSpecific('categories', '#dsz-resync-categories', '#dsz-resync-categories-message');
+        },
+
+        /**
+         * Shared function for specific resync types
+         */
+        resyncSpecific: function (type, btnSelector, messageSelector) {
+            var $btn = $(btnSelector);
+            var $message = $(messageSelector);
+            var typeLabel = type === 'images' ? 'images' : 'categories';
+
+            if (this.resyncInProgress) {
+                DSZAdmin.showNotification('warning', 'A resync operation is already in progress. Please wait.');
+                return;
+            }
+
+            if (!confirm('This will refresh ' + typeLabel + ' for all mapped products. Continue?')) {
+                return;
+            }
+
+            this.resyncInProgress = true;
+            $btn.addClass('dsz-loading').prop('disabled', true);
+            $btn.find('.dashicons').addClass('dsz-spin');
+            $message.removeClass('hidden dsz-message-success dsz-message-error').html('<span class="dashicons dashicons-update dsz-spin"></span> Processing...');
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_resync_' + type,
+                    nonce: dsz_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $message
+                            .removeClass('dsz-message-error')
+                            .addClass('dsz-message-success')
+                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                        DSZAdmin.showNotification('success', response.data.message);
+                    } else {
+                        $message
+                            .removeClass('dsz-message-success')
+                            .addClass('dsz-message-error')
+                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                        DSZAdmin.showNotification('error', response.data.message);
+                    }
+                },
+                error: function () {
+                    $message
+                        .addClass('dsz-message-error')
+                        .html('<span class="dashicons dashicons-warning"></span> Request failed');
+                    DSZAdmin.showNotification('error', 'Request failed');
+                },
+                complete: function () {
+                    DSZAdmin.resyncInProgress = false;
+                    $btn.removeClass('dsz-loading').prop('disabled', false);
+                    $btn.find('.dashicons').removeClass('dsz-spin');
                 }
             });
         },
