@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.3.2
+ * Version: 2.4.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.3.2');
+define('DSZ_SYNC_VERSION', '2.4.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -111,6 +111,7 @@ final class Dropshipzone_Sync {
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-shipping-method.php';
         
         // Admin UI
         if (is_admin()) {
@@ -180,6 +181,20 @@ final class Dropshipzone_Sync {
         if (is_admin()) {
             $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler);
         }
+
+        // Register shipping method
+        add_filter('woocommerce_shipping_methods', [$this, 'register_shipping_method']);
+    }
+
+    /**
+     * Register DSZ shipping method with WooCommerce
+     *
+     * @param array $methods Existing shipping methods.
+     * @return array Modified shipping methods.
+     */
+    public function register_shipping_method($methods) {
+        $methods['dsz_shipping'] = 'Dropshipzone\\Shipping_Method';
+        return $methods;
     }
 
     /**

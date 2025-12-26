@@ -5,6 +5,21 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-12-27
+
+### Added
+- **Shipping Zones**: New WooCommerce shipping method that calculates rates using Dropshipzone zone mapping.
+  - Maps customer postcode to DSZ shipping zones (Standard, Defined, Advanced)
+  - Fetches per-product zone rates from DSZ API
+  - Supports free shipping threshold and handling fees
+  - Handles undeliverable zones (9999)
+  - Caches zone data for performance
+
+### Changed
+- Updated `readme.txt` and `README.md` with new features and roadmap.
+
+---
+
 ## [2.3.2] - 2025-12-27
 
 ### Fixed

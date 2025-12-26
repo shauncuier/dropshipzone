@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.3.2
+Stable tag: 2.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,9 +20,12 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 * **Price Sync** - Automatically update regular and sale prices
 * **Stock Sync** - Keep stock quantities accurate in real-time
+* **Shipping Zones** - Calculate shipping using DSZ zone mapping and per-product rates
 * **Product Import** - Import products directly from Dropshipzone catalog
 * **Order Submission** - Submit orders to Dropshipzone for fulfillment
 * **Product Mapping** - Link WooCommerce products to Dropshipzone SKUs
+* **Scan Unmapped Products** - Auto-detect and link existing WC products to DSZ
+* **Granular Resync** - Refresh images, categories, or all data separately
 * **SKU Matching** - Products matched by SKU for accuracy
 * **Flexible Pricing** - Percentage or fixed markup options
 * **GST Support** - Include or exclude 10% Australian GST
@@ -97,7 +100,31 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 8. Order Submission - Submit orders to Dropshipzone for fulfillment
 9. Logs - View detailed sync activity and errors
 
+== Future Roadmap ==
+
+We're constantly improving DropshipZone Sync. Here's what's planned:
+
+= Coming Soon =
+
+* **Bulk Order Submission** - Submit multiple orders at once
+* **Advanced Shipping Rules** - Per-category and weight-based shipping
+* **Product Variations** - Full support for variable products from DSZ
+* **Inventory Alerts** - Email notifications for low stock
+* **Order Tracking Integration** - Display tracking info from DSZ orders
+
+= Under Consideration =
+
+* **Multi-supplier Support** - Integrate with multiple dropship suppliers
+* **Profit Calculator** - View margins on product and order level
+* **Auto-pricing Rules** - Dynamic pricing based on competitor analysis
+* **WooCommerce Blocks Support** - Full Gutenberg block compatibility
+
 == Changelog ==
+
+= 2.4.0 =
+* NEW: Shipping Zones - WooCommerce shipping method using DSZ zone mapping and per-product rates.
+* NEW: Supports free shipping threshold, handling fees, and undeliverable zone detection.
+* UPDATED: readme.txt and README.md with new features and roadmap.
 
 = 2.3.2 =
 * FIXED: WordPress.org compatibility - 15 unescaped output issues fixed with esc_attr().

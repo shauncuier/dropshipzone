@@ -26,10 +26,11 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 See [CHANGELOG.md](CHANGELOG.md) for full release notes, or check the [latest release](https://github.com/shauncuier/dropshipzone/releases/latest).
 
 **Recent highlights:**
+- **Shipping Zones** - WooCommerce shipping method using DSZ zone mapping
+- **Scan Unmapped Products** - Auto-detect and link existing WC products to DSZ
+- **Granular Resync** - Refresh images, categories, or all data separately
 - **Order Submission** - Submit WooCommerce orders to Dropshipzone for fulfillment
 - **Complete API Integration** - All Dropshipzone API endpoints implemented
-- **Resync Never Synced** - Bulk resync products that have never been synced
-- **API Load Balancer** - Smart adaptive delays prevent rate limit errors
 
 ---
 
@@ -39,13 +40,15 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 
 | Priority | Feature | Description | Status |
 |----------|---------|-------------|--------|
-| 🔴 High | **Tracking Number Sync** | Auto-import tracking numbers and update WooCommerce orders | 📋 Planned |
-| 🟡 Medium | **Category Mapping** | Map Dropshipzone categories to WooCommerce categories | 📋 Planned |
-| 🟡 Medium | **Bulk Product Actions** | Select multiple products for bulk import/sync operations | 📋 Planned |
-| 🟡 Medium | **Email Notifications** | Get notified on sync errors, low stock, or price changes | 📋 Planned |
-| 🟢 Low | **Multi-currency Support** | Support for international stores with currency conversion | 💭 Considering |
-| 🟢 Low | **Webhook Integration** | Real-time updates via webhooks (when API supports it) | 💭 Considering |
-| 🟢 Low | **Performance Analytics** | Dashboard with sales analytics for dropship products | 💭 Considering |
+| ✅ Done | **Shipping Zones** | WooCommerce shipping method using DSZ zone rates | ✅ Complete |
+| ✅ Done | **Scan Unmapped Products** | Auto-link existing products to DSZ | ✅ Complete |
+| ✅ Done | **Granular Resync** | Refresh images, categories, or all separately | ✅ Complete |
+| 🔴 High | **Tracking Number Sync** | Auto-import tracking numbers and update orders | 📋 Planned |
+| 🟡 Medium | **Bulk Order Submission** | Submit multiple orders at once | 📋 Planned |
+| 🟡 Medium | **Email Notifications** | Get notified on sync errors, low stock | 📋 Planned |
+| 🟡 Medium | **Product Variations** | Full support for variable products from DSZ | 📋 Planned |
+| 🟢 Low | **Multi-currency Support** | Support for international stores | 💭 Considering |
+| 🟢 Low | **Profit Calculator** | View margins on product and order level | 💭 Considering |
 
 ### Legend
 - ✅ **Complete** - Feature is available now
@@ -63,9 +66,12 @@ We're constantly working to improve DropshipZone Sync! Here's what's coming:
 |---------|-------------|
 | 🔄 **Price Sync** | Automatically update regular and sale prices from supplier |
 | 📦 **Stock Sync** | Keep stock quantities accurate in real-time |
+| 🚚 **Shipping Zones** | WooCommerce shipping using DSZ zone mapping and per-product rates |
 | 🛍️ **Product Import** | Import products directly from Dropshipzone catalog |
 | 📤 **Order Submission** | Submit orders to Dropshipzone for fulfillment |
 | 🗺️ **Product Mapping** | Link WooCommerce products to Dropshipzone SKUs |
+| 🔍 **Scan Unmapped** | Auto-detect and link existing WC products to DSZ |
+| 🔃 **Granular Resync** | Refresh images, categories, or all data separately |
 | 🏷️ **SKU Matching** | Products matched by SKU for accuracy |
 | 💰 **Flexible Pricing** | Percentage or fixed markup options |
 | 🧮 **GST Support** | Include or exclude 10% Australian GST |
