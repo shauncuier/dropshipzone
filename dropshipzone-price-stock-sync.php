@@ -111,7 +111,7 @@ final class Dropshipzone_Sync {
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-shipping-method.php';
+        // Note: class-shipping-method.php is loaded via woocommerce_shipping_init hook
         
         // Admin UI
         if (is_admin()) {
@@ -182,8 +182,16 @@ final class Dropshipzone_Sync {
             $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler);
         }
 
-        // Register shipping method
+        // Register shipping method (after WooCommerce shipping is initialized)
+        add_action('woocommerce_shipping_init', [$this, 'load_shipping_method']);
         add_filter('woocommerce_shipping_methods', [$this, 'register_shipping_method']);
+    }
+
+    /**
+     * Load the shipping method class after WooCommerce is ready
+     */
+    public function load_shipping_method() {
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-shipping-method.php';
     }
 
     /**
