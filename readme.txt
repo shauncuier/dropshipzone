@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.3.1
+Stable tag: 2.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,9 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 9. Logs - View detailed sync activity and errors
 
 == Changelog ==
+
+= 2.3.2 =
+* FIXED: WordPress.org compatibility - 15 unescaped output issues fixed with esc_attr().
 
 = 2.3.1 =
 * NEW: Granular resync buttons - Refresh Images, Refresh Categories, or Refresh All Data separately.

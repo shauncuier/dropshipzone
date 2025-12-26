@@ -347,7 +347,7 @@ class Admin_UI {
                 $url = admin_url('admin.php?page=' . $page_slug);
             ?>
                 <a href="<?php echo esc_url($url); ?>" 
-                   class="dsz-nav-item <?php echo $is_active ? 'dsz-nav-active' : ''; ?>"
+                   class="dsz-nav-item <?php echo esc_attr($is_active ? 'dsz-nav-active' : ''); ?>"
                    title="<?php echo esc_attr($item['label']); ?>">
                     <span class="dashicons <?php echo esc_attr($item['icon']); ?>"></span>
                     <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
@@ -375,9 +375,9 @@ class Admin_UI {
             <div class="dsz-dashboard">
                 <!-- Status Cards -->
                 <div class="dsz-cards">
-                    <div class="dsz-card dsz-card-status <?php echo $token_status['is_valid'] ? 'dsz-card-success' : 'dsz-card-error'; ?>">
+                    <div class="dsz-card dsz-card-status <?php echo esc_attr($token_status['is_valid'] ? 'dsz-card-success' : 'dsz-card-error'); ?>">
                         <div class="dsz-card-icon">
-                            <span class="dashicons <?php echo $token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
+                            <span class="dashicons <?php echo esc_attr($token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'); ?>"></span>
                         </div>
                         <div class="dsz-card-content">
                             <h3><?php esc_html_e('API Status', 'dropshipzone'); ?></h3>
@@ -418,7 +418,7 @@ class Admin_UI {
                         </div>
                     </div>
 
-                    <div class="dsz-card <?php echo $error_count > 0 ? 'dsz-card-warning' : ''; ?>">
+                    <div class="dsz-card <?php echo esc_attr($error_count > 0 ? 'dsz-card-warning' : ''); ?>">
                         <div class="dsz-card-icon">
                             <span class="dashicons dashicons-flag"></span>
                         </div>
@@ -461,7 +461,7 @@ class Admin_UI {
                     <h2><?php esc_html_e('Sync in Progress', 'dropshipzone'); ?></h2>
                     <div class="dsz-progress-wrapper">
                         <div class="dsz-progress-bar">
-                            <div class="dsz-progress-fill" style="width: <?php echo $this->cron->get_progress(); ?>%"></div>
+                            <div class="dsz-progress-fill" style="width: <?php echo esc_attr($this->cron->get_progress()); ?>%"></div>
                         </div>
                         <p class="dsz-progress-text">
                             <?php /* translators: %s: progress percentage */ ?>
@@ -511,7 +511,7 @@ class Admin_UI {
                                     <label for="dsz_api_password"><?php esc_html_e('API Password', 'dropshipzone'); ?></label>
                                 </th>
                                 <td>
-                                    <input type="password" id="dsz_api_password" name="dsz_api_password" value="" class="regular-text" placeholder="<?php echo $email ? '••••••••' : ''; ?>" />
+                                    <input type="password" id="dsz_api_password" name="dsz_api_password" value="" class="regular-text" placeholder="<?php echo esc_attr($email ? '••••••••' : ''); ?>" />
                                     <p class="description"><?php esc_html_e('Your Dropshipzone account password (stored securely)', 'dropshipzone'); ?></p>
                                 </td>
                             </tr>
@@ -557,8 +557,8 @@ class Admin_UI {
                     <!-- Token Status -->
                     <div class="dsz-form-section">
                         <h2><?php esc_html_e('Connection Status', 'dropshipzone'); ?></h2>
-                        <div class="dsz-status-box <?php echo $token_status['is_valid'] ? 'dsz-status-success' : 'dsz-status-warning'; ?>">
-                            <span class="dashicons <?php echo $token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'; ?>"></span>
+                        <div class="dsz-status-box <?php echo esc_attr($token_status['is_valid'] ? 'dsz-status-success' : 'dsz-status-warning'); ?>">
+                            <span class="dashicons <?php echo esc_attr($token_status['is_valid'] ? 'dashicons-yes-alt' : 'dashicons-warning'); ?>"></span>
                             <div>
                                 <strong><?php echo esc_html($token_status['is_valid'] ? __('Connected', 'dropshipzone') : __('Not Connected', 'dropshipzone')); ?></strong>
                                 <?php if ($token_status['is_valid']): ?>
@@ -833,9 +833,9 @@ class Admin_UI {
                 <!-- Status Cards Grid -->
                 <div class="dsz-sync-cards">
                     <!-- Card: Current Status -->
-                    <div class="dsz-sync-card <?php echo $in_progress ? 'dsz-card-syncing' : 'dsz-card-idle'; ?>">
+                    <div class="dsz-sync-card <?php echo esc_attr($in_progress ? 'dsz-card-syncing' : 'dsz-card-idle'); ?>">
                         <div class="dsz-sync-card-icon">
-                            <span class="dashicons <?php echo $in_progress ? 'dashicons-update-alt dsz-spin' : 'dashicons-yes-alt'; ?>"></span>
+                            <span class="dashicons <?php echo esc_attr($in_progress ? 'dashicons-update-alt dsz-spin' : 'dashicons-yes-alt'); ?>"></span>
                         </div>
                         <div class="dsz-sync-card-content">
                             <h3><?php esc_html_e('Sync State', 'dropshipzone'); ?></h3>
@@ -942,13 +942,13 @@ class Admin_UI {
                             <?php esc_html_e('Sync the latest prices and stock levels from Dropshipzone API for all linked products.', 'dropshipzone'); ?>
                         </p>
                         <div class="dsz-action-card-footer">
-                            <button type="button" id="dsz-run-sync" class="button button-primary" <?php echo $in_progress ? 'disabled' : ''; ?>>
+                            <button type="button" id="dsz-run-sync" class="button button-primary" <?php echo esc_attr($in_progress ? 'disabled' : ''); ?>>
                                 <span class="dashicons dashicons-update-alt"></span>
                                 <?php esc_html_e('Update Now', 'dropshipzone'); ?>
                             </button>
                         </div>
                         <!-- Progress Section -->
-                        <div id="dsz-progress-container" class="dsz-progress-console <?php echo $in_progress ? '' : 'hidden'; ?>">
+                        <div id="dsz-progress-container" class="dsz-progress-console <?php echo esc_attr($in_progress ? '' : 'hidden'); ?>">
                             <div class="dsz-progress-stats">
                                 <span class="dsz-progress-label"><?php esc_html_e('Progress', 'dropshipzone'); ?></span>
                                 <span id="dsz-progress-percent" class="dsz-progress-value"><?php echo esc_html($this->cron->get_progress()); ?>%</span>
@@ -1105,21 +1105,21 @@ class Admin_UI {
                         <span class="dsz-log-stat-label"><?php esc_html_e('Total Logs', 'dropshipzone'); ?></span>
                     </div>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=info')); ?>" class="dsz-log-stat-card dsz-log-stat-info <?php echo $level === 'info' ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=info')); ?>" class="dsz-log-stat-card dsz-log-stat-info <?php echo esc_attr($level === 'info' ? 'active' : ''); ?>">
                     <span class="dsz-log-stat-icon dashicons dashicons-info"></span>
                     <div class="dsz-log-stat-content">
                         <span class="dsz-log-stat-value"><?php echo number_format($total_info); ?></span>
                         <span class="dsz-log-stat-label"><?php esc_html_e('Info', 'dropshipzone'); ?></span>
                     </div>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=warning')); ?>" class="dsz-log-stat-card dsz-log-stat-warning <?php echo $level === 'warning' ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=warning')); ?>" class="dsz-log-stat-card dsz-log-stat-warning <?php echo esc_attr($level === 'warning' ? 'active' : ''); ?>">
                     <span class="dsz-log-stat-icon dashicons dashicons-warning"></span>
                     <div class="dsz-log-stat-content">
                         <span class="dsz-log-stat-value"><?php echo number_format($total_warning); ?></span>
                         <span class="dsz-log-stat-label"><?php esc_html_e('Warnings', 'dropshipzone'); ?></span>
                     </div>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=error')); ?>" class="dsz-log-stat-card dsz-log-stat-error <?php echo $level === 'error' ? 'active' : ''; ?>">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs&level=error')); ?>" class="dsz-log-stat-card dsz-log-stat-error <?php echo esc_attr($level === 'error' ? 'active' : ''); ?>">
                     <span class="dsz-log-stat-icon dashicons dashicons-dismiss"></span>
                     <div class="dsz-log-stat-content">
                         <span class="dsz-log-stat-value"><?php echo number_format($total_error); ?></span>
