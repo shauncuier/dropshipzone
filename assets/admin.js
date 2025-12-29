@@ -1269,12 +1269,7 @@
             var newArrival = $('#dsz-filter-newarrivals').is(':checked');
             var sort = $('#dsz-filter-sort').val();
 
-            // Check if we have valid input
-            var hasFilters = categoryId || inStock || freeShipping || onPromotion || newArrival;
-            if (search.length < 2 && !hasFilters) {
-                DSZAdmin.showNotification('error', 'Enter at least 2 characters or select a filter.');
-                return;
-            }
+            // Allow empty search to browse all products (limited to 100 by API)
 
             $btn.addClass('dsz-loading').prop('disabled', true);
             $results.html(`

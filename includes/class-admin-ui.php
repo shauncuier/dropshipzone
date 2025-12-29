@@ -1981,11 +1981,7 @@ class Admin_UI {
         $new_arrival = isset($_POST['new_arrival']) && $_POST['new_arrival'] === 'true';
         $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : '';
 
-        // Validate: need at least a search term, category, or one filter
-        $has_filters = $category_id > 0 || $in_stock || $free_shipping || $on_promotion || $new_arrival;
-        if (strlen($search) < 2 && !$has_filters) {
-            wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone')]);
-        }
+        // Allow empty search to browse all products (will be limited by API limit param)
 
         // Build API query parameters
         $api_params = [
