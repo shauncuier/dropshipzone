@@ -20,6 +20,9 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 * **Price Sync** - Automatically update regular and sale prices
 * **Stock Sync** - Keep stock quantities accurate in real-time
+* **Auto Product Import** - Schedule automatic imports with customizable filters (NEW)
+* **Import Metrics** - Track import runs with 7-day, 30-day stats and history (NEW)
+* **Minimum Stock Filter** - Only import products with 100+ units in stock (NEW)
 * **Shipping Zones** - Calculate shipping using DSZ zone mapping and per-product rates
 * **Product Import** - Import products directly from Dropshipzone catalog
 * **Order Submission** - Submit orders to Dropshipzone for fulfillment
@@ -96,28 +99,40 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 4. Stock Rules - Configure buffer and out-of-stock handling
 5. Sync Control - Manual sync and scheduling options
 6. Product Import - Browse and import products from Dropshipzone
-7. Product Mapping - Link WC products to Dropshipzone SKUs
-8. Order Submission - Submit orders to Dropshipzone for fulfillment
-9. Logs - View detailed sync activity and errors
+7. Auto Import - Configure scheduled automatic imports (NEW)
+8. Product Mapping - Link WC products to Dropshipzone SKUs
+9. Order Submission - Submit orders to Dropshipzone for fulfillment
+10. Logs - View detailed sync activity and errors
 
 == Future Roadmap ==
 
 We're constantly improving DropshipZone Sync. Here's what's planned:
 
-= Coming Soon =
+= High Priority (Coming Soon) =
 
+* **Tracking Number Sync** - Auto-import tracking numbers from DSZ orders
+* **Webhook Support** - Real-time updates via DSZ webhooks
+* **Advanced Price Rules** - Category-based and supplier-based pricing
 * **Bulk Order Submission** - Submit multiple orders at once
-* **Advanced Shipping Rules** - Per-category and weight-based shipping
+
+= Medium Priority =
+
 * **Product Variations** - Full support for variable products from DSZ
-* **Inventory Alerts** - Email notifications for low stock
-* **Order Tracking Integration** - Display tracking info from DSZ orders
+* **Email Notifications** - Get notified on sync errors, low stock, price changes
+* **Auto-Repricing** - Adjust prices based on competitor analysis
+* **Inventory Alerts** - Low stock warnings with configurable thresholds
+* **Import Scheduling** - Schedule specific import times
+* **Category Mapping** - Map DSZ categories to custom WC categories
 
 = Under Consideration =
 
-* **Multi-supplier Support** - Integrate with multiple dropship suppliers
+* **Multi-currency Support** - Support for AUD, NZD, USD
 * **Profit Calculator** - View margins on product and order level
-* **Auto-pricing Rules** - Dynamic pricing based on competitor analysis
-* **WooCommerce Blocks Support** - Full Gutenberg block compatibility
+* **Multi-supplier Support** - Integrate with multiple dropship suppliers
+* **REST API Endpoints** - Expose sync functionality via REST API
+* **Sync Analytics Dashboard** - Charts showing sync history and trends
+* **Supplier Blacklist** - Exclude specific suppliers from import
+* **Export Tools** - Export product data, mappings, and reports
 
 == Changelog ==
 
