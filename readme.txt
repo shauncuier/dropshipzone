@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.4.0
+Stable tag: 2.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -120,6 +120,14 @@ We're constantly improving DropshipZone Sync. Here's what's planned:
 * **WooCommerce Blocks Support** - Full Gutenberg block compatibility
 
 == Changelog ==
+
+= 2.5.0 =
+* NEW: Auto Product Import - Scheduled automatic import of new products from Dropshipzone API.
+* NEW: Configurable filters: New Arrivals, In Stock, Free Shipping, Min Stock Qty (default 100).
+* NEW: Auto Import Metrics - Track import runs with 7-day and 30-day statistics.
+* NEW: Import history table showing date, imported/skipped/errors, and status.
+* IMPROVED: Compact Import Products search bar with inline layout.
+* IMPROVED: Added "Auto Import" tab to plugin navigation.
 
 = 2.4.0 =
 * NEW: Shipping Zones - WooCommerce shipping method using DSZ zone mapping and per-product rates.

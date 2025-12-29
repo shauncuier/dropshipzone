@@ -64,9 +64,16 @@ class Admin_UI {
     private $order_handler;
 
     /**
+     * Auto Importer instance
+     * 
+     * @var Auto_Importer
+     */
+    private $auto_importer;
+
+    /**
      * Constructor
      */
-    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null, Order_Handler $order_handler = null) {
+    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null, Order_Handler $order_handler = null, Auto_Importer $auto_importer = null) {
         $this->api_client = $api_client;
         $this->price_sync = $price_sync;
         $this->stock_sync = $stock_sync;
@@ -75,6 +82,7 @@ class Admin_UI {
         $this->product_mapper = $product_mapper;
         $this->product_importer = $product_importer;
         $this->order_handler = $order_handler;
+        $this->auto_importer = $auto_importer;
 
         // Admin hooks
         add_action('admin_menu', [$this, 'register_menu']);
@@ -110,6 +118,10 @@ class Admin_UI {
         
         // Order AJAX handlers
         add_action('wp_ajax_dsz_submit_order', [$this, 'ajax_submit_order']);
+        
+        // Auto Import AJAX handlers
+        add_action('wp_ajax_dsz_run_auto_import', [$this, 'ajax_run_auto_import']);
+        add_action('wp_ajax_dsz_save_auto_import_settings', [$this, 'ajax_save_auto_import_settings']);
         
         // WooCommerce order integration
         add_action('add_meta_boxes', [$this, 'add_order_meta_box']);
@@ -209,6 +221,16 @@ class Admin_UI {
             'dsz-sync-import',
             [$this, 'render_import']
         );
+
+        // Auto Import Settings
+        add_submenu_page(
+            'dsz-sync',
+            __('Auto Import', 'dropshipzone'),
+            __('Auto Import', 'dropshipzone'),
+            'manage_woocommerce',
+            'dsz-sync-auto-import',
+            [$this, 'render_auto_import']
+        );
     }
 
     /**
@@ -307,6 +329,10 @@ class Admin_UI {
             'dsz-sync-import' => [
                 'label' => __('Import Products', 'dropshipzone'),
                 'icon' => 'dashicons-download'
+            ],
+            'dsz-sync-auto-import' => [
+                'label' => __('Auto Import', 'dropshipzone'),
+                'icon' => 'dashicons-controls-repeat'
             ],
             'dsz-sync-mapping' => [
                 'label' => __('Product Mapping', 'dropshipzone'),
@@ -3056,5 +3082,407 @@ class Admin_UI {
         });
         </script>
         <?php
+    }
+
+    /**
+     * Render Auto Import settings page
+     */
+    public function render_auto_import() {
+        if (!dsz_current_user_can_manage()) {
+            wp_die(esc_html__('You do not have permission to access this page.', 'dropshipzone'));
+        }
+
+        $settings = $this->auto_importer ? $this->auto_importer->get_settings() : [];
+        $status = $this->auto_importer ? $this->auto_importer->get_status() : [];
+        $next_scheduled = $this->auto_importer ? $this->auto_importer->get_next_scheduled() : false;
+        ?>
+        <div class="wrap dsz-wrap">
+            <?php $this->render_header(__('Auto Import', 'dropshipzone'), __('Automatically import new products from Dropshipzone', 'dropshipzone')); ?>
+
+            <div class="dsz-content">
+                <form id="dsz-auto-import-form" class="dsz-form">
+                    <?php wp_nonce_field('dsz_auto_import_settings', 'dsz_nonce'); ?>
+                    
+                    <!-- Status Section -->
+                    <div class="dsz-form-section">
+                        <h2><?php esc_html_e('Auto Import Status', 'dropshipzone'); ?></h2>
+                        <div class="dsz-cards" style="margin-bottom: 20px;">
+                            <div class="dsz-card <?php echo esc_attr($settings['enabled'] ? 'dsz-card-success' : 'dsz-card-warning'); ?>">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons <?php echo esc_attr($settings['enabled'] ? 'dashicons-yes-alt' : 'dashicons-warning'); ?>"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Status', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo esc_html($settings['enabled'] ? __('Enabled', 'dropshipzone') : __('Disabled', 'dropshipzone')); ?></p>
+                                </div>
+                            </div>
+                            <div class="dsz-card">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons dashicons-clock"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Next Run', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo $next_scheduled ? esc_html(dsz_time_ago($next_scheduled)) : esc_html__('Not Scheduled', 'dropshipzone'); ?></p>
+                                </div>
+                            </div>
+                            <?php if (!empty($status['last_results'])): ?>
+                            <div class="dsz-card">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons dashicons-download"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Last Run', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo intval($status['last_results']['imported']); ?> <?php esc_html_e('imported', 'dropshipzone'); ?></p>
+                                    <?php if ($status['last_completed']): ?>
+                                        <p class="dsz-card-meta"><?php echo esc_html(dsz_time_ago($status['last_completed'])); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <div class="dsz-form-actions" style="margin-bottom: 30px;">
+                            <button type="button" id="dsz-run-auto-import" class="button button-secondary">
+                                <span class="dashicons dashicons-download"></span>
+                                <?php esc_html_e('Run Import Now', 'dropshipzone'); ?>
+                            </button>
+                            <span id="dsz-auto-import-result" style="margin-left: 15px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Import Metrics Section -->
+                    <?php 
+                    $stats = $this->auto_importer ? $this->auto_importer->get_stats() : [];
+                    $history = $this->auto_importer ? $this->auto_importer->get_history(10) : [];
+                    ?>
+                    <div class="dsz-form-section">
+                        <h2><?php esc_html_e('Import Metrics', 'dropshipzone'); ?></h2>
+                        <div class="dsz-cards" style="margin-bottom: 20px;">
+                            <div class="dsz-card">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons dashicons-chart-bar"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Total Imported', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo intval($stats['total_imported']); ?></p>
+                                    <p class="dsz-card-meta"><?php echo intval($stats['total_runs']); ?> <?php esc_html_e('runs', 'dropshipzone'); ?></p>
+                                </div>
+                            </div>
+                            <div class="dsz-card">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Last 7 Days', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo intval($stats['last_7_days']['imported']); ?></p>
+                                    <p class="dsz-card-meta"><?php echo intval($stats['last_7_days']['runs']); ?> <?php esc_html_e('runs', 'dropshipzone'); ?></p>
+                                </div>
+                            </div>
+                            <div class="dsz-card">
+                                <div class="dsz-card-icon">
+                                    <span class="dashicons dashicons-calendar"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Last 30 Days', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo intval($stats['last_30_days']['imported']); ?></p>
+                                    <p class="dsz-card-meta"><?php echo intval($stats['last_30_days']['runs']); ?> <?php esc_html_e('runs', 'dropshipzone'); ?></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <?php if (!empty($history)): ?>
+                        <h3 style="margin-bottom: 10px;"><?php esc_html_e('Recent Import History', 'dropshipzone'); ?></h3>
+                        <table class="widefat striped" style="margin-bottom: 20px;">
+                            <thead>
+                                <tr>
+                                    <th><?php esc_html_e('Date', 'dropshipzone'); ?></th>
+                                    <th><?php esc_html_e('Imported', 'dropshipzone'); ?></th>
+                                    <th><?php esc_html_e('Skipped', 'dropshipzone'); ?></th>
+                                    <th><?php esc_html_e('Errors', 'dropshipzone'); ?></th>
+                                    <th><?php esc_html_e('Status', 'dropshipzone'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($history as $entry): ?>
+                                <tr>
+                                    <td><?php echo esc_html(wp_date('M j, Y g:i a', $entry['timestamp'])); ?></td>
+                                    <td><strong><?php echo intval($entry['imported']); ?></strong></td>
+                                    <td><?php echo intval($entry['skipped']); ?></td>
+                                    <td><?php echo intval($entry['errors']); ?></td>
+                                    <td>
+                                        <?php if ($entry['status'] === 'complete'): ?>
+                                            <span style="color: var(--dsz-success);">✓ <?php esc_html_e('Complete', 'dropshipzone'); ?></span>
+                                        <?php elseif ($entry['status'] === 'error'): ?>
+                                            <span style="color: var(--dsz-error);">✗ <?php esc_html_e('Error', 'dropshipzone'); ?></span>
+                                        <?php else: ?>
+                                            <?php echo esc_html($entry['status']); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <p style="color: var(--dsz-gray-500);"><?php esc_html_e('No import history yet. Run an import to see metrics.', 'dropshipzone'); ?></p>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Settings Section -->
+                    <div class="dsz-form-section">
+                        <h2><?php esc_html_e('Auto Import Settings', 'dropshipzone'); ?></h2>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Enable Auto Import', 'dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="enabled" value="1" <?php checked($settings['enabled'], true); ?> />
+                                        <?php esc_html_e('Automatically import new products on schedule', 'dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="frequency"><?php esc_html_e('Import Frequency', 'dropshipzone'); ?></label>
+                                </th>
+                                <td>
+                                    <select name="frequency" id="frequency">
+                                        <option value="hourly" <?php selected($settings['frequency'], 'hourly'); ?>><?php esc_html_e('Every Hour', 'dropshipzone'); ?></option>
+                                        <option value="twicedaily" <?php selected($settings['frequency'], 'twicedaily'); ?>><?php esc_html_e('Twice Daily', 'dropshipzone'); ?></option>
+                                        <option value="daily" <?php selected($settings['frequency'], 'daily'); ?>><?php esc_html_e('Once Daily', 'dropshipzone'); ?></option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="max_products_per_run"><?php esc_html_e('Max Products Per Run', 'dropshipzone'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="number" id="max_products_per_run" name="max_products_per_run" value="<?php echo esc_attr($settings['max_products_per_run']); ?>" min="1" max="200" class="small-text" />
+                                    <p class="description"><?php esc_html_e('Maximum number of products to import per scheduled run (1-200)', 'dropshipzone'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="min_stock_qty"><?php esc_html_e('Minimum Stock Quantity', 'dropshipzone'); ?></label>
+                                </th>
+                                <td>
+                                    <input type="number" id="min_stock_qty" name="min_stock_qty" value="<?php echo esc_attr(isset($settings['min_stock_qty']) ? $settings['min_stock_qty'] : 100); ?>" min="0" max="10000" class="small-text" />
+                                    <p class="description"><?php esc_html_e('Only import products with at least this many units in stock (default: 100)', 'dropshipzone'); ?></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="default_product_status"><?php esc_html_e('Default Product Status', 'dropshipzone'); ?></label>
+                                </th>
+                                <td>
+                                    <select name="default_product_status" id="default_product_status">
+                                        <option value="publish" <?php selected($settings['default_product_status'], 'publish'); ?>><?php esc_html_e('Published', 'dropshipzone'); ?></option>
+                                        <option value="draft" <?php selected($settings['default_product_status'], 'draft'); ?>><?php esc_html_e('Draft', 'dropshipzone'); ?></option>
+                                        <option value="pending" <?php selected($settings['default_product_status'], 'pending'); ?>><?php esc_html_e('Pending Review', 'dropshipzone'); ?></option>
+                                    </select>
+                                    <p class="description"><?php esc_html_e('Status for newly imported products', 'dropshipzone'); ?></p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Filters Section -->
+                    <div class="dsz-form-section">
+                        <h2><?php esc_html_e('Import Filters', 'dropshipzone'); ?></h2>
+                        <p class="description"><?php esc_html_e('Only products matching these filters will be imported.', 'dropshipzone'); ?></p>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><?php esc_html_e('New Arrivals Only', 'dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="filter_new_arrival" value="1" <?php checked($settings['filter_new_arrival'], true); ?> />
+                                        <?php esc_html_e('Only import products marked as new arrivals', 'dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('In Stock Only', 'dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="filter_in_stock" value="1" <?php checked($settings['filter_in_stock'], true); ?> />
+                                        <?php esc_html_e('Only import products that are currently in stock', 'dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Free Shipping Only', 'dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="filter_free_shipping" value="1" <?php checked($settings['filter_free_shipping'], true); ?> />
+                                        <?php esc_html_e('Only import products with free shipping in Australia', 'dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="dsz-form-actions">
+                        <button type="submit" class="button button-primary">
+                            <span class="dashicons dashicons-saved"></span>
+                            <?php esc_html_e('Save Settings', 'dropshipzone'); ?>
+                        </button>
+                    </div>
+
+                    <div id="dsz-auto-import-message" class="dsz-message hidden"></div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+        jQuery(function($) {
+            // Save settings
+            $('#dsz-auto-import-form').on('submit', function(e) {
+                e.preventDefault();
+                var $form = $(this);
+                var $btn = $form.find('button[type="submit"]');
+                var $message = $('#dsz-auto-import-message');
+                
+                $btn.prop('disabled', true);
+                
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_save_auto_import_settings',
+                        nonce: dsz_admin.nonce,
+                        enabled: $form.find('input[name="enabled"]').is(':checked') ? 1 : 0,
+                        frequency: $form.find('select[name="frequency"]').val(),
+                        max_products_per_run: $form.find('input[name="max_products_per_run"]').val(),
+                        min_stock_qty: $form.find('input[name="min_stock_qty"]').val(),
+                        default_product_status: $form.find('select[name="default_product_status"]').val(),
+                        filter_new_arrival: $form.find('input[name="filter_new_arrival"]').is(':checked') ? 1 : 0,
+                        filter_in_stock: $form.find('input[name="filter_in_stock"]').is(':checked') ? 1 : 0,
+                        filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $message.removeClass('hidden dsz-message-error').addClass('dsz-message-success').html('<span class="dashicons dashicons-yes"></span> ' + response.data.message);
+                        } else {
+                            $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').html('<span class="dashicons dashicons-no"></span> ' + response.data.message);
+                        }
+                        $btn.prop('disabled', false);
+                    },
+                    error: function() {
+                        $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').text('Request failed');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+            
+            // Run import now
+            $('#dsz-run-auto-import').on('click', function() {
+                var $btn = $(this);
+                var $result = $('#dsz-auto-import-result');
+                
+                $btn.prop('disabled', true);
+                $result.html('<span class="dashicons dashicons-update spin"></span> <?php echo esc_js(__('Importing...', 'dropshipzone')); ?>');
+                
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_run_auto_import',
+                        nonce: dsz_admin.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            $result.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                        } else {
+                            $result.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                        }
+                        $btn.prop('disabled', false);
+                    },
+                    error: function() {
+                        $result.html('<span style="color:red;">Request failed</span>');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+
+    /**
+     * AJAX handler: Run auto import manually
+     */
+    public function ajax_run_auto_import() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+        
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        if (!$this->auto_importer) {
+            wp_send_json_error(['message' => __('Auto importer not initialized', 'dropshipzone')]);
+        }
+
+        // Temporarily enable for manual run
+        $settings = $this->auto_importer->get_settings();
+        $was_enabled = $settings['enabled'];
+        
+        if (!$was_enabled) {
+            $settings['enabled'] = true;
+            $this->auto_importer->save_settings($settings);
+        }
+
+        $result = $this->auto_importer->run_import();
+
+        // Restore original setting
+        if (!$was_enabled) {
+            $settings['enabled'] = false;
+            $this->auto_importer->save_settings($settings);
+        }
+
+        wp_send_json_success([
+            'message' => $result['message'],
+            'imported' => $result['imported'],
+            'skipped' => $result['skipped'],
+            'errors' => $result['errors'],
+        ]);
+    }
+
+    /**
+     * AJAX handler: Save auto import settings
+     */
+    public function ajax_save_auto_import_settings() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+        
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        if (!$this->auto_importer) {
+            wp_send_json_error(['message' => __('Auto importer not initialized', 'dropshipzone')]);
+        }
+
+        $settings = [
+            'enabled'               => !empty($_POST['enabled']),
+            'frequency'             => isset($_POST['frequency']) ? sanitize_text_field(wp_unslash($_POST['frequency'])) : 'daily',
+            'max_products_per_run'  => isset($_POST['max_products_per_run']) ? intval($_POST['max_products_per_run']) : 50,
+            'min_stock_qty'         => isset($_POST['min_stock_qty']) ? intval($_POST['min_stock_qty']) : 100,
+            'default_product_status'=> isset($_POST['default_product_status']) ? sanitize_text_field(wp_unslash($_POST['default_product_status'])) : 'publish',
+            'filter_new_arrival'    => !empty($_POST['filter_new_arrival']),
+            'filter_in_stock'       => !empty($_POST['filter_in_stock']),
+            'filter_free_shipping'  => !empty($_POST['filter_free_shipping']),
+        ];
+
+        $this->auto_importer->save_settings($settings);
+
+        // Update cron schedule
+        if ($settings['enabled']) {
+            $this->auto_importer->schedule_import($settings['frequency']);
+        } else {
+            $this->auto_importer->unschedule_import();
+        }
+
+        wp_send_json_success(['message' => __('Settings saved successfully', 'dropshipzone')]);
     }
 }

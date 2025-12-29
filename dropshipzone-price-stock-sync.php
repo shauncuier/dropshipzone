@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.4.0
+ * Version: 2.5.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.4.0');
+define('DSZ_SYNC_VERSION', '2.5.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -52,6 +52,7 @@ final class Dropshipzone_Sync {
     public $product_mapper;
     public $product_importer;
     public $order_handler;
+    public $auto_importer;
 
     /**
      * Get single instance
@@ -111,6 +112,7 @@ final class Dropshipzone_Sync {
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
         require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
+        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-auto-importer.php';
         // Note: class-shipping-method.php is loaded via woocommerce_shipping_init hook
         
         // Admin UI
@@ -174,12 +176,16 @@ final class Dropshipzone_Sync {
         $this->product_mapper = new Product_Mapper($this->logger);
         $this->product_importer = new Product_Importer($this->api_client, $this->price_sync, $this->stock_sync, $this->product_mapper, $this->logger);
         $this->order_handler = new Order_Handler($this->api_client, $this->product_mapper, $this->logger);
+        $this->auto_importer = new Auto_Importer($this->product_importer, $this->api_client, $this->logger);
         
         // Ensure mapping table exists (for upgrades from older versions)
         $this->maybe_create_mapping_table();
         
+        // Register auto import cron hook
+        add_action('dsz_auto_import_cron_hook', [$this, 'run_auto_import']);
+        
         if (is_admin()) {
-            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler);
+            $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler, $this->auto_importer);
         }
 
         // Register shipping method (after WooCommerce shipping is initialized)
@@ -258,9 +264,19 @@ final class Dropshipzone_Sync {
     public function deactivate() {
         // Clear scheduled cron
         wp_clear_scheduled_hook('dsz_sync_cron_hook');
+        wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
         
         // Flush rewrite rules
         flush_rewrite_rules();
+    }
+
+    /**
+     * Run auto import (cron callback)
+     */
+    public function run_auto_import() {
+        if ($this->auto_importer) {
+            $this->auto_importer->run_import();
+        }
     }
 
     /**

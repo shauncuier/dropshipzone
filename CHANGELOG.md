@@ -5,6 +5,27 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2025-12-30
+
+### Added
+- **Auto Product Import**: Scheduled automatic import of new products from Dropshipzone API.
+  - Enable/disable auto import on schedule (hourly, twice daily, daily)
+  - Configurable filters: New Arrivals, In Stock, Free Shipping
+  - Maximum products per run limit (default: 50)
+  - Minimum stock quantity filter (default: 100) - only import products with sufficient stock
+  - Default product status for imports (publish/draft/pending)
+- **Auto Import Metrics**: Separate tracking for auto import runs.
+  - Total imports count with number of runs
+  - Last 7 days and 30 days statistics
+  - Import history table showing date, imported/skipped/errors, and status
+  - Stores up to 30 historical import runs
+
+### Changed
+- **Import Products UI**: Compact search bar with inline layout (title left, search right)
+- **Navigation**: Added "Auto Import" tab to plugin navigation
+
+---
+
 ## [2.4.0] - 2025-12-27
 
 ### Added
