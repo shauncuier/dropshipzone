@@ -1987,17 +1987,17 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone')]);
         }
 
-        // Build API query parameters
+        // Build API query parameters - always exclude out of stock products by default
         $api_params = [
             'limit' => 100,
+            'in_stock' => true,  // Always filter to in-stock products
         ];
 
         // Add filters
         if ($category_id > 0) $api_params['category_id'] = $category_id;
-        if ($in_stock) $api_params['in_stock'] = 1;
-        if ($free_shipping) $api_params['au_free_shipping'] = 1;
-        if ($on_promotion) $api_params['on_promotion'] = 1;
-        if ($new_arrival) $api_params['new_arrival'] = 1;
+        if ($free_shipping) $api_params['au_free_shipping'] = true;
+        if ($on_promotion) $api_params['on_promotion'] = true;
+        if ($new_arrival) $api_params['new_arrival'] = true;
         if (!empty($sort)) {
             if ($sort === 'price_asc') {
                 $api_params['sort_by'] = 'price';

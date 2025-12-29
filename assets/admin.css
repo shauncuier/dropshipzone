@@ -3248,61 +3248,60 @@ select:focus-visible {
 }
 
 /* ========================================
-   Product Import Page - Compact Search Bar
+   Product Import Page - Clean Search Bar
    ======================================== */
 .dsz-import-hero {
-    background: linear-gradient(135deg, var(--dsz-primary) 0%, var(--dsz-secondary) 100%);
+    background: #fff;
+    border: 1px solid var(--dsz-gray-200);
     border-radius: var(--dsz-border-radius-sm);
-    padding: 16px 20px;
+    padding: 20px;
     margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
 }
 
 .dsz-import-hero-content {
-    flex: 1;
-    min-width: 200px;
+    margin-bottom: 16px;
 }
 
 .dsz-import-hero-content h2 {
-    color: #fff;
-    font-size: 16px;
+    color: var(--dsz-gray-800);
+    font-size: 18px;
     font-weight: 600;
-    margin: 0;
+    margin: 0 0 4px 0;
 }
 
 .dsz-import-hero-content p {
-    display: none;
+    color: var(--dsz-gray-500);
+    font-size: 13px;
+    margin: 0;
 }
 
-/* Search Box - Compact Style */
+/* Search Box - Clean & Simple */
 .dsz-import-search-wrapper {
-    max-width: 500px;
+    width: 100%;
 }
 
 .dsz-import-search-box {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: var(--dsz-border-radius-sm);
-    padding: 4px 4px 4px 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all var(--dsz-transition);
+    background: #f9fafb;
+    border: 1px solid var(--dsz-gray-200);
+    border-radius: 8px;
+    padding: 4px 4px 4px 16px;
+    transition: all 0.2s ease;
 }
 
 .dsz-import-search-box:focus-within {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: #fff;
+    border-color: var(--dsz-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .dsz-import-search-box .dashicons {
     color: var(--dsz-gray-400);
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    margin-right: 8px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
 }
 
 .dsz-import-search-box:focus-within .dashicons {
@@ -3315,9 +3314,9 @@ select:focus-visible {
     background: transparent;
     font-size: 14px;
     color: var(--dsz-gray-800);
-    padding: 10px 0;
+    padding: 12px 0;
     outline: none;
-    min-width: 0;
+    min-width: 200px;
 }
 
 .dsz-import-search-box input::placeholder {
@@ -3325,26 +3324,26 @@ select:focus-visible {
 }
 
 .dsz-import-search-box .button {
-    padding: 10px 18px;
-    border-radius: var(--dsz-border-radius-sm);
-    font-size: 13px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
     font-weight: 500;
-    background: linear-gradient(135deg, var(--dsz-primary) 0%, var(--dsz-secondary) 100%);
+    background: var(--dsz-primary);
     border: none;
     color: #fff;
     cursor: pointer;
-    transition: all var(--dsz-transition);
+    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
 .dsz-import-search-box .button:hover {
-    opacity: 0.9;
+    background: var(--dsz-secondary);
 }
 
-/* Quick Filter Cards - Compact */
+/* Quick Filter Cards - Simple Chip Style */
 .dsz-import-quick-filters {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
@@ -3353,23 +3352,24 @@ select:focus-visible {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
-    background: #fff;
-    border: 1px solid var(--dsz-gray-200);
-    border-radius: var(--dsz-border-radius-sm);
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: 1px solid transparent;
+    border-radius: 20px;
     cursor: pointer;
-    transition: all var(--dsz-transition);
+    transition: all 0.2s ease;
     font-size: 13px;
+    font-weight: 500;
+    color: var(--dsz-gray-600);
 }
 
 .dsz-quick-filter-card:hover {
-    border-color: var(--dsz-primary);
-    color: var(--dsz-primary);
+    background: #e5e7eb;
+    color: var(--dsz-gray-800);
 }
 
 .dsz-quick-filter-card.active {
     background: var(--dsz-primary);
-    border-color: var(--dsz-primary);
     color: #fff;
 }
 
@@ -3385,36 +3385,6 @@ select:focus-visible {
 
 .dsz-quick-filter-label {
     font-weight: 500;
-}
-
-.dsz-quick-filter-card.active {
-    background: linear-gradient(135deg, var(--dsz-primary) 0%, var(--dsz-secondary) 100%);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
-.dsz-quick-filter-card .dashicons {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-    color: var(--dsz-primary);
-    transition: all var(--dsz-transition);
-}
-
-.dsz-quick-filter-card:hover .dashicons {
-    transform: scale(1.15);
-}
-
-.dsz-quick-filter-card.active .dashicons {
-    color: #fff;
-}
-
-.dsz-quick-filter-label {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--dsz-gray-700);
-    transition: color var(--dsz-transition);
 }
 
 .dsz-quick-filter-card.active .dsz-quick-filter-label {
