@@ -3139,7 +3139,7 @@ class Admin_UI {
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Last Run', 'dropshipzone'); ?></h3>
-                                    <p class="dsz-card-value"><?php echo intval($status['last_results']['imported']); ?> <?php esc_html_e('imported', 'dropshipzone'); ?></p>
+                                    <p class="dsz-card-value"><?php echo isset($status['last_results']['imported']) ? intval($status['last_results']['imported']) : 0; ?> <?php esc_html_e('imported', 'dropshipzone'); ?></p>
                                     <?php if ($status['last_completed']): ?>
                                         <p class="dsz-card-meta"><?php echo esc_html(dsz_time_ago($status['last_completed'])); ?></p>
                                     <?php endif; ?>

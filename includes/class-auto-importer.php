@@ -218,27 +218,34 @@ class Auto_Importer {
 
         // Filter out products that already exist in WooCommerce or don't meet stock requirements
         $products_to_import = [];
-        $min_stock = isset($settings['min_stock_qty']) ? intval($settings['min_stock_qty']) : 100;
+        $min_stock = isset($settings['min_stock_qty']) ? intval($settings['min_stock_qty']) : 10;
+        
+        // Tracking counters for debugging
+        $skipped_no_sku = 0;
+        $skipped_low_stock = 0;
+        $skipped_exists = 0;
+        
+        $this->logger->info('Processing products with min_stock_qty: ' . $min_stock, [
+            'api_result_count' => count($response['result']),
+        ]);
         
         foreach ($response['result'] as $product) {
             if (empty($product['sku'])) {
+                $skipped_no_sku++;
                 continue;
             }
             
             // Check minimum stock quantity
             $stock_qty = isset($product['stock_qty']) ? intval($product['stock_qty']) : 0;
             if ($stock_qty < $min_stock) {
-                $this->logger->debug('Product skipped due to low stock', [
-                    'sku' => $product['sku'],
-                    'stock_qty' => $stock_qty,
-                    'min_required' => $min_stock,
-                ]);
+                $skipped_low_stock++;
                 continue;
             }
 
             // Check if product already exists
             $existing_id = wc_get_product_id_by_sku($product['sku']);
             if ($existing_id) {
+                $skipped_exists++;
                 continue;
             }
 
@@ -251,9 +258,13 @@ class Auto_Importer {
         }
 
         $this->logger->info('Products to import after filtering', [
-            'api_total'     => count($response['result']),
-            'to_import'     => count($products_to_import),
-            'max_per_run'   => $settings['max_products_per_run'],
+            'api_total'       => count($response['result']),
+            'skipped_no_sku'  => $skipped_no_sku,
+            'skipped_low_stock' => $skipped_low_stock,
+            'skipped_exists'  => $skipped_exists,
+            'to_import'       => count($products_to_import),
+            'max_per_run'     => $settings['max_products_per_run'],
+            'min_stock_used'  => $min_stock,
         ]);
 
         return $products_to_import;
