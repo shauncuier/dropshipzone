@@ -2047,6 +2047,15 @@ class Admin_UI {
             }
         }
 
+        // PHP-side filter: Remove products with 0 stock (API filter may not be reliable)
+        if (!empty($products)) {
+            $products = array_filter($products, function($product) {
+                $stock_qty = isset($product['stock_qty']) ? intval($product['stock_qty']) : 0;
+                return $stock_qty > 0;
+            });
+            $products = array_values($products); // Re-index array
+        }
+
         if (empty($products)) {
             if ($last_error) {
                 wp_send_json_error(['message' => $last_error->get_error_message()]);
