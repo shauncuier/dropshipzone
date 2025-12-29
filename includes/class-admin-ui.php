@@ -242,18 +242,21 @@ class Admin_UI {
             return;
         }
 
+        // Use timestamp in dev mode to bust cache
+        $asset_version = defined('WP_DEBUG') && WP_DEBUG ? DSZ_SYNC_VERSION . '.' . time() : DSZ_SYNC_VERSION;
+
         wp_enqueue_style(
             'dsz-admin-css',
             DSZ_SYNC_PLUGIN_URL . 'assets/admin.css',
             [],
-            DSZ_SYNC_VERSION
+            $asset_version
         );
 
         wp_enqueue_script(
             'dsz-admin-js',
             DSZ_SYNC_PLUGIN_URL . 'assets/admin.js',
             ['jquery'],
-            DSZ_SYNC_VERSION,
+            $asset_version,
             true
         );
 
@@ -3158,18 +3161,35 @@ class Admin_UI {
                     <?php 
                     $stats = $this->auto_importer ? $this->auto_importer->get_stats() : [];
                     $history = $this->auto_importer ? $this->auto_importer->get_history(10) : [];
+                    
+                    // Get realtime count of mapped products from database
+                    global $wpdb;
+                    $table = $wpdb->prefix . 'dsz_product_mapping';
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                    $realtime_count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+                    $realtime_count = $realtime_count !== null ? intval($realtime_count) : 0;
                     ?>
                     <div class="dsz-form-section">
                         <h2><?php esc_html_e('Import Metrics', 'dropshipzone'); ?></h2>
                         <div class="dsz-cards" style="margin-bottom: 20px;">
                             <div class="dsz-card">
+                                <div class="dsz-card-icon" style="background: linear-gradient(135deg, var(--dsz-success) 0%, #059669 100%);">
+                                    <span class="dashicons dashicons-database"></span>
+                                </div>
+                                <div class="dsz-card-content">
+                                    <h3><?php esc_html_e('Mapped Products', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo intval($realtime_count); ?></p>
+                                    <p class="dsz-card-meta"><?php esc_html_e('in database (live)', 'dropshipzone'); ?></p>
+                                </div>
+                            </div>
+                            <div class="dsz-card">
                                 <div class="dsz-card-icon">
                                     <span class="dashicons dashicons-chart-bar"></span>
                                 </div>
                                 <div class="dsz-card-content">
-                                    <h3><?php esc_html_e('Total Imported', 'dropshipzone'); ?></h3>
-                                    <p class="dsz-card-value"><?php echo intval($stats['total_imported']); ?></p>
-                                    <p class="dsz-card-meta"><?php echo intval($stats['total_runs']); ?> <?php esc_html_e('runs', 'dropshipzone'); ?></p>
+                                    <h3><?php esc_html_e('Auto Imported', 'dropshipzone'); ?></h3>
+                                    <p class="dsz-card-value"><?php echo isset($stats['total_imported']) ? intval($stats['total_imported']) : 0; ?></p>
+                                    <p class="dsz-card-meta"><?php echo isset($stats['total_runs']) ? intval($stats['total_runs']) : 0; ?> <?php esc_html_e('runs', 'dropshipzone'); ?></p>
                                 </div>
                             </div>
                             <div class="dsz-card">
