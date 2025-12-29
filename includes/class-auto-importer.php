@@ -41,9 +41,9 @@ class Auto_Importer {
         'enabled'               => false,
         'frequency'             => 'daily',
         'max_products_per_run'  => 50,
-        'min_stock_qty'         => 100,
-        'filter_new_arrival'    => true,
-        'filter_in_stock'       => true,
+        'min_stock_qty'         => 10,  // Lowered from 100 for more products
+        'filter_new_arrival'    => false, // Disabled - was too restrictive
+        'filter_in_stock'       => false, // Disabled - causes API issues, PHP filtering handles this
         'filter_free_shipping'  => false,
         'filter_category_ids'   => [],
         'default_product_status'=> 'publish',
