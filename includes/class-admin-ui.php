@@ -1987,10 +1987,9 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Enter at least 2 characters or select a filter.', 'dropshipzone')]);
         }
 
-        // Build API query parameters - always exclude out of stock products by default
+        // Build API query parameters
         $api_params = [
             'limit' => 100,
-            'in_stock' => true,  // Always filter to in-stock products
         ];
 
         // Add filters
