@@ -190,8 +190,8 @@ class Price_Sync {
         }
 
         try {
-            // Get supplier prices
-            $supplier_price = isset($api_product['price']) ? floatval($api_product['price']) : 0;
+            // Get supplier prices (shared cost source with cron sync path)
+            $supplier_price = dsz_get_api_cost($api_product);
             $special_price = isset($api_product['special_price']) ? floatval($api_product['special_price']) : null;
             $rrp_price = isset($api_product['RrpPrice']) ? floatval($api_product['RrpPrice']) : null;
 

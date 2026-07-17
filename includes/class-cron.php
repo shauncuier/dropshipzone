@@ -280,8 +280,10 @@ class Cron {
         $errors = 0;
         $skipped = 0;
         $not_found = 0;
+        $processed = 0;
 
         foreach ($mapped_products as $mapping) {
+            $processed++;
             $wc_product_id = intval($mapping['wc_product_id']);
             $dsz_sku = $mapping['dsz_sku'];
             
@@ -387,12 +389,13 @@ class Cron {
         $settings = get_option('dsz_sync_settings', []);
         $settings['products_updated'] = (isset($settings['products_updated']) ? $settings['products_updated'] : 0) + $updated;
         $settings['errors_count'] = (isset($settings['errors_count']) ? $settings['errors_count'] : 0) + $errors;
-        $settings['current_offset'] = $current_offset + count($mapped_products);
+        // Advance by the number actually processed (a memory-limit break can end the batch early)
+        $settings['current_offset'] = $current_offset + $processed;
         $settings['last_batch_time'] = time();
         $settings['total_products'] = $total_mappings;
 
         // Check if we've processed all mapped products
-        $new_offset = $current_offset + count($mapped_products);
+        $new_offset = $current_offset + $processed;
         if ($new_offset >= $total_mappings) {
             $this->complete_sync([
                 'products_updated' => $settings['products_updated'],
@@ -407,6 +410,11 @@ class Cron {
         }
 
         update_option('dsz_sync_settings', $settings);
+
+        // Schedule the next batch so scheduled syncs progress without manual AJAX polling
+        if (!wp_next_scheduled('dsz_sync_batch_continue')) {
+            wp_schedule_single_event(time() + 60, 'dsz_sync_batch_continue');
+        }
 
         // Return progress status
         $progress = ($total_mappings > 0) ? round(($new_offset / $total_mappings) * 100) : 0;
@@ -441,12 +449,9 @@ class Cron {
         // Get price rules
         $rules = $this->price_sync->get_rules();
         
-        // Get cost from API (cost is wholesale, price is sometimes RRP)
-        $cost = isset($api_data['cost']) ? floatval($api_data['cost']) : 0;
-        if ($cost <= 0) {
-            $cost = isset($api_data['price']) ? floatval($api_data['price']) : 0;
-        }
-        
+        // Get supplier cost from API (shared source with import/price sync paths)
+        $cost = dsz_get_api_cost($api_data);
+
         if ($cost <= 0) {
             return false;
         }
@@ -616,6 +621,9 @@ class Cron {
 
         update_option('dsz_sync_settings', $settings);
 
+        // No further batches needed
+        wp_clear_scheduled_hook('dsz_sync_batch_continue');
+
         $this->logger->info('Sync completed', $final_results);
     }
 
@@ -628,6 +636,8 @@ class Cron {
         $settings['current_offset'] = 0;
         $settings['last_batch_time'] = null;
         update_option('dsz_sync_settings', $settings);
+
+        wp_clear_scheduled_hook('dsz_sync_batch_continue');
 
         $this->logger->info('Sync state reset');
     }

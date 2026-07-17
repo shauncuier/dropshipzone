@@ -33,11 +33,14 @@ $DistDir = Join-Path $BuildDir $PluginName
 $ZipFile = Join-Path $BuildDir "$PluginName-v$Version.zip"
 
 # Files/folders to exclude from the zip
+# Note: exclusions match top-level items only. All *.md docs are repo/GitHub
+# documentation, not runtime files — readme.txt and LICENSE still ship.
 $Excludes = @(
     ".git",
     ".github",
     ".gitignore",
     ".gitattributes",
+    ".claude",
     "build",
     "build.ps1",
     "release.ps1",
@@ -46,6 +49,7 @@ $Excludes = @(
     ".DS_Store",
     "Thumbs.db",
     "*.log",
+    "*.md",
     ".agent"
 )
 

@@ -219,7 +219,10 @@ class API_Client {
         }
 
         $params = wp_parse_args($params, $defaults);
-        
+
+        // API constraint: limit minimum 40, maximum 200
+        $params['limit'] = max(40, min(intval($params['limit']), 200));
+
         // Log the API request details
         $this->logger->debug('Making products API request', [
             'params' => $params,
@@ -257,7 +260,7 @@ class API_Client {
     public function get_all_products($page_no = 1, $limit = 200, $filters = []) {
         $params = array_merge([
             'page_no' => $page_no,
-            'limit' => min($limit, 200), // Max 200 per API docs
+            'limit' => max(40, min($limit, 200)), // API limit range: 40-200
         ], $filters);
 
         return $this->get_products($params);
@@ -333,11 +336,21 @@ class API_Client {
             $end_time = gmdate('Y-m-d H:i:s');
         }
 
+        // API rejects ranges of 10 days or more ("must be less than 10 days apart")
+        $start_ts = strtotime($start_time);
+        $end_ts = strtotime($end_time);
+        if ($start_ts && $end_ts && ($end_ts - $start_ts) >= 10 * DAY_IN_SECONDS) {
+            return new \WP_Error(
+                'invalid_range',
+                __('Stock history time range must be less than 10 days.', 'dropshipzone')
+            );
+        }
+
         $body = [
             'start_time' => $start_time,
             'end_time' => $end_time,
             'page_no' => $page_no,
-            'limit' => min($limit, 160), // Max 160 per API docs
+            'limit' => max(40, min($limit, 160)), // API limit range: 40-160
         ];
 
         if (!empty($skus)) {
@@ -471,6 +484,13 @@ class API_Client {
         // Add body or query params based on method
         if ($method === 'GET') {
             if (!empty($data)) {
+                // API documents filter params as Boolean and expects literal
+                // true/false; add_query_arg would serialize PHP bools as 1/0.
+                foreach ($data as $key => $value) {
+                    if (is_bool($value)) {
+                        $data[$key] = $value ? 'true' : 'false';
+                    }
+                }
                 $url = add_query_arg($data, $url);
             }
         } else {
@@ -658,24 +678,34 @@ class API_Client {
             return $response;
         }
 
-        // API returns array, check first element
+        // API returns an array of result entries with HTTP 200 even on failure;
+        // any entry with status != 1 carries an errmsg. Treat any failure as an error.
         if (is_array($response) && !empty($response[0])) {
-            $result = $response[0];
-            
-            if (isset($result['status']) && $result['status'] === 1) {
+            $errors = [];
+            foreach ($response as $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+                if (!isset($entry['status']) || intval($entry['status']) !== 1) {
+                    $errors[] = $entry['errmsg'] ?? __('Unknown error', 'dropshipzone');
+                }
+            }
+
+            if (empty($errors)) {
+                $result = $response[0];
                 $this->logger->info('Order placed successfully', [
                     'order_no' => $order_data['your_order_no'],
                     'dsz_serial' => $result['serial_number'] ?? '',
                 ]);
                 return $result;
-            } else {
-                $error_msg = $result['errmsg'] ?? __('Unknown error', 'dropshipzone');
-                $this->logger->error('Order placement failed', [
-                    'order_no' => $order_data['your_order_no'],
-                    'error' => $error_msg,
-                ]);
-                return new \WP_Error('order_failed', $error_msg, $result);
             }
+
+            $error_msg = implode('; ', array_unique($errors));
+            $this->logger->error('Order placement failed', [
+                'order_no' => $order_data['your_order_no'],
+                'error' => $error_msg,
+            ]);
+            return new \WP_Error('order_failed', $error_msg, $response);
         }
 
         return new \WP_Error('invalid_response', __('Invalid response from Dropshipzone API', 'dropshipzone'));
@@ -693,6 +723,21 @@ class API_Client {
             'limit' => 40,
         ];
         $params = wp_parse_args($params, $defaults);
+
+        // API constraint: limit range 40-160
+        $params['limit'] = max(40, min(intval($params['limit']), 160));
+
+        // API rejects date ranges over 14 days apart
+        if (!empty($params['start_date']) && !empty($params['end_date'])) {
+            $start_ts = strtotime($params['start_date']);
+            $end_ts = strtotime($params['end_date']);
+            if ($start_ts && $end_ts && ($end_ts - $start_ts) > 14 * DAY_IN_SECONDS) {
+                return new \WP_Error(
+                    'invalid_range',
+                    __('Order date range must be 14 days or less.', 'dropshipzone')
+                );
+            }
+        }
 
         $this->logger->debug('Fetching orders from Dropshipzone', $params);
 
@@ -729,7 +774,7 @@ class API_Client {
         $data = [
             'postcode' => is_array($postcodes) ? implode(',', $postcodes) : $postcodes,
             'page_no' => $params['page_no'],
-            'limit' => $params['limit'],
+            'limit' => max(40, min(intval($params['limit']), 160)), // API limit range: 40-160
         ];
 
         $this->logger->debug('Fetching zone mapping from Dropshipzone', ['postcodes' => $data['postcode']]);
@@ -756,7 +801,7 @@ class API_Client {
         $data = [
             'skus' => is_array($skus) ? implode(',', $skus) : $skus,
             'page_no' => $params['page_no'],
-            'limit' => $params['limit'],
+            'limit' => max(40, min(intval($params['limit']), 160)), // API limit range: 40-160
         ];
 
         $this->logger->debug('Fetching zone rates from Dropshipzone', ['skus' => $data['skus']]);

@@ -181,7 +181,7 @@ class Auto_Importer {
      */
     private function fetch_products_to_import($settings) {
         $api_params = [
-            'limit'   => min($settings['max_products_per_run'] * 2, 200), // Fetch extra to account for skips
+            'limit'   => max(40, min($settings['max_products_per_run'] * 2, 200)), // Fetch extra for skips; API limit range 40-200
             'page_no' => 1,
             'enabled' => true,
         ];

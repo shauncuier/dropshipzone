@@ -223,7 +223,7 @@ class Shipping_Method extends \WC_Shipping_Method {
         // Calculate total shipping cost
         $total_cost = 0;
         $undeliverable = false;
-        $zone_id = isset($zone_info['zone_id']) ? $zone_info['zone_id'] : '';
+        $zone_id = isset($zone_info['standard']) ? $zone_info['standard'] : '';
 
         foreach ($skus as $sku) {
             if (!isset($zone_rates[$sku])) {
@@ -231,8 +231,9 @@ class Shipping_Method extends \WC_Shipping_Method {
             }
 
             $rate = $this->get_rate_for_zone($zone_rates[$sku], $zone_id, $zone_info);
-            
-            if ($rate === 9999 || $rate === '9999') {
+
+            // "9999" is the API sentinel for zones the product cannot ship to
+            if (intval($rate) === 9999) {
                 $undeliverable = true;
                 break;
             }
@@ -374,28 +375,25 @@ class Shipping_Method extends \WC_Shipping_Method {
      * @return float Shipping rate.
      */
     private function get_rate_for_zone($rate_data, $zone_id, $zone_info) {
-        // Try to find the rate for this zone
-        // The API returns different zone types: standard, defined, advanced
-        
-        $zone_type = $zone_info['zone_type'] ?? 'standard';
-        
-        // Look for specific zone rate
-        if (isset($rate_data['zones']) && is_array($rate_data['zones'])) {
-            foreach ($rate_data['zones'] as $zone) {
-                if (isset($zone['zone_id']) && $zone['zone_id'] === $zone_id) {
-                    return floatval($zone['rate'] ?? 0);
-                }
+        // V2 API schema: rate data carries per-scheme objects (standard/defined/
+        // advanced) keyed by lowercase zone slug, each with an "active" flag.
+        // The V2 zone mapping gives the matching slug per scheme for a postcode.
+        // Prefer the most specific active scheme that has a rate for this zone.
+        foreach (['advanced', 'defined', 'standard'] as $scheme) {
+            if (empty($rate_data[$scheme]) || !is_array($rate_data[$scheme])) {
+                continue;
             }
-        }
 
-        // Fallback to default rate if available
-        if (isset($rate_data['default_rate'])) {
-            return floatval($rate_data['default_rate']);
-        }
+            $scheme_rates = $rate_data[$scheme];
+            if (isset($scheme_rates['active']) && !$scheme_rates['active']) {
+                continue;
+            }
 
-        // Fallback to shipping_cost field
-        if (isset($rate_data['shipping_cost'])) {
-            return floatval($rate_data['shipping_cost']);
+            $zone_key = isset($zone_info[$scheme]) ? strtolower($zone_info[$scheme]) : '';
+            if ($zone_key !== '' && isset($scheme_rates[$zone_key])) {
+                // Raw value ("9999" means undeliverable) — caller interprets it
+                return $scheme_rates[$zone_key];
+            }
         }
 
         return 0;

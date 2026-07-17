@@ -138,8 +138,8 @@ class Product_Importer {
         
         $product->set_sku($sku);
         
-        // Use Price Sync logic to set price
-        $cost_price = isset($data['price']) ? floatval($data['price']) : 0;
+        // Use Price Sync logic to set price (shared cost source with cron sync path)
+        $cost_price = dsz_get_api_cost($data);
         $final_price = $this->price_sync->calculate_price($cost_price);
         $product->set_regular_price($final_price);
 
@@ -390,7 +390,7 @@ class Product_Importer {
 
         // Update price if enabled
         if ($options['update_price']) {
-            $cost_price = isset($data['price']) ? floatval($data['price']) : 0;
+            $cost_price = dsz_get_api_cost($data);
             if ($cost_price > 0) {
                 $final_price = $this->price_sync->calculate_price($cost_price);
                 $product->set_regular_price($final_price);
@@ -471,17 +471,26 @@ class Product_Importer {
                 $main_image = $data['images'][0];
             }
 
-            // Delete existing featured image and gallery
+            // Remove existing featured image and gallery. Only attachments the
+            // plugin imported are deleted from the media library — user-added
+            // images are detached from the product but kept.
             $existing_thumbnail_id = get_post_thumbnail_id($product_id);
             if ($existing_thumbnail_id) {
-                wp_delete_attachment($existing_thumbnail_id, true);
+                if (get_post_meta($existing_thumbnail_id, '_dsz_imported_image', true)) {
+                    wp_delete_attachment($existing_thumbnail_id, true);
+                } else {
+                    delete_post_thumbnail($product_id);
+                }
             }
 
             $existing_gallery = get_post_meta($product_id, '_product_image_gallery', true);
             if ($existing_gallery) {
                 $gallery_ids = explode(',', $existing_gallery);
                 foreach ($gallery_ids as $gallery_id) {
-                    wp_delete_attachment(intval($gallery_id), true);
+                    $gallery_id = intval($gallery_id);
+                    if ($gallery_id && get_post_meta($gallery_id, '_dsz_imported_image', true)) {
+                        wp_delete_attachment($gallery_id, true);
+                    }
                 }
                 delete_post_meta($product_id, '_product_image_gallery');
             }
@@ -566,6 +575,9 @@ class Product_Importer {
             ]);
             return false;
         }
+
+        // Mark as plugin-imported so resync knows it is safe to delete
+        update_post_meta($id, '_dsz_imported_image', 1);
 
         // Set as featured image only if requested
         if ($set_featured) {

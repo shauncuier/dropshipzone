@@ -1756,7 +1756,7 @@ class Admin_UI {
         }
 
         // Search Dropshipzone API by SKU
-        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 20]);
+        $response = $this->api_client->get_products(['skus' => $search, 'limit' => 40]);
         
         if (is_wp_error($response)) {
             wp_send_json_error(['message' => $response->get_error_message()]);
@@ -2014,7 +2014,7 @@ class Admin_UI {
             // 1. Try exact SKU match with ALL filters applied
             $sku_params = $api_params;
             $sku_params['skus'] = $search;
-            $sku_params['limit'] = 10;
+            $sku_params['limit'] = 40; // API minimum limit
             
             $sku_response = $this->api_client->get_products($sku_params);
             if (is_wp_error($sku_response)) {
@@ -2103,7 +2103,7 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
         }
 
-        $response = $this->api_client->make_request('GET', '/v2/categories', [], true);
+        $response = $this->api_client->get_categories();
 
         if (is_wp_error($response)) {
             $this->logger->error('Failed to fetch categories', [

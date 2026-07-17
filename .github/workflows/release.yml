@@ -60,14 +60,13 @@ jobs:
         run: |
           mkdir -p build/dropshipzone-price-stock-sync
           
-          # Copy plugin files (excluding dev files)
+          # Copy plugin files (excluding dev files; markdown docs stay repo-only)
           cp -r assets build/dropshipzone-price-stock-sync/
           cp -r includes build/dropshipzone-price-stock-sync/
+          cp -r languages build/dropshipzone-price-stock-sync/
           cp dropshipzone-price-stock-sync.php build/dropshipzone-price-stock-sync/
           cp readme.txt build/dropshipzone-price-stock-sync/
-          cp README.md build/dropshipzone-price-stock-sync/
           cp LICENSE build/dropshipzone-price-stock-sync/
-          cp CHANGELOG.md build/dropshipzone-price-stock-sync/
           
           # Remove any development files
           find build -name "*.map" -delete

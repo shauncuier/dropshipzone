@@ -5,6 +5,20 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-07-18
+
+### Fixed
+- **Auto Import Defaults**: Changed overly restrictive default settings for auto import.
+- **Product Import Search**: Removed API `in_stock` filter; now relies on PHP-side filtering to exclude 0-stock products.
+- **Product Import UI**: Improved search interface with default in-stock filter and cleaner layout.
+- **Metrics Display**: Added cache-busting for realtime metrics display.
+
+### Added
+- **Browse All Products**: Allow empty search to browse the full product catalog.
+- **Auto Import Debug Counters**: Added detailed skip counters for auto import troubleshooting.
+
+---
+
 ## [2.5.0] - 2025-12-30
 
 ### Added
@@ -434,6 +448,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[2.5.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.5.1
 [2.0.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.1
 [2.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.0
 [1.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v1.0.0

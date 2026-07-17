@@ -263,6 +263,26 @@ function dsz_decrypt($encrypted_data) {
 }
 
 /**
+ * Get the supplier cost from Dropshipzone API product data
+ *
+ * The API returns the wholesale cost in both `cost` and `price` fields
+ * (`price` is documented as "Product cost price"). Prefer `cost` and fall
+ * back to `price` so every pricing path uses the same source value.
+ *
+ * @param array $api_data Product data from the Dropshipzone API
+ * @return float Supplier cost (0 if unavailable)
+ */
+function dsz_get_api_cost($api_data) {
+    $cost = isset($api_data['cost']) ? floatval($api_data['cost']) : 0;
+
+    if ($cost <= 0) {
+        $cost = isset($api_data['price']) ? floatval($api_data['price']) : 0;
+    }
+
+    return $cost;
+}
+
+/**
  * Log message (wrapper for logger)
  *
  * @param string $level   Log level (info, warning, error)
