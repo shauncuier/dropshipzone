@@ -1297,6 +1297,16 @@ class Admin_UI {
             wp_send_json_error(['message' => $result->get_error_message()]);
         }
 
+        // Persist the verified credentials. Without this, a successful test
+        // stores a token but no password — once the token expires, scheduled
+        // refreshes fail with "missing credentials".
+        if (!empty($email)) {
+            update_option('dsz_sync_api_email', $email);
+        }
+        if (!empty($_POST['password'])) {
+            update_option('dsz_sync_api_password', dsz_encrypt($password));
+        }
+
         wp_send_json_success([
             'message' => $result['message'],
             'products' => $result['products_available'],
