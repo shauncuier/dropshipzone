@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.6.6
+ * Version: 2.7.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.6.6');
+define('DSZ_SYNC_VERSION', '2.7.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -191,6 +191,9 @@ final class Dropshipzone_Sync {
         // Register shipping method (after WooCommerce shipping is initialized)
         add_action('woocommerce_shipping_init', [$this, 'load_shipping_method']);
         add_filter('woocommerce_shipping_methods', [$this, 'register_shipping_method']);
+
+        // One-time zone attachment after activation (deferred until WC is ready)
+        add_action('admin_init', [$this, 'maybe_setup_shipping_zones']);
     }
 
     /**
@@ -262,9 +265,82 @@ final class Dropshipzone_Sync {
         if (!wp_next_scheduled('dsz_sync_cron_hook')) {
             wp_schedule_event(time(), 'hourly', 'dsz_sync_cron_hook');
         }
-        
+
+        // Defer shipping zone setup to the next admin load — WooCommerce's
+        // shipping registry is not reliably available during activation
+        update_option('dsz_setup_shipping_pending', 1, false);
+
         // Flush rewrite rules
         flush_rewrite_rules();
+    }
+
+    /**
+     * One-time setup: attach the DSZ shipping method to AU/NZ zones.
+     *
+     * Dropshipzone ships the products directly, so the store must quote
+     * their shipping rates — without a zone assignment the method never
+     * appears at checkout. Idempotent: skipped when any zone already has
+     * the method (merchants can still remove/re-arrange it manually).
+     */
+    public function maybe_setup_shipping_zones() {
+        if (!get_option('dsz_setup_shipping_pending')) {
+            return;
+        }
+
+        if (!class_exists('WC_Shipping_Zones') || !class_exists('WC_Shipping_Zone')) {
+            return; // WooCommerce not ready — retry next admin load
+        }
+
+        delete_option('dsz_setup_shipping_pending');
+
+        $zones = \WC_Shipping_Zones::get_zones();
+
+        // Already attached somewhere? Respect the merchant's setup.
+        foreach ($zones as $zone_data) {
+            foreach ($zone_data['shipping_methods'] as $method) {
+                if ($method->id === 'dsz_shipping') {
+                    return;
+                }
+            }
+        }
+
+        $targets = [
+            'AU' => __('Australia', 'dropshipzone'),
+            'NZ' => __('New Zealand', 'dropshipzone'),
+        ];
+
+        foreach ($targets as $country => $label) {
+            $target_zone = null;
+
+            // Reuse an existing zone that covers this country
+            foreach ($zones as $zone_data) {
+                foreach ($zone_data['zone_locations'] as $location) {
+                    if ($location->type === 'country' && $location->code === $country) {
+                        $target_zone = new \WC_Shipping_Zone($zone_data['id']);
+                        break;
+                    }
+                }
+                if ($target_zone) {
+                    break;
+                }
+            }
+
+            if (!$target_zone) {
+                $target_zone = new \WC_Shipping_Zone();
+                $target_zone->set_zone_name($label);
+                $target_zone->add_location($country, 'country');
+                $target_zone->save();
+            }
+
+            $target_zone->add_shipping_method('dsz_shipping');
+
+            if ($this->logger) {
+                $this->logger->info('DSZ shipping method attached to zone', [
+                    'zone' => $target_zone->get_zone_name(),
+                    'country' => $country,
+                ]);
+            }
+        }
     }
 
     /**

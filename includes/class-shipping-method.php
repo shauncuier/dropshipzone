@@ -109,10 +109,18 @@ class Shipping_Method extends \WC_Shipping_Method {
                 'desc_tip' => true,
                 'placeholder' => __('N/A', 'dropshipzone'),
             ],
+            'markup_percent' => [
+                'title' => __('Shipping Markup (%)', 'dropshipzone'),
+                'type' => 'number',
+                'description' => __('Percentage added on top of the Dropshipzone shipping cost. Dropshipzone bills you their rate when the order is placed — markup is your margin. 0 passes their cost straight through.', 'dropshipzone'),
+                'default' => '0',
+                'desc_tip' => true,
+                'custom_attributes' => ['min' => '0', 'step' => '0.1'],
+            ],
             'free_shipping_threshold' => [
                 'title' => __('Free Shipping Threshold', 'dropshipzone'),
                 'type' => 'price',
-                'description' => __('Offer free shipping when cart total exceeds this amount. Leave empty to disable.', 'dropshipzone'),
+                'description' => __('Offer free shipping when cart total exceeds this amount. Warning: Dropshipzone still charges you their shipping rate on the order — this comes out of your margin. Leave empty to disable.', 'dropshipzone'),
                 'default' => '',
                 'desc_tip' => true,
                 'placeholder' => __('No threshold', 'dropshipzone'),
@@ -124,8 +132,23 @@ class Shipping_Method extends \WC_Shipping_Method {
                 'default' => '0',
                 'desc_tip' => true,
             ],
+            'zero_rate_unavailable' => [
+                'title' => __('Treat $0 rates as unavailable', 'dropshipzone'),
+                'type' => 'checkbox',
+                'label' => __('Use the fallback cost when the API returns a $0 rate for a zone', 'dropshipzone'),
+                'description' => __('Dropshipzone rate data often shows $0 for zones a supplier has not priced. Enable this if $0 rates are producing unwanted free shipping.', 'dropshipzone'),
+                'default' => 'no',
+                'desc_tip' => true,
+            ],
         ];
     }
+
+    /**
+     * Per-request cache of package → DSZ SKU sets
+     *
+     * @var array
+     */
+    private $package_sku_cache = [];
 
     /**
      * Check if shipping method is available
@@ -138,37 +161,96 @@ class Shipping_Method extends \WC_Shipping_Method {
             return false;
         }
 
-        // Check if we have DSZ products in cart
-        $has_dsz_products = false;
-        foreach ($package['contents'] as $item) {
-            $product = $item['data'];
-            $sku = $product->get_sku();
-            if (!empty($sku) && $this->is_dsz_product($item['product_id'])) {
-                $has_dsz_products = true;
-                break;
-            }
-        }
+        $dsz = $this->get_dsz_skus_for_package($package);
 
-        return $has_dsz_products;
+        return !empty($dsz['skus']);
     }
 
     /**
-     * Check if product is a DSZ product (has mapping)
+     * Resolve the DSZ SKUs for a package with one batched mapping query.
      *
-     * @param int $product_id WooCommerce product ID.
-     * @return bool
+     * Variations are matched on their own ID first, falling back to the
+     * parent product ID. The mapping table's dsz_sku is used (source of
+     * truth) rather than the WC SKU, which can drift.
+     *
+     * @param array $package Shipping package.
+     * @return array { skus: string[], quantities: array<string,int> }
      */
-    private function is_dsz_product($product_id) {
+    private function get_dsz_skus_for_package($package) {
+        $empty = ['skus' => [], 'quantities' => []];
+
+        if (empty($package['contents']) || !is_array($package['contents'])) {
+            return $empty;
+        }
+
+        // Candidate IDs per cart line: variation first, then parent
+        $lines = [];
+        $all_ids = [];
+        foreach ($package['contents'] as $item) {
+            $ids = [];
+            if (!empty($item['variation_id'])) {
+                $ids[] = intval($item['variation_id']);
+            }
+            if (!empty($item['product_id'])) {
+                $ids[] = intval($item['product_id']);
+            }
+            if (empty($ids)) {
+                continue;
+            }
+            $lines[] = [
+                'ids' => $ids,
+                'quantity' => isset($item['quantity']) ? intval($item['quantity']) : 1,
+            ];
+            $all_ids = array_merge($all_ids, $ids);
+        }
+
+        if (empty($all_ids)) {
+            return $empty;
+        }
+
+        $all_ids = array_values(array_unique($all_ids));
+        $cache_key = md5(wp_json_encode([$all_ids, wp_list_pluck($lines, 'quantity')]));
+
+        if (isset($this->package_sku_cache[$cache_key])) {
+            return $this->package_sku_cache[$cache_key];
+        }
+
         global $wpdb;
         $table_name = $wpdb->prefix . 'dsz_product_mapping';
-        
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-        $mapping = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM {$table_name} WHERE wc_product_id = %d",
-            $product_id
-        ));
+        $placeholders = implode(',', array_fill(0, count($all_ids), '%d'));
 
-        return !empty($mapping);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $rows = $wpdb->get_results(
+            $wpdb->prepare("SELECT wc_product_id, dsz_sku FROM {$table_name} WHERE wc_product_id IN ({$placeholders})", $all_ids),
+            ARRAY_A
+        );
+
+        $id_to_sku = [];
+        foreach ((array) $rows as $row) {
+            if (!empty($row['dsz_sku'])) {
+                $id_to_sku[intval($row['wc_product_id'])] = $row['dsz_sku'];
+            }
+        }
+
+        $skus = [];
+        $quantities = [];
+        foreach ($lines as $line) {
+            foreach ($line['ids'] as $id) {
+                if (isset($id_to_sku[$id])) {
+                    $sku = $id_to_sku[$id];
+                    $quantities[$sku] = (isset($quantities[$sku]) ? $quantities[$sku] : 0) + $line['quantity'];
+                    if (!in_array($sku, $skus, true)) {
+                        $skus[] = $sku;
+                    }
+                    break; // First (most specific) match wins
+                }
+            }
+        }
+
+        $result = ['skus' => $skus, 'quantities' => $quantities];
+        $this->package_sku_cache[$cache_key] = $result;
+
+        return $result;
     }
 
     /**
@@ -177,37 +259,36 @@ class Shipping_Method extends \WC_Shipping_Method {
      * @param array $package Shipping package.
      */
     public function calculate_shipping($package = []) {
-        $destination = $package['destination'];
-        $postcode = isset($destination['postcode']) ? sanitize_text_field($destination['postcode']) : '';
+        $destination = isset($package['destination']) ? $package['destination'] : [];
+        $postcode = isset($destination['postcode']) ? trim(sanitize_text_field($destination['postcode'])) : '';
         $country = isset($destination['country']) ? sanitize_text_field($destination['country']) : '';
 
-        // Only support Australia for now
-        if ($country !== 'AU' || empty($postcode)) {
-            $this->add_fallback_rate();
-            return;
-        }
-
-        // Get zone mapping for postcode
-        $zone_info = $this->get_zone_for_postcode($postcode);
-        if (is_wp_error($zone_info) || empty($zone_info)) {
-            $this->logger->warning('Could not determine zone for postcode', ['postcode' => $postcode]);
-            $this->add_fallback_rate();
-            return;
-        }
-
-        // Collect SKUs from cart
-        $skus = [];
-        $quantities = [];
-        foreach ($package['contents'] as $item) {
-            $product = $item['data'];
-            $sku = $product->get_sku();
-            if (!empty($sku) && $this->is_dsz_product($item['product_id'])) {
-                $skus[] = $sku;
-                $quantities[$sku] = isset($quantities[$sku]) ? $quantities[$sku] + $item['quantity'] : $item['quantity'];
-            }
-        }
+        $dsz = $this->get_dsz_skus_for_package($package);
+        $skus = $dsz['skus'];
+        $quantities = $dsz['quantities'];
 
         if (empty($skus)) {
+            return;
+        }
+
+        if ($country === 'AU') {
+            // AU postcodes are 4 digits — don't waste an API call on garbage
+            if (!preg_match('/^\d{4}$/', $postcode)) {
+                $this->add_fallback_rate();
+                return;
+            }
+
+            $zone_info = $this->get_zone_for_postcode($postcode);
+            if (is_wp_error($zone_info) || empty($zone_info)) {
+                $this->logger->warning('Could not determine zone for postcode', ['postcode' => $postcode]);
+                $this->add_fallback_rate();
+                return;
+            }
+        } elseif ($country === 'NZ') {
+            // NZ has a flat per-SKU rate under the standard scheme ("nz" key);
+            // no postcode mapping applies
+            $zone_info = ['standard' => 'nz'];
+        } else {
             $this->add_fallback_rate();
             return;
         }
@@ -223,14 +304,30 @@ class Shipping_Method extends \WC_Shipping_Method {
         // Calculate total shipping cost
         $total_cost = 0;
         $undeliverable = false;
+        $missing_rate_skus = [];
         $zone_id = isset($zone_info['standard']) ? $zone_info['standard'] : '';
+        $zero_unavailable = ($this->get_option('zero_rate_unavailable', 'no') === 'yes');
 
         foreach ($skus as $sku) {
             if (!isset($zone_rates[$sku])) {
+                $missing_rate_skus[] = $sku;
                 continue;
             }
 
             $rate = $this->get_rate_for_zone($zone_rates[$sku], $zone_id, $zone_info);
+
+            if ($rate === null) {
+                $missing_rate_skus[] = $sku;
+                continue;
+            }
+
+            // Optional: a $0 zone rate can mean "supplier never priced this
+            // zone" rather than free shipping — treat as unavailable if the
+            // merchant enabled that interpretation
+            if ($zero_unavailable && floatval($rate) == 0) {
+                $missing_rate_skus[] = $sku;
+                continue;
+            }
 
             // "9999" is the API sentinel for zones the product cannot ship to
             if (intval($rate) === 9999) {
@@ -246,6 +343,24 @@ class Shipping_Method extends \WC_Shipping_Method {
         if ($undeliverable) {
             $this->logger->info('Zone is undeliverable', ['postcode' => $postcode, 'zone' => $zone_id]);
             return;
+        }
+
+        // Incomplete quote: never silently ship items for free. Use the
+        // configured fallback, or hide the method when none is set.
+        if (!empty($missing_rate_skus)) {
+            $this->logger->warning('No zone rate for some cart SKUs - using fallback behavior', [
+                'postcode' => $postcode,
+                'zone' => $zone_id,
+                'missing_skus' => $missing_rate_skus,
+            ]);
+            $this->add_fallback_rate();
+            return;
+        }
+
+        // Apply shipping markup (merchant margin on top of DSZ's cost)
+        $markup = floatval($this->get_option('markup_percent', 0));
+        if ($markup > 0 && $total_cost > 0) {
+            $total_cost = round($total_cost * (1 + $markup / 100), 2);
         }
 
         // Check free shipping threshold
@@ -297,16 +412,33 @@ class Shipping_Method extends \WC_Shipping_Method {
             return $cached;
         }
 
+        // Negative cache: while the API is failing, don't re-hit it on every
+        // shipping recalculation (rate limiter waits would slow checkout)
+        if (get_transient('dsz_zone_err_' . $postcode)) {
+            return new \WP_Error('dsz_zone_unavailable', __('Zone lookup temporarily unavailable.', 'dropshipzone'));
+        }
+
         // Fetch from API
         $response = $this->api_client->get_zone_mapping($postcode);
-        
+
         if (is_wp_error($response)) {
+            set_transient('dsz_zone_err_' . $postcode, 1, 5 * MINUTE_IN_SECONDS);
             return $response;
         }
 
+        // Match the entry for the requested postcode explicitly rather than
+        // trusting result order
         $zone_info = [];
         if (!empty($response['result']) && is_array($response['result'])) {
-            $zone_info = $response['result'][0] ?? [];
+            foreach ($response['result'] as $entry) {
+                if (isset($entry['postcode']) && (string) $entry['postcode'] === (string) $postcode) {
+                    $zone_info = $entry;
+                    break;
+                }
+            }
+            if (empty($zone_info)) {
+                $zone_info = $response['result'][0] ?? [];
+            }
         }
 
         // Cache for 1 hour
@@ -344,9 +476,17 @@ class Shipping_Method extends \WC_Shipping_Method {
 
         // Fetch uncached from API
         if (!empty($uncached_skus)) {
+            // Negative cache mirrors get_zone_for_postcode(): back off for
+            // 5 minutes after a failure instead of hammering the API
+            $err_key = 'dsz_rates_err_' . md5(implode(',', $uncached_skus));
+            if (get_transient($err_key)) {
+                return new \WP_Error('dsz_rates_unavailable', __('Rate lookup temporarily unavailable.', 'dropshipzone'));
+            }
+
             $response = $this->api_client->get_zone_rates($uncached_skus);
-            
+
             if (is_wp_error($response)) {
+                set_transient($err_key, 1, 5 * MINUTE_IN_SECONDS);
                 return $response;
             }
 
@@ -361,6 +501,19 @@ class Shipping_Method extends \WC_Shipping_Method {
                     }
                 }
             }
+
+            // Cache a "no rates" marker for requested SKUs the API didn't
+            // return, so they aren't refetched on every recalculation. The
+            // marker has no scheme keys, so rate resolution yields null and
+            // the fallback path applies.
+            foreach ($uncached_skus as $sku) {
+                if (!isset($rates[$sku])) {
+                    $marker = ['sku' => $sku];
+                    $rates[$sku] = $marker;
+                    $this->rates_cache[$sku] = $marker;
+                    set_transient('dsz_rates_' . md5($sku), $marker, HOUR_IN_SECONDS);
+                }
+            }
         }
 
         return $rates;
@@ -370,9 +523,9 @@ class Shipping_Method extends \WC_Shipping_Method {
      * Get rate for specific zone from rate data
      *
      * @param array  $rate_data Rate data for a SKU.
-     * @param string $zone_id   Zone ID.
-     * @param array  $zone_info Zone info from mapping.
-     * @return float Shipping rate.
+     * @param string $zone_id   Zone ID (for logging context).
+     * @param array  $zone_info Zone info from mapping (slug per scheme).
+     * @return string|float|null Raw rate value, or null when no rate resolves.
      */
     private function get_rate_for_zone($rate_data, $zone_id, $zone_info) {
         // V2 API schema: rate data carries per-scheme objects (standard/defined/
@@ -396,7 +549,8 @@ class Shipping_Method extends \WC_Shipping_Method {
             }
         }
 
-        return 0;
+        // No scheme resolved a rate — caller must NOT treat this as free
+        return null;
     }
 
     /**
