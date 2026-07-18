@@ -19,9 +19,9 @@ param(
 
 # Colors for output
 function Write-Step { param($msg) Write-Host "`n[$script:StepNum/$script:TotalSteps] $msg" -ForegroundColor Yellow; $script:StepNum++ }
-function Write-Success { param($msg) Write-Host "  ✓ $msg" -ForegroundColor Green }
-function Write-Info { param($msg) Write-Host "  → $msg" -ForegroundColor Cyan }
-function Write-Warn { param($msg) Write-Host "  ! $msg" -ForegroundColor Magenta }
+function Write-Success { param($msg) Write-Host "  [OK] $msg" -ForegroundColor Green }
+function Write-Info { param($msg) Write-Host "  [INFO] $msg" -ForegroundColor Cyan }
+function Write-Warn { param($msg) Write-Host "  [WARN] $msg" -ForegroundColor Magenta }
 
 $script:StepNum = 1
 $script:TotalSteps = 7
@@ -31,9 +31,9 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║   Dropshipzone Plugin Release Script    ║" -ForegroundColor Cyan
-Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
+Write-Host "    Dropshipzone Plugin Release Script      " -ForegroundColor Cyan
+Write-Host "============================================" -ForegroundColor Cyan
 
 # ============================================
 # STEP 1: Get current version
@@ -225,7 +225,7 @@ if (-not $NoPush -and -not $DryRun) {
     Write-Success "Pushed branch '$currentBranch' and tag '$TagName' to origin"
 } elseif ($NoPush) {
     Write-Warn "Skipped push (-NoPush flag)"
-    Write-Info "Run manually: git push origin main && git push origin $TagName"
+    Write-Info "Run manually: git push origin main ; git push origin $TagName"
 } else {
     Write-Info "Would push to origin"
 }
@@ -243,11 +243,11 @@ if (-not $NoBuild -and -not $DryRun) {
 # Summary
 # ============================================
 Write-Host ""
-Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║          Release Complete! 🎉           ║" -ForegroundColor Green
-Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Green
+Write-Host "           Release Complete!                " -ForegroundColor Green
+Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Version:  $CurrentVersion → $NewVersion" -ForegroundColor White
+Write-Host "  Version:  $CurrentVersion -> $NewVersion" -ForegroundColor White
 Write-Host "  Tag:      $TagName" -ForegroundColor White
 Write-Host "  Date:     $Today" -ForegroundColor White
 Write-Host ""

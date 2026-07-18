@@ -44,61 +44,10 @@
         },
 
         /**
-         * Initialize ripple effect for buttons
+         * Ripple effect retired in the flat design system.
+         * Kept as a no-op so existing init calls stay valid.
          */
-        initRippleEffect: function () {
-            $(document).on('click', '.button, .dsz-card', function (e) {
-                var $this = $(this);
-
-                // Skip if already has ripple or is a link that should navigate
-                if ($this.find('.dsz-ripple').length) {
-                    return;
-                }
-
-                var ripple = $('<span class="dsz-ripple"></span>');
-                var offset = $this.offset();
-                var x = e.pageX - offset.left;
-                var y = e.pageY - offset.top;
-
-                ripple.css({
-                    left: x + 'px',
-                    top: y + 'px'
-                });
-
-                $this.css('position', 'relative').css('overflow', 'hidden');
-                $this.append(ripple);
-
-                // Add ripple styles dynamically if not exists
-                if (!$('#dsz-ripple-style').length) {
-                    $('head').append(`
-                        <style id="dsz-ripple-style">
-                            .dsz-ripple {
-                                position: absolute;
-                                border-radius: 50%;
-                                background: rgba(255, 255, 255, 0.4);
-                                transform: scale(0);
-                                animation: dsz-ripple-effect 0.6s linear;
-                                pointer-events: none;
-                                width: 100px;
-                                height: 100px;
-                                margin-left: -50px;
-                                margin-top: -50px;
-                            }
-                            @keyframes dsz-ripple-effect {
-                                to {
-                                    transform: scale(4);
-                                    opacity: 0;
-                                }
-                            }
-                        </style>
-                    `);
-                }
-
-                setTimeout(function () {
-                    ripple.remove();
-                }, 600);
-            });
-        },
+        initRippleEffect: function () {},
 
         /**
          * Animate number counters
@@ -273,7 +222,12 @@
          * Create confetti particles
          */
         createConfetti: function () {
-            var colors = ['#667eea', '#764ba2', '#10b981', '#f59e0b', '#ef4444'];
+            // Respect users who prefer reduced motion
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+
+            var colors = ['#4f46e5', '#818cf8', '#16a34a', '#d97706', '#0284c7'];
             var container = $('<div class="dsz-confetti-container"></div>');
 
             $('body').append(container);
@@ -314,23 +268,63 @@
          * Shake element on error
          */
         shakeElement: function ($element) {
-            $element.css('animation', 'none');
+            $element.removeClass('dsz-shake');
             setTimeout(function () {
-                $element.css('animation', 'shake 0.5s ease');
+                $element.addClass('dsz-shake');
             }, 10);
+            setTimeout(function () {
+                $element.removeClass('dsz-shake');
+            }, 500);
+        },
 
-            // Add shake animation if not exists
-            if (!$('#dsz-shake-style').length) {
-                $('head').append(`
-                    <style id="dsz-shake-style">
-                        @keyframes shake {
-                            0%, 100% { transform: translateX(0); }
-                            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-                            20%, 40%, 60%, 80% { transform: translateX(5px); }
-                        }
-                    </style>
-                `);
-            }
+        /**
+         * Styled confirm dialog (replaces native confirm()).
+         *
+         * @param {string} message Dialog body text
+         * @param {Object} [opts]  { title, danger, okText, cancelText }
+         * @return {Promise<boolean>} Resolves true on confirm, false on cancel
+         */
+        confirm: function (message, opts) {
+            opts = opts || {};
+
+            return new Promise(function (resolve) {
+                var $overlay = $('<div class="dsz-confirm-overlay"></div>');
+                var $dialog = $('<div class="dsz-confirm-dialog" role="alertdialog" aria-modal="true"></div>');
+                var $ok = $('<button type="button"></button>')
+                    .addClass('button button-primary dsz-confirm-ok' + (opts.danger ? ' dsz-confirm-danger' : ''))
+                    .text(opts.okText || dsz_admin.strings.confirm_ok || 'Confirm');
+                var $cancel = $('<button type="button" class="button dsz-confirm-cancel"></button>')
+                    .text(opts.cancelText || dsz_admin.strings.confirm_cancel || 'Cancel');
+
+                if (opts.title) {
+                    $dialog.append($('<h3 class="dsz-confirm-title"></h3>').text(opts.title));
+                }
+                $dialog.append($('<p class="dsz-confirm-text"></p>').text(message));
+                $dialog.append($('<div class="dsz-confirm-actions"></div>').append($cancel).append($ok));
+                $overlay.append($dialog);
+
+                var close = function (result) {
+                    $(document).off('keydown.dszConfirm');
+                    $overlay.remove();
+                    resolve(result);
+                };
+
+                $ok.on('click', function () { close(true); });
+                $cancel.on('click', function () { close(false); });
+                $overlay.on('click', function (e) {
+                    if (e.target === $overlay[0]) {
+                        close(false);
+                    }
+                });
+                $(document).on('keydown.dszConfirm', function (e) {
+                    if (e.key === 'Escape') {
+                        close(false);
+                    }
+                });
+
+                $('body').append($overlay);
+                $ok.trigger('focus');
+            });
         },
 
         /**
@@ -731,7 +725,13 @@
         clearLogs: function (e) {
             e.preventDefault();
 
-            if (!confirm(dsz_admin.strings.confirm_clear)) {
+            if (!e.dszConfirmed) {
+                DSZAdmin.confirm(dsz_admin.strings.confirm_clear, { danger: true }).then(function (ok) {
+                    if (ok) {
+                        e.dszConfirmed = true;
+                        DSZAdmin.clearLogs(e);
+                    }
+                });
                 return;
             }
 
@@ -815,56 +815,27 @@
             // Remove existing notifications
             $('.dsz-toast').remove();
 
-            var icon = type === 'success' ? 'dashicons-yes-alt' : 'dashicons-warning';
-            var toast = $(`
-                <div class="dsz-toast dsz-toast-${type}">
-                    <span class="dashicons ${icon}"></span>
-                    <span>${message}</span>
-                </div>
-            `);
+            var icons = {
+                success: 'dashicons-yes-alt',
+                error: 'dashicons-warning',
+                warning: 'dashicons-flag',
+                info: 'dashicons-info'
+            };
+            var safeType = icons[type] ? type : 'info';
 
-            // Add toast styles if not exist
-            if (!$('#dsz-toast-style').length) {
-                $('head').append(`
-                    <style id="dsz-toast-style">
-                        .dsz-toast {
-                            position: fixed;
-                            bottom: 30px;
-                            right: 30px;
-                            padding: 16px 24px;
-                            border-radius: 12px;
-                            display: flex;
-                            align-items: center;
-                            gap: 12px;
-                            z-index: 10000;
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                            animation: slideInUp 0.3s ease, fadeOut 0.3s ease 3s forwards;
-                            font-weight: 500;
-                        }
-                        .dsz-toast-success {
-                            background: linear-gradient(135deg, #10b981, #059669);
-                            color: white;
-                        }
-                        .dsz-toast-error {
-                            background: linear-gradient(135deg, #ef4444, #dc2626);
-                            color: white;
-                        }
-                        @keyframes slideInUp {
-                            from { transform: translateY(100px); opacity: 0; }
-                            to { transform: translateY(0); opacity: 1; }
-                        }
-                        @keyframes fadeOut {
-                            to { opacity: 0; transform: translateY(-20px); }
-                        }
-                    </style>
-                `);
-            }
+            var toast = $('<div class="dsz-toast"></div>')
+                .addClass('dsz-toast-' + safeType)
+                .append($('<span></span>').addClass('dashicons ' + icons[safeType]))
+                .append($('<span></span>').text(message));
 
             $('body').append(toast);
 
             setTimeout(function () {
+                toast.addClass('dsz-toast-hide');
+            }, 3000);
+            setTimeout(function () {
                 toast.remove();
-            }, 3500);
+            }, 3400);
         },
 
         /**
@@ -876,7 +847,13 @@
             var $btn = $('#dsz-auto-map');
             var $message = $('#dsz-automap-message');
 
-            if (!confirm('This will auto-map all WooCommerce products to Dropshipzone SKUs using their current SKU. Continue?')) {
+            if (!e.dszConfirmed) {
+                DSZAdmin.confirm('This will auto-map all WooCommerce products to Dropshipzone SKUs using their current SKU. Continue?').then(function (ok) {
+                    if (ok) {
+                        e.dszConfirmed = true;
+                        DSZAdmin.autoMap(e);
+                    }
+                });
                 return;
             }
 
@@ -994,7 +971,13 @@
             var $btn = $(e.target).closest('.dsz-unmap-btn');
             var wcProductId = $btn.data('wc-id');
 
-            if (!confirm('Remove this mapping?')) {
+            if (!e.dszConfirmed) {
+                DSZAdmin.confirm('Remove this mapping?', { danger: true }).then(function (ok) {
+                    if (ok) {
+                        e.dszConfirmed = true;
+                        DSZAdmin.unmapProduct(e);
+                    }
+                });
                 return;
             }
 
@@ -1531,7 +1514,13 @@
             var $message = $('#dsz-resync-all-message');
             var $progress = $('#dsz-resync-all-progress');
 
-            if (!confirm('This will resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.). This may take a while depending on the number of mapped products. Continue?')) {
+            if (!e.dszConfirmed) {
+                DSZAdmin.confirm('This will resync all mapped products with the latest data from Dropshipzone (price, stock, images, etc.). This may take a while depending on the number of mapped products. Continue?').then(function (ok) {
+                    if (ok) {
+                        e.dszConfirmed = true;
+                        DSZAdmin.resyncAllProducts(e);
+                    }
+                });
                 return;
             }
 
@@ -1541,21 +1530,6 @@
             $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Resyncing All...');
             $message.addClass('hidden').removeClass('dsz-message-success dsz-message-error');
             $progress.removeClass('hidden');
-
-            // Add spin animation for the update icon if not exists
-            if (!$('#dsz-spin-style').length) {
-                $('head').append(`
-                    <style id="dsz-spin-style">
-                        .dsz-spin {
-                            animation: dsz-spin 1s linear infinite;
-                        }
-                        @keyframes dsz-spin {
-                            from { transform: rotate(0deg); }
-                            to { transform: rotate(360deg); }
-                        }
-                    </style>
-                `);
-            }
 
             // Reset progress bar
             $('#dsz-resync-all-progress-fill').css('width', '0%');
@@ -1662,7 +1636,7 @@
         /**
          * Shared function for specific resync types
          */
-        resyncSpecific: function (type, btnSelector, messageSelector) {
+        resyncSpecific: function (type, btnSelector, messageSelector, confirmed) {
             var $btn = $(btnSelector);
             var $message = $(messageSelector);
             var typeLabel = type === 'images' ? 'images' : 'categories';
@@ -1672,7 +1646,12 @@
                 return;
             }
 
-            if (!confirm('This will refresh ' + typeLabel + ' for all mapped products. Continue?')) {
+            if (!confirmed) {
+                DSZAdmin.confirm('This will refresh ' + typeLabel + ' for all mapped products. Continue?').then(function (ok) {
+                    if (ok) {
+                        DSZAdmin.resyncSpecific(type, btnSelector, messageSelector, true);
+                    }
+                });
                 return;
             }
 
@@ -1771,21 +1750,6 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
             $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Syncing...');
 
-            // Add spin animation for the update icon
-            if (!$('#dsz-spin-style').length) {
-                $('head').append(`
-                    <style id="dsz-spin-style">
-                        .dsz-spin {
-                            animation: dsz-spin 1s linear infinite;
-                        }
-                        @keyframes dsz-spin {
-                            from { transform: rotate(0deg); }
-                            to { transform: rotate(360deg); }
-                        }
-                    </style>
-                `);
-            }
-
             $.ajax({
                 url: dsz_admin.ajax_url,
                 type: 'POST',
@@ -1849,18 +1813,6 @@
     $(document).ready(function () {
         DSZAdmin.init();
         DSZAdmin.initMappingPage();
-
-        // Add fadeOut keyframe if not exists
-        if (!$('#dsz-fadeout-style').length) {
-            $('head').append(`
-                <style id="dsz-fadeout-style">
-                    @keyframes fadeOut {
-                        from { opacity: 1; }
-                        to { opacity: 0; }
-                    }
-                </style>
-            `);
-        }
     });
 
     /**
@@ -1873,52 +1825,54 @@
             var $btn = $(this);
             var $status = $('#dsz-resync-never-synced-status');
 
-            if (!confirm(dsz_admin.strings.confirm_never_synced)) {
-                return;
-            }
+            DSZAdmin.confirm(dsz_admin.strings.confirm_never_synced).then(function (proceed) {
+                if (!proceed) {
+                    return;
+                }
 
-            $btn.prop('disabled', true);
-            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.processing + '</span>');
+                $btn.prop('disabled', true);
+                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.processing + '</span>');
 
-            var totals = { success: 0, errors: 0 };
-            var runChunk = function () {
-                $.ajax({
-                    url: dsz_admin.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'dsz_resync_never_synced',
-                        nonce: dsz_admin.nonce,
-                        offset: totals.errors
-                    },
-                    success: function (response) {
-                        if (!response.success) {
-                            if (response.data && response.data.retry_after) {
-                                $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
-                                setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                var totals = { success: 0, errors: 0 };
+                var runChunk = function () {
+                    $.ajax({
+                        url: dsz_admin.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'dsz_resync_never_synced',
+                            nonce: dsz_admin.nonce,
+                            offset: totals.errors
+                        },
+                        success: function (response) {
+                            if (!response.success) {
+                                if (response.data && response.data.retry_after) {
+                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                    setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                                    return;
+                                }
+                                $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + response.data.message + '</span>');
+                                $btn.prop('disabled', false);
                                 return;
                             }
-                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                            var d = response.data;
+                            totals.success += d.success || 0;
+                            totals.errors += d.errors || 0;
+                            if (d.done) {
+                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + dsz_admin.strings.resynced + ' ' + totals.success + (totals.errors ? ' (' + totals.errors + ' ' + dsz_admin.strings.errors_word + ')' : '') + '</span>');
+                                setTimeout(function () { location.reload(); }, 2000);
+                            } else {
+                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.success + totals.errors) + ' ' + dsz_admin.strings.processed + '</span>');
+                                runChunk();
+                            }
+                        },
+                        error: function () {
+                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
                             $btn.prop('disabled', false);
-                            return;
                         }
-                        var d = response.data;
-                        totals.success += d.success || 0;
-                        totals.errors += d.errors || 0;
-                        if (d.done) {
-                            $status.html('<span style="color:green;">✓ ' + dsz_admin.strings.resynced + ' ' + totals.success + (totals.errors ? ' (' + totals.errors + ' ' + dsz_admin.strings.errors_word + ')' : '') + '</span>');
-                            setTimeout(function () { location.reload(); }, 2000);
-                        } else {
-                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.success + totals.errors) + ' ' + dsz_admin.strings.processed + '</span>');
-                            runChunk();
-                        }
-                    },
-                    error: function () {
-                        $status.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
-                        $btn.prop('disabled', false);
-                    }
-                });
-            };
-            runChunk();
+                    });
+                };
+                runChunk();
+            });
         });
     });
 
@@ -1932,51 +1886,53 @@
             var $btn = $(this);
             var $status = $('#dsz-scan-unmapped-status');
 
-            if (!confirm(dsz_admin.strings.confirm_scan)) {
-                return;
-            }
+            DSZAdmin.confirm(dsz_admin.strings.confirm_scan).then(function (proceed) {
+                if (!proceed) {
+                    return;
+                }
 
-            $btn.prop('disabled', true);
-            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.scanning + '</span>');
+                $btn.prop('disabled', true);
+                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.scanning + '</span>');
 
-            var totals = { found: 0, notFound: 0 };
-            var runChunk = function () {
-                $.ajax({
-                    url: dsz_admin.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'dsz_scan_unmapped_products',
-                        nonce: dsz_admin.nonce
-                    },
-                    success: function (response) {
-                        if (!response.success) {
-                            if (response.data && response.data.retry_after) {
-                                $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
-                                setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                var totals = { found: 0, notFound: 0 };
+                var runChunk = function () {
+                    $.ajax({
+                        url: dsz_admin.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'dsz_scan_unmapped_products',
+                            nonce: dsz_admin.nonce
+                        },
+                        success: function (response) {
+                            if (!response.success) {
+                                if (response.data && response.data.retry_after) {
+                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                    setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                                    return;
+                                }
+                                $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + response.data.message + '</span>');
+                                $btn.prop('disabled', false);
                                 return;
                             }
-                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                            var d = response.data;
+                            totals.found += d.found || 0;
+                            totals.notFound += d.not_found || 0;
+                            if (d.done) {
+                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + totals.found + ' ' + dsz_admin.strings.linked + ', ' + totals.notFound + ' ' + dsz_admin.strings.non_dsz + '</span>');
+                                setTimeout(function () { location.reload(); }, 2000);
+                            } else {
+                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.found + totals.notFound) + ' ' + dsz_admin.strings.scanned + '</span>');
+                                runChunk();
+                            }
+                        },
+                        error: function () {
+                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
                             $btn.prop('disabled', false);
-                            return;
                         }
-                        var d = response.data;
-                        totals.found += d.found || 0;
-                        totals.notFound += d.not_found || 0;
-                        if (d.done) {
-                            $status.html('<span style="color:green;">✓ ' + totals.found + ' ' + dsz_admin.strings.linked + ', ' + totals.notFound + ' ' + dsz_admin.strings.non_dsz + '</span>');
-                            setTimeout(function () { location.reload(); }, 2000);
-                        } else {
-                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.found + totals.notFound) + ' ' + dsz_admin.strings.scanned + '</span>');
-                            runChunk();
-                        }
-                    },
-                    error: function () {
-                        $status.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
-                        $btn.prop('disabled', false);
-                    }
-                });
-            };
-            runChunk();
+                    });
+                };
+                runChunk();
+            });
         });
     });
 
@@ -1990,8 +1946,8 @@
             var orderId = $btn.data('order-id');
             var $message = $btn.siblings('.dsz-order-message');
 
-            $btn.prop('disabled', true).find('.dashicons').addClass('spin');
-            $message.html('<span style="color:#666;">' + dsz_admin.strings.submitting + '</span>');
+            $btn.prop('disabled', true).find('.dashicons').addClass('dsz-spin');
+            $message.html('<span class="dsz-text-muted">' + dsz_admin.strings.submitting + '</span>');
 
             $.ajax({
                 url: dsz_admin.ajax_url,
@@ -2003,16 +1959,16 @@
                 },
                 success: function (response) {
                     if (response.success) {
-                        $message.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                        $message.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + response.data.message + '</span>');
                         setTimeout(function () { location.reload(); }, 1500);
                     } else {
-                        $message.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
-                        $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                        $message.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + response.data.message + '</span>');
+                        $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
                     }
                 },
                 error: function () {
-                    $message.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
-                    $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                    $message.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
+                    $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
                 }
             });
         });
@@ -2065,7 +2021,7 @@
             var $result = $('#dsz-auto-import-result');
 
             $btn.prop('disabled', true);
-            $result.html('<span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.importing);
+            $result.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.importing);
 
             $.ajax({
                 url: dsz_admin.ajax_url,
@@ -2076,14 +2032,14 @@
                 },
                 success: function (response) {
                     if (response.success) {
-                        $result.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                        $result.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + response.data.message + '</span>');
                     } else {
-                        $result.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                        $result.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + response.data.message + '</span>');
                     }
                     $btn.prop('disabled', false);
                 },
                 error: function () {
-                    $result.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
+                    $result.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
                     $btn.prop('disabled', false);
                 }
             });

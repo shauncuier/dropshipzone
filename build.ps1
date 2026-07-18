@@ -50,6 +50,7 @@ $Excludes = @(
     "Thumbs.db",
     "*.log",
     "*.md",
+    "doc",
     ".agent*"
 )
 

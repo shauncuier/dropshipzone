@@ -287,6 +287,8 @@ class Admin_UI {
                 'submitting' => __('Submitting...', 'dropshipzone'),
                 'request_failed' => __('Request failed', 'dropshipzone'),
                 'rate_wait' => __('Rate limit reached — retrying shortly...', 'dropshipzone'),
+                'confirm_ok' => __('Confirm', 'dropshipzone'),
+                'confirm_cancel' => __('Cancel', 'dropshipzone'),
             ],
         ]);
     }
@@ -650,7 +652,7 @@ class Admin_UI {
                                         <input type="radio" name="markup_type" value="percentage" <?php checked($rules['markup_type'], 'percentage'); ?> />
                                         <?php esc_html_e('Percentage', 'dropshipzone'); ?>
                                     </label>
-                                    <label style="margin-left: 20px;">
+                                    <label class="dsz-ml-3">
                                         <input type="radio" name="markup_type" value="fixed" <?php checked($rules['markup_type'], 'fixed'); ?> />
                                         <?php esc_html_e('Fixed Amount', 'dropshipzone'); ?>
                                     </label>
@@ -1503,29 +1505,29 @@ class Admin_UI {
                     </div>
                     
                     <?php if ($never_synced_count > 0): ?>
-                    <div style="margin-top: 15px;">
+                    <div class="dsz-mt-4">
                         <button type="button" id="dsz-resync-never-synced" class="button button-primary">
-                            <span class="dashicons dashicons-update" style="line-height: 1.4;"></span>
+                            <span class="dashicons dashicons-update"></span>
                             <?php 
                             /* translators: %d: number of products */
                             echo esc_html(sprintf(__('Resync %d Never Synced Products', 'dropshipzone'), $never_synced_count)); 
                             ?>
                         </button>
-                        <span id="dsz-resync-never-synced-status" style="margin-left: 10px;"></span>
+                        <span id="dsz-resync-never-synced-status" class="dsz-ml-2"></span>
                     </div>
                     <?php endif; ?>
                     
                     <?php if ($unmapped_count > 0): ?>
-                    <div style="margin-top: 15px;">
+                    <div class="dsz-mt-4">
                         <button type="button" id="dsz-scan-unmapped" class="button button-secondary">
-                            <span class="dashicons dashicons-search" style="line-height: 1.4;"></span>
+                            <span class="dashicons dashicons-search"></span>
                             <?php 
                             /* translators: %d: number of products */
                             echo esc_html(sprintf(__('Scan %d Unmapped Products', 'dropshipzone'), $unmapped_count)); 
                             ?>
                         </button>
-                        <span id="dsz-scan-unmapped-status" style="margin-left: 10px;"></span>
-                        <p class="description" style="margin-top: 5px;">
+                        <span id="dsz-scan-unmapped-status" class="dsz-ml-2"></span>
+                        <p class="description dsz-mt-2">
                             <?php esc_html_e('Checks if unmapped products exist in Dropshipzone. Found products will be linked; not-found products will be marked as Non-DSZ.', 'dropshipzone'); ?>
                         </p>
                     </div>
@@ -1577,10 +1579,10 @@ class Admin_UI {
                     <h2><?php esc_html_e('Existing Mappings', 'dropshipzone'); ?></h2>
                     
                     <!-- Search and Filter -->
-                    <form method="get" class="dsz-mapping-search" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <form method="get" class="dsz-mapping-search">
                         <input type="hidden" name="page" value="dsz-sync-mapping" />
-                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search mappings...', 'dropshipzone'); ?>" style="min-width: 200px;" />
-                        <select name="resync_filter" style="min-width: 150px;">
+                        <input type="text" name="search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search mappings...', 'dropshipzone'); ?>" />
+                        <select name="resync_filter">
                             <option value=""><?php esc_html_e('All Resync Status', 'dropshipzone'); ?></option>
                             <option value="never" <?php selected($resync_filter, 'never'); ?>><?php esc_html_e('Never Resynced', 'dropshipzone'); ?></option>
                             <option value="today" <?php selected($resync_filter, 'today'); ?>><?php esc_html_e('Resynced Today', 'dropshipzone'); ?></option>
@@ -1883,7 +1885,7 @@ class Admin_UI {
                 </div>
 
                 <!-- Hidden checkboxes for quick filters (JS interacts with these) -->
-                <div style="display:none;">
+                <div class="hidden">
                     <input type="checkbox" id="dsz-filter-instock" value="1">
                     <input type="checkbox" id="dsz-filter-freeship" value="1">
                     <input type="checkbox" id="dsz-filter-promotion" value="1">
@@ -2776,7 +2778,7 @@ class Admin_UI {
         $has_dsz_products = $this->order_handler->order_has_dsz_products($order_id);
 
         if (!$has_dsz_products) {
-            echo '<p style="color: #666;">' . esc_html__('No Dropshipzone products in this order.', 'dropshipzone') . '</p>';
+            echo '<p class="dsz-text-muted">' . esc_html__('No Dropshipzone products in this order.', 'dropshipzone') . '</p>';
             return;
         }
 
@@ -2823,7 +2825,7 @@ class Admin_UI {
                     <?php esc_html_e('Submit to Dropshipzone', 'dropshipzone'); ?>
                 </button>
             <?php endif; ?>
-            <div class="dsz-order-message" style="margin-top: 10px;"></div>
+            <div class="dsz-order-message"></div>
         </div>
         <?php
     }
@@ -2850,7 +2852,7 @@ class Admin_UI {
                     <!-- Status Section -->
                     <div class="dsz-form-section">
                         <h2><?php esc_html_e('Auto Import Status', 'dropshipzone'); ?></h2>
-                        <div class="dsz-cards" style="margin-bottom: 20px;">
+                        <div class="dsz-cards">
                             <div class="dsz-card <?php echo esc_attr($settings['enabled'] ? 'dsz-card-success' : 'dsz-card-warning'); ?>">
                                 <div class="dsz-card-icon">
                                     <span class="dashicons <?php echo esc_attr($settings['enabled'] ? 'dashicons-yes-alt' : 'dashicons-warning'); ?>"></span>
@@ -2885,12 +2887,12 @@ class Admin_UI {
                             <?php endif; ?>
                         </div>
                         
-                        <div class="dsz-form-actions" style="margin-bottom: 30px;">
+                        <div class="dsz-form-actions dsz-mb-5">
                             <button type="button" id="dsz-run-auto-import" class="button button-secondary">
                                 <span class="dashicons dashicons-download"></span>
                                 <?php esc_html_e('Run Import Now', 'dropshipzone'); ?>
                             </button>
-                            <span id="dsz-auto-import-result" style="margin-left: 15px;"></span>
+                            <span id="dsz-auto-import-result" class="dsz-ml-3"></span>
                         </div>
                     </div>
 
@@ -2908,9 +2910,9 @@ class Admin_UI {
                     ?>
                     <div class="dsz-form-section">
                         <h2><?php esc_html_e('Import Metrics', 'dropshipzone'); ?></h2>
-                        <div class="dsz-cards" style="margin-bottom: 20px;">
+                        <div class="dsz-cards">
                             <div class="dsz-card">
-                                <div class="dsz-card-icon" style="background: linear-gradient(135deg, var(--dsz-success) 0%, #059669 100%);">
+                                <div class="dsz-card-icon dsz-icon-success">
                                     <span class="dashicons dashicons-database"></span>
                                 </div>
                                 <div class="dsz-card-content">
@@ -2952,8 +2954,8 @@ class Admin_UI {
                         </div>
                         
                         <?php if (!empty($history)): ?>
-                        <h3 style="margin-bottom: 10px;"><?php esc_html_e('Recent Import History', 'dropshipzone'); ?></h3>
-                        <table class="widefat striped" style="margin-bottom: 20px;">
+                        <h3><?php esc_html_e('Recent Import History', 'dropshipzone'); ?></h3>
+                        <table class="widefat striped dsz-mb-5">
                             <thead>
                                 <tr>
                                     <th><?php esc_html_e('Date', 'dropshipzone'); ?></th>
@@ -2972,9 +2974,9 @@ class Admin_UI {
                                     <td><?php echo intval($entry['errors']); ?></td>
                                     <td>
                                         <?php if ($entry['status'] === 'complete'): ?>
-                                            <span style="color: var(--dsz-success);">✓ <?php esc_html_e('Complete', 'dropshipzone'); ?></span>
+                                            <span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('Complete', 'dropshipzone'); ?></span>
                                         <?php elseif ($entry['status'] === 'error'): ?>
-                                            <span style="color: var(--dsz-error);">✗ <?php esc_html_e('Error', 'dropshipzone'); ?></span>
+                                            <span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> <?php esc_html_e('Error', 'dropshipzone'); ?></span>
                                         <?php else: ?>
                                             <?php echo esc_html($entry['status']); ?>
                                         <?php endif; ?>
@@ -2984,7 +2986,7 @@ class Admin_UI {
                             </tbody>
                         </table>
                         <?php else: ?>
-                        <p style="color: var(--dsz-gray-500);"><?php esc_html_e('No import history yet. Run an import to see metrics.', 'dropshipzone'); ?></p>
+                        <p class="dsz-text-muted"><?php esc_html_e('No import history yet. Run an import to see metrics.', 'dropshipzone'); ?></p>
                         <?php endif; ?>
                     </div>
 
