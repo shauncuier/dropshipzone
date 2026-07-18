@@ -2,7 +2,8 @@
  * Dropshipzone Sync — Admin UI
  *
  * Clean, flat design system: single indigo accent, token-driven,
- * light + dark (prefers-color-scheme), reduced-motion aware.
+ * light by default with opt-in dark theme (body.dsz-dark via the header
+ * toggle, persisted in localStorage), reduced-motion aware.
  *
  * Contract: every .dsz-* class referenced by class-admin-ui.php or
  * admin.js keeps working. Legacy duplicate systems (import v1/v2/v3,
@@ -108,8 +109,12 @@
     --dsz-transition-slow: 300ms ease;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
+/*
+ * Dark theme is OPT-IN via the header toggle (body.dsz-dark), never tied to
+ * the OS preference — WP admin's content area stays light regardless of OS,
+ * and auto-darkening only our panels clashes with the surrounding chrome.
+ */
+body.dsz-dark {
         --dsz-primary: #818cf8;
         --dsz-primary-hover: #a5b4fc;
         --dsz-primary-active: #6366f1;
@@ -153,7 +158,13 @@
         --dsz-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         --dsz-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
         --dsz-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
-    }
+}
+
+/* Darken the WP content area behind our panels so dark mode reads as one
+   coherent surface instead of dark cards floating on white */
+body.dsz-dark #wpcontent,
+body.dsz-dark #wpbody-content {
+    background: #0b1220;
 }
 
 /* ==========================================================================
@@ -216,6 +227,29 @@
 
 .dsz-header-content {
     max-width: 1200px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--dsz-space-4);
+}
+
+.dsz-theme-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0 !important;
+    color: var(--dsz-text-muted);
+}
+
+.dsz-theme-toggle .dashicons {
+    margin: 0 !important;
+}
+
+body.dsz-dark .dsz-theme-toggle {
+    color: var(--dsz-warning);
 }
 
 .dsz-header h1 {

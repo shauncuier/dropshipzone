@@ -5,6 +5,13 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.3] - 2026-07-18
+
+### Added
+- **Admin UI Theme Toggle**: Added an opt-in dark theme toggle in the header, persisted via `localStorage` (independent of OS preferences to avoid clashing with the standard light WordPress admin dashboard).
+
+---
+
 ## [2.6.2] - 2026-07-18
 
 ### Changed
@@ -483,15 +490,27 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.1
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.0
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.5.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.5.1
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.0.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.1
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.0
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [2.6.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.2
+[2.6.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.3
 [1.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v1.0.0

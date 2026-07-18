@@ -382,10 +382,15 @@ class Admin_UI {
         ?>
         <div class="dsz-header">
             <div class="dsz-header-content">
-                <h1><?php echo esc_html($title); ?></h1>
-                <?php if ($subtitle): ?>
-                    <p class="dsz-subtitle"><?php echo esc_html($subtitle); ?></p>
-                <?php endif; ?>
+                <div class="dsz-header-text">
+                    <h1><?php echo esc_html($title); ?></h1>
+                    <?php if ($subtitle): ?>
+                        <p class="dsz-subtitle"><?php echo esc_html($subtitle); ?></p>
+                    <?php endif; ?>
+                </div>
+                <button type="button" id="dsz-theme-toggle" class="button dsz-theme-toggle" title="<?php esc_attr_e('Toggle light/dark theme', 'dropshipzone'); ?>">
+                    <span class="dashicons dashicons-lightbulb"></span>
+                </button>
             </div>
         </div>
         

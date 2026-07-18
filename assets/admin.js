@@ -50,6 +50,29 @@
         initRippleEffect: function () {},
 
         /**
+         * Opt-in dark theme. Applied via body.dsz-dark and persisted in
+         * localStorage — never tied to the OS preference, because the WP
+         * admin content area stays light and auto-darkening clashes.
+         */
+        initThemeToggle: function () {
+            var saved = null;
+            try {
+                saved = window.localStorage.getItem('dszAdminTheme');
+            } catch (err) {}
+
+            if (saved === 'dark') {
+                $('body').addClass('dsz-dark');
+            }
+
+            $(document).on('click', '#dsz-theme-toggle', function () {
+                var dark = $('body').toggleClass('dsz-dark').hasClass('dsz-dark');
+                try {
+                    window.localStorage.setItem('dszAdminTheme', dark ? 'dark' : 'light');
+                } catch (err) {}
+            });
+        },
+
+        /**
          * Animate number counters
          */
         animateNumbers: function () {
@@ -1811,6 +1834,7 @@
 
     // Initialize on DOM ready
     $(document).ready(function () {
+        DSZAdmin.initThemeToggle();
         DSZAdmin.init();
         DSZAdmin.initMappingPage();
     });
