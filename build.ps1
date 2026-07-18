@@ -27,10 +27,11 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Define paths
-$PluginName = "dropshipzone-price-stock-sync"
+$PluginFolder = "dropshipzone"
+$ZipName = "dropshipzone-price-stock-sync"
 $BuildDir = Join-Path $ScriptDir "build"
-$DistDir = Join-Path $BuildDir $PluginName
-$ZipFile = Join-Path $BuildDir "$PluginName-v$Version.zip"
+$DistDir = Join-Path $BuildDir $PluginFolder
+$ZipFile = Join-Path $BuildDir "$ZipName-v$Version.zip"
 
 # Files/folders to exclude from the zip
 # Note: exclusions match top-level items only. All *.md docs are repo/GitHub

@@ -58,15 +58,15 @@ jobs:
 
       - name: Create plugin directory structure
         run: |
-          mkdir -p build/dropshipzone-price-stock-sync
+          mkdir -p build/dropshipzone
           
           # Copy plugin files (excluding dev files; markdown docs stay repo-only)
-          cp -r assets build/dropshipzone-price-stock-sync/
-          cp -r includes build/dropshipzone-price-stock-sync/
-          cp -r languages build/dropshipzone-price-stock-sync/
-          cp dropshipzone-price-stock-sync.php build/dropshipzone-price-stock-sync/
-          cp readme.txt build/dropshipzone-price-stock-sync/
-          cp LICENSE build/dropshipzone-price-stock-sync/
+          cp -r assets build/dropshipzone/
+          cp -r includes build/dropshipzone/
+          cp -r languages build/dropshipzone/
+          cp dropshipzone-price-stock-sync.php build/dropshipzone/
+          cp readme.txt build/dropshipzone/
+          cp LICENSE build/dropshipzone/
           
           # Remove any development files
           find build -name "*.map" -delete
@@ -77,7 +77,7 @@ jobs:
       - name: Create ZIP archive
         run: |
           cd build
-          zip -r ../dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}.zip dropshipzone-price-stock-sync
+          zip -r ../dropshipzone-price-stock-sync-${{ steps.get_version.outputs.version }}.zip dropshipzone
           cd ..
           ls -la *.zip
 
