@@ -141,6 +141,8 @@ class Product_Importer {
         // Use Price Sync logic to set price (shared cost source with cron sync path)
         $cost_price = dsz_get_api_cost($data);
         $final_price = $this->price_sync->calculate_price($cost_price);
+        /** This filter is documented in includes/class-cron.php (product not yet saved: ID 0) */
+        $final_price = (float) apply_filters('dsz_calculated_price', $final_price, 0, $cost_price);
         $product->set_regular_price($final_price);
 
         // Use Stock Sync logic to set stock - check multiple possible field names
@@ -155,6 +157,8 @@ class Product_Importer {
             $api_stock = intval($data['quantity']);
         }
         $final_stock = $this->stock_sync->calculate_stock($api_stock);
+        /** This filter is documented in includes/class-cron.php (product not yet saved: ID 0) */
+        $final_stock = (int) apply_filters('dsz_calculated_stock', $final_stock, 0, $api_stock);
         $product->set_manage_stock(true);
         $product->set_stock_quantity($final_stock);
         
@@ -393,6 +397,8 @@ class Product_Importer {
             $cost_price = dsz_get_api_cost($data);
             if ($cost_price > 0) {
                 $final_price = $this->price_sync->calculate_price($cost_price);
+                /** This filter is documented in includes/class-cron.php */
+                $final_price = (float) apply_filters('dsz_calculated_price', $final_price, $product_id, $cost_price);
                 $product->set_regular_price($final_price);
             }
         }

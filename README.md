@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![Plugin Banner](assets/banner-1544x500.png)
-
 [![GitHub Release](https://img.shields.io/github/v/release/shauncuier/dropshipzone?label=version&color=blue)](https://github.com/shauncuier/dropshipzone/releases/latest)
 [![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
@@ -25,6 +23,12 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes, or check the [latest release](https://github.com/shauncuier/dropshipzone/releases/latest).
 
+**Version 2.8.0 Highlights:**
+- **🔌 Developer Hooks** - `dsz_calculated_price`/`dsz_calculated_stock` filters and `dsz_sync_completed`/`dsz_price_updated` actions are live
+- **🧹 Daily Maintenance** - Automatic log retention, orphaned mapping cleanup, transient purging
+- **🚫 Supplier Blacklist** - Exclude suppliers from Auto Import
+- **💾 Import Templates & CSV Export** - Save filter presets; export mappings
+
 **Version 2.7.0 Highlights:**
 - **🇳🇿 New Zealand Shipping** - Flat-rate shipping support for NZ destinations (standard scheme `nz` key)
 - **🛡️ Treat $0 Rates as Unavailable** - Prevents unintended free shipping when a supplier has not priced a zone
@@ -45,6 +49,12 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### ✅ Completed Features
 | Feature | Description | Version |
 |---------|-------------|:-------:|
+| **Developer Hooks** | Price/stock filters + sync lifecycle actions | v2.8.0 |
+| **Scheduled Maintenance** | Auto-cleanup of old logs, orphaned mappings, stale caches | v2.8.0 |
+| **Supplier Blacklist** | Exclude specific suppliers from import | v2.8.0 |
+| **Import Templates** | Save and reuse import filter configurations | v2.8.0 |
+| **Export Tools** | Export product mappings as CSV | v2.8.0 |
+| **Database Optimization** | Composite indexes for large-catalog sync queries | v2.8.0 |
 | **New Zealand Shipping** | Flat-rate shipping support for NZ destinations | v2.7.0 |
 | **Negative Caching** | 5-minute transient back-off cache on API failures | v2.7.0 |
 | **Batch Auto-Mapping** | Process SKU auto-mapping in safe batches of 500 | v2.6.0 |
@@ -59,10 +69,10 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### 🔴 High Priority (Coming Soon)
 | Feature | Description | Status |
 |---------|-------------|:------:|
+| **Advanced Price Rules** | Category-based and supplier-based pricing | 🚧 In Progress |
 | **Tracking Number Sync** | Auto-import tracking numbers from DSZ orders and update WC orders | 📋 Planned |
-| **Webhook Support** | Real-time updates via DSZ webhooks (when available) | 📋 Planned |
-| **Advanced Price Rules** | Category-based and supplier-based pricing | 📋 Planned |
 | **Bulk Order Submission** | Submit multiple orders to DSZ at once | 📋 Planned |
+| **Webhook Support** | Real-time updates via DSZ webhooks | ⏸️ Waiting on DSZ (no webhook API exists yet) |
 
 ### 🟡 Medium Priority
 | Feature | Description | Status |
@@ -77,28 +87,21 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### 🟢 Low Priority / Under Consideration
 | Feature | Description | Status |
 |---------|-------------|:------:|
-| **Multi-currency Support** | Support for international stores (AUD, NZD, USD) | 💭 Considering |
-| **Profit Calculator** | View margins on product and order level | 💭 Considering |
-| **Multi-supplier Support** | Integrate with multiple dropship suppliers | 💭 Considering |
-| **REST API Endpoints** | Expose sync functionality via REST API | 💭 Considering |
-| **WooCommerce Blocks** | Full Gutenberg block compatibility | 💭 Considering |
-| **Sync Analytics Dashboard** | Charts showing sync history, errors, trends | 💭 Considering |
-| **Product Compare** | Compare local product data with DSZ data | 💭 Considering |
-| **Auto-Discontinue** | Automatically handle discontinued products | 💭 Considering |
-| **Supplier Blacklist** | Exclude specific suppliers from import | 💭 Considering |
-| **Markup by Category** | Different markup rules per product category | 💭 Considering |
-| **Scheduled Maintenance** | Auto-cleanup of old logs, orphaned mappings | 💭 Considering |
-| **Export Tools** | Export product data, mappings, and reports | 💭 Considering |
-| **Import Templates** | Save and reuse import filter configurations | 💭 Considering |
+| **Profit Calculator** | View margins on product and order level | 📋 Planned |
+| **REST API Endpoints** | Expose sync functionality via REST API | 📋 Planned |
+| **Sync Analytics Dashboard** | Charts showing sync history, errors, trends | 📋 Planned |
+| **Product Compare** | Compare local product data with DSZ data | 📋 Planned |
+| **Auto-Discontinue** | Automatically handle discontinued products | 📋 Planned (surfacing of existing deactivate-if-not-found) |
+| **Markup by Category** | Different markup rules per product category | 🚧 Part of Advanced Price Rules |
+
+**Not pursuing** (with reasons): Auto-Repricing (no competitor data source in the API), Multi-supplier (out of scope for a DSZ integration), Multi-currency (API is AUD-only; currency plugins handle display), Redis/Memcached layer (transient caching is already object-cache backed), WooCommerce Blocks (plugin has no frontend surface).
 
 ### 🔧 Technical Improvements
 | Feature | Description | Status |
 |---------|-------------|:------:|
 | **Background Processing** | Move heavy tasks to Action Scheduler | 📋 Planned |
-| **Database Optimization** | Index optimization for large catalogs | 📋 Planned |
-| **Caching Layer** | Redis/Memcached support for API responses | 💭 Considering |
 | **Unit Tests** | Comprehensive PHPUnit test suite | 📋 Planned |
-| **CLI Commands** | WP-CLI commands for sync operations | 💭 Considering |
+| **CLI Commands** | WP-CLI commands for sync operations | 📋 Planned |
 
 ### Legend
 | Icon | Status |
@@ -187,7 +190,7 @@ git clone https://github.com/shauncuier/dropshipzone.git
 
 ### Option 3: From GitHub Releases
 
-1. Download `dropshipzone-price-stock-sync-v2.0.0.zip` from [Releases](https://github.com/shauncuier/dropshipzone/releases)
+1. Download the latest `dropshipzone-*.zip` from [Releases](https://github.com/shauncuier/dropshipzone/releases)
 2. Extract and upload to `/wp-content/plugins/`
 3. Activate through WordPress admin
 

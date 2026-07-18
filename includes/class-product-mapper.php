@@ -59,14 +59,36 @@ class Product_Mapper {
             PRIMARY KEY (id),
             UNIQUE KEY wc_product_id (wc_product_id),
             UNIQUE KEY dsz_sku (dsz_sku),
-            KEY sync_enabled (sync_enabled)
+            KEY sync_enabled (sync_enabled),
+            KEY sync_enabled_last_synced (sync_enabled, last_synced)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
-        
+
         // Add last_resynced column if it doesn't exist (for upgrades)
         self::maybe_add_last_resynced_column();
+        self::maybe_add_indexes();
+    }
+
+    /**
+     * Add newer indexes on existing installations (schema v3)
+     */
+    public static function maybe_add_indexes() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'dsz_product_mapping';
+
+        $index_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = %s AND table_name = %s AND index_name = %s",
+            DB_NAME,
+            $table_name,
+            'sync_enabled_last_synced'
+        ));
+
+        if (!$index_exists) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
+            $wpdb->query("ALTER TABLE `{$table_name}` ADD KEY `sync_enabled_last_synced` (`sync_enabled`, `last_synced`)");
+        }
     }
     
     /**
@@ -518,6 +540,28 @@ class Product_Mapper {
             'remaining' => $results['remaining'],
         ]);
         return $results;
+    }
+
+    /**
+     * Remove mappings whose WooCommerce product no longer exists
+     *
+     * @return int Rows deleted
+     */
+    public function cleanup_orphaned() {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $deleted = $wpdb->query("
+            DELETE m FROM " . $this->table_name . " m
+            LEFT JOIN " . $wpdb->posts . " p ON m.wc_product_id = p.ID
+            WHERE p.ID IS NULL
+        ");
+
+        if ($deleted) {
+            $this->logger->info('Maintenance: removed orphaned mappings', ['deleted' => intval($deleted)]);
+        }
+
+        return intval($deleted);
     }
 
     /**

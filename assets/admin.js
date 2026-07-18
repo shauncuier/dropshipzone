@@ -2023,7 +2023,8 @@
                     default_product_status: $form.find('select[name="default_product_status"]').val(),
                     filter_new_arrival: $form.find('input[name="filter_new_arrival"]').is(':checked') ? 1 : 0,
                     filter_in_stock: $form.find('input[name="filter_in_stock"]').is(':checked') ? 1 : 0,
-                    filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0
+                    filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0,
+                    exclude_supplier_ids: $form.find('input[name="exclude_supplier_ids"]').val() || ''
                 },
                 success: function (response) {
                     if (response.success) {
@@ -2066,6 +2067,149 @@
                     $result.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
                     $btn.prop('disabled', false);
                 }
+            });
+        });
+    });
+
+    /**
+     * Import page: filter templates (save/apply/delete named presets).
+     */
+    $(document).ready(function () {
+        if (!$('#dsz-import-template').length) {
+            return;
+        }
+
+        // Quick-filter card data-filter → hidden checkbox id suffix
+        var cardMap = { in_stock: 'instock', on_promotion: 'promotion', free_shipping: 'freeship', new_arrival: 'newarrivals' };
+
+        var rebuildOptions = function (selected) {
+            var $sel = $('#dsz-import-template');
+            $sel.find('option:not(:first)').remove();
+            $.each(dsz_admin.import_templates || {}, function (name) {
+                $sel.append($('<option></option>').val(name).text(name));
+            });
+            $sel.val(selected || '');
+        };
+
+        $('#dsz-import-template').on('change', function () {
+            var name = $(this).val();
+            var tpl = (dsz_admin.import_templates || {})[name];
+            if (!tpl) {
+                return;
+            }
+
+            $('#dsz-filter-category').val(tpl.category || '');
+            $('#dsz-filter-sort').val(tpl.sort || '');
+            $('#dsz-filter-instock').prop('checked', !!tpl.in_stock);
+            $('#dsz-filter-promotion').prop('checked', !!tpl.promotion);
+            $('#dsz-filter-freeship').prop('checked', !!tpl.free_shipping);
+            $('#dsz-filter-newarrivals').prop('checked', !!tpl.new_arrival);
+
+            // Sync quick-filter card highlights with the checkbox states
+            $('.dsz-quick-filter-card').each(function () {
+                var suffix = cardMap[$(this).data('filter')];
+                if (suffix) {
+                    $(this).toggleClass('active', $('#dsz-filter-' + suffix).is(':checked'));
+                }
+            });
+
+            $('#dsz-import-template-name').val(name);
+        });
+
+        $('#dsz-save-template').on('click', function () {
+            var name = $.trim($('#dsz-import-template-name').val());
+            if (!name) {
+                DSZAdmin.showNotification('warning', 'Enter a template name first.');
+                return;
+            }
+
+            $.post(dsz_admin.ajax_url, {
+                action: 'dsz_save_import_template',
+                nonce: dsz_admin.nonce,
+                name: name,
+                filters: {
+                    category: $('#dsz-filter-category').val() || '',
+                    sort: $('#dsz-filter-sort').val() || '',
+                    in_stock: $('#dsz-filter-instock').is(':checked') ? 1 : 0,
+                    promotion: $('#dsz-filter-promotion').is(':checked') ? 1 : 0,
+                    free_shipping: $('#dsz-filter-freeship').is(':checked') ? 1 : 0,
+                    new_arrival: $('#dsz-filter-newarrivals').is(':checked') ? 1 : 0
+                }
+            }, function (response) {
+                if (response.success) {
+                    dsz_admin.import_templates = response.data.templates;
+                    rebuildOptions(name);
+                    DSZAdmin.showNotification('success', response.data.message);
+                } else {
+                    DSZAdmin.showNotification('error', response.data.message);
+                }
+            });
+        });
+
+        $('#dsz-delete-template').on('click', function () {
+            var name = $('#dsz-import-template').val();
+            if (!name) {
+                DSZAdmin.showNotification('warning', 'Select a template to delete.');
+                return;
+            }
+
+            DSZAdmin.confirm('Delete template "' + name + '"?', { danger: true }).then(function (ok) {
+                if (!ok) {
+                    return;
+                }
+                $.post(dsz_admin.ajax_url, {
+                    action: 'dsz_delete_import_template',
+                    nonce: dsz_admin.nonce,
+                    name: name
+                }, function (response) {
+                    if (response.success) {
+                        dsz_admin.import_templates = response.data.templates;
+                        rebuildOptions('');
+                        $('#dsz-import-template-name').val('');
+                        DSZAdmin.showNotification('success', response.data.message);
+                    } else {
+                        DSZAdmin.showNotification('error', response.data.message);
+                    }
+                });
+            });
+        });
+    });
+
+    /**
+     * Mapping page: export all mappings as CSV.
+     */
+    $(document).ready(function () {
+        $('#dsz-export-mappings').on('click', function () {
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+
+            $.post(dsz_admin.ajax_url, {
+                action: 'dsz_export_mappings',
+                nonce: dsz_admin.nonce
+            }, function (response) {
+                $btn.prop('disabled', false);
+                if (!response.success) {
+                    DSZAdmin.showNotification('error', response.data.message);
+                    return;
+                }
+
+                var csvContent = atob(response.data.csv);
+                var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                var link = document.createElement('a');
+                var url = URL.createObjectURL(blob);
+
+                link.setAttribute('href', url);
+                link.setAttribute('download', response.data.filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                DSZAdmin.showNotification('success', 'Mappings exported.');
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                DSZAdmin.showNotification('error', dsz_admin.strings.request_failed);
             });
         });
     });

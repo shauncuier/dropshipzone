@@ -205,6 +205,8 @@ class Price_Sync {
 
             // Calculate final prices
             $calculated_regular = $this->calculate_price($supplier_price);
+            /** This filter is documented in includes/class-cron.php */
+            $calculated_regular = (float) apply_filters('dsz_calculated_price', $calculated_regular, $product_id, $supplier_price);
             $calculated_sale = null;
 
             // If there's a special/sale price from supplier
@@ -238,6 +240,9 @@ class Price_Sync {
 
             // Update prices
             $product->set_regular_price($calculated_regular);
+
+            /** This action is documented in includes/class-cron.php */
+            do_action('dsz_price_updated', $product_id, $current_regular, $calculated_regular);
             
             if ($calculated_sale !== null) {
                 $product->set_sale_price($calculated_sale);

@@ -115,7 +115,10 @@ class Admin_UI {
         add_action('wp_ajax_dsz_resync_never_synced', [$this, 'ajax_resync_never_synced']);
         add_action('wp_ajax_dsz_scan_unmapped_products', [$this, 'ajax_scan_unmapped_products']);
         add_action('wp_ajax_dsz_get_categories', [$this, 'ajax_get_categories']);
-        
+        add_action('wp_ajax_dsz_save_import_template', [$this, 'ajax_save_import_template']);
+        add_action('wp_ajax_dsz_delete_import_template', [$this, 'ajax_delete_import_template']);
+        add_action('wp_ajax_dsz_export_mappings', [$this, 'ajax_export_mappings']);
+
         // Order AJAX handlers
         add_action('wp_ajax_dsz_submit_order', [$this, 'ajax_submit_order']);
         
@@ -266,6 +269,7 @@ class Admin_UI {
         wp_localize_script('dsz-admin-js', 'dsz_admin', [
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('dsz_admin_nonce'),
+            'import_templates' => (object) get_option('dsz_import_templates', []),
             'strings' => [
                 'testing' => __('Testing connection...', 'dropshipzone'),
                 'saving' => __('Saving...', 'dropshipzone'),
@@ -1469,6 +1473,114 @@ class Admin_UI {
     }
 
     /**
+     * AJAX: Export product mappings as CSV
+     */
+    public function ajax_export_mappings() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        $mappings = $this->product_mapper->get_mappings(['limit' => 100000, 'offset' => 0]);
+
+        $rows = [
+            ['wc_product_id', 'wc_product_name', 'dsz_sku', 'sync_enabled', 'last_synced', 'last_resynced', 'created_at'],
+        ];
+        foreach ($mappings as $m) {
+            $rows[] = [
+                $m['wc_product_id'],
+                isset($m['wc_product_name']) ? $m['wc_product_name'] : '',
+                $m['dsz_sku'],
+                $m['sync_enabled'],
+                isset($m['last_synced']) ? $m['last_synced'] : '',
+                isset($m['last_resynced']) ? $m['last_resynced'] : '',
+                isset($m['created_at']) ? $m['created_at'] : '',
+            ];
+        }
+
+        $fh = fopen('php://temp', 'r+');
+        foreach ($rows as $row) {
+            fputcsv($fh, $row);
+        }
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        wp_send_json_success([
+            'csv' => base64_encode($csv),
+            'filename' => 'dsz-mappings-' . gmdate('Y-m-d') . '.csv',
+        ]);
+    }
+
+    /**
+     * AJAX: Save an import filter template
+     */
+    public function ajax_save_import_template() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $filters = isset($_POST['filters']) ? (array) wp_unslash($_POST['filters']) : [];
+
+        if ($name === '') {
+            wp_send_json_error(['message' => __('Template name is required.', 'dropshipzone')]);
+        }
+
+        $templates = get_option('dsz_import_templates', []);
+
+        if (!isset($templates[$name]) && count($templates) >= 20) {
+            wp_send_json_error(['message' => __('Template limit reached (20). Delete one first.', 'dropshipzone')]);
+        }
+
+        $sort = isset($filters['sort']) ? sanitize_text_field($filters['sort']) : '';
+        $templates[$name] = [
+            'category' => isset($filters['category']) ? sanitize_text_field($filters['category']) : '',
+            'sort' => in_array($sort, ['', 'price_asc', 'price_desc'], true) ? $sort : '',
+            'in_stock' => !empty($filters['in_stock']),
+            'free_shipping' => !empty($filters['free_shipping']),
+            'promotion' => !empty($filters['promotion']),
+            'new_arrival' => !empty($filters['new_arrival']),
+        ];
+
+        update_option('dsz_import_templates', $templates, false);
+
+        wp_send_json_success([
+            'message' => __('Template saved.', 'dropshipzone'),
+            'templates' => (object) $templates,
+        ]);
+    }
+
+    /**
+     * AJAX: Delete an import filter template
+     */
+    public function ajax_delete_import_template() {
+        check_ajax_referer('dsz_admin_nonce', 'nonce');
+
+        if (!dsz_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
+        }
+
+        $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        $templates = get_option('dsz_import_templates', []);
+
+        if (!isset($templates[$name])) {
+            wp_send_json_error(['message' => __('Template not found.', 'dropshipzone')]);
+        }
+
+        unset($templates[$name]);
+        update_option('dsz_import_templates', $templates, false);
+
+        wp_send_json_success([
+            'message' => __('Template deleted.', 'dropshipzone'),
+            'templates' => (object) $templates,
+        ]);
+    }
+
+    /**
      * Render Product Mapping page
      */
     public function render_mapping() {
@@ -1591,7 +1703,13 @@ class Admin_UI {
 
                 <!-- Existing Mappings -->
                 <div class="dsz-form-section">
-                    <h2><?php esc_html_e('Existing Mappings', 'dropshipzone'); ?></h2>
+                    <div class="dsz-section-header">
+                        <h2><?php esc_html_e('Existing Mappings', 'dropshipzone'); ?></h2>
+                        <button type="button" id="dsz-export-mappings" class="button">
+                            <span class="dashicons dashicons-download"></span>
+                            <?php esc_html_e('Export CSV', 'dropshipzone'); ?>
+                        </button>
+                    </div>
                     
                     <!-- Search and Filter -->
                     <form method="get" class="dsz-mapping-search">
@@ -1883,6 +2001,23 @@ class Admin_UI {
                                     <option value="price_asc"><?php esc_html_e('Price: Low to High', 'dropshipzone'); ?></option>
                                     <option value="price_desc"><?php esc_html_e('Price: High to Low', 'dropshipzone'); ?></option>
                                 </select>
+                            </div>
+                        </div>
+
+                        <!-- Filter templates: save/apply named filter presets -->
+                        <?php $import_templates = get_option('dsz_import_templates', []); ?>
+                        <div class="dsz-filter-item dsz-mt-3">
+                            <label for="dsz-import-template"><?php esc_html_e('Filter Templates', 'dropshipzone'); ?></label>
+                            <div class="dsz-flex-row">
+                                <select id="dsz-import-template">
+                                    <option value=""><?php esc_html_e('&mdash; Select template &mdash;', 'dropshipzone'); ?></option>
+                                    <?php foreach (array_keys($import_templates) as $tpl_name): ?>
+                                        <option value="<?php echo esc_attr($tpl_name); ?>"><?php echo esc_html($tpl_name); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="text" id="dsz-import-template-name" placeholder="<?php esc_attr_e('Template name', 'dropshipzone'); ?>" />
+                                <button type="button" id="dsz-save-template" class="button"><?php esc_html_e('Save Current', 'dropshipzone'); ?></button>
+                                <button type="button" id="dsz-delete-template" class="button dsz-btn-danger"><?php esc_html_e('Delete', 'dropshipzone'); ?></button>
                             </div>
                         </div>
 
@@ -3098,6 +3233,13 @@ class Admin_UI {
                                     </label>
                                 </td>
                             </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('Supplier Blacklist', 'dropshipzone'); ?></th>
+                                <td>
+                                    <input type="text" name="exclude_supplier_ids" class="regular-text" value="<?php echo esc_attr(isset($settings['exclude_supplier_ids']) ? $settings['exclude_supplier_ids'] : ''); ?>" placeholder="<?php esc_attr_e('e.g. 201,305,412', 'dropshipzone'); ?>" />
+                                    <p class="description"><?php esc_html_e('Comma-separated supplier IDs to exclude from imports (max 50). Find the supplier ID in the product data as vendor_id.', 'dropshipzone'); ?></p>
+                                </td>
+                            </tr>
                         </table>
                     </div>
 
@@ -3178,6 +3320,7 @@ class Admin_UI {
             'filter_new_arrival'    => !empty($_POST['filter_new_arrival']),
             'filter_in_stock'       => !empty($_POST['filter_in_stock']),
             'filter_free_shipping'  => !empty($_POST['filter_free_shipping']),
+            'exclude_supplier_ids'  => isset($_POST['exclude_supplier_ids']) ? sanitize_text_field(wp_unslash($_POST['exclude_supplier_ids'])) : '',
         ];
 
         $this->auto_importer->save_settings($settings);

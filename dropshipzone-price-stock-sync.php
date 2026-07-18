@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.7.0
+ * Version: 2.8.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.7.0');
+define('DSZ_SYNC_VERSION', '2.8.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -183,6 +183,12 @@ final class Dropshipzone_Sync {
         
         // Register auto import cron hook
         add_action('dsz_auto_import_cron_hook', [$this, 'run_auto_import']);
+
+        // Daily maintenance (log retention, orphaned mappings, stale transients)
+        add_action('dsz_maintenance_hook', [$this, 'run_maintenance']);
+        if (!wp_next_scheduled('dsz_maintenance_hook')) {
+            wp_schedule_event(time() + DAY_IN_SECONDS, 'daily', 'dsz_maintenance_hook');
+        }
         
         if (is_admin()) {
             $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler, $this->auto_importer);
@@ -219,8 +225,9 @@ final class Dropshipzone_Sync {
      */
     private function maybe_create_mapping_table() {
         // Schema version gate — avoids an information_schema query on every load.
-        // Bump DSZ_MAPPING_SCHEMA_VERSION whenever the table structure changes.
-        $schema_version = '2';
+        // Bump whenever the table structure changes.
+        // v3: composite index (sync_enabled, last_synced)
+        $schema_version = '3';
         if (get_option('dsz_mapping_schema_version') === $schema_version) {
             return;
         }
@@ -238,8 +245,9 @@ final class Dropshipzone_Sync {
         if (!$table_exists) {
             Product_Mapper::create_table();
         } else {
-            // Run column migration for existing installations
+            // Run migrations for existing installations
             Product_Mapper::maybe_add_last_resynced_column();
+            Product_Mapper::maybe_add_indexes();
         }
 
         update_option('dsz_mapping_schema_version', $schema_version, false);
@@ -350,6 +358,8 @@ final class Dropshipzone_Sync {
         // Clear scheduled cron
         wp_clear_scheduled_hook('dsz_sync_cron_hook');
         wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
+        wp_clear_scheduled_hook('dsz_maintenance_hook');
+        wp_clear_scheduled_hook('dsz_sync_batch_continue');
         
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -361,6 +371,38 @@ final class Dropshipzone_Sync {
     public function run_auto_import() {
         if ($this->auto_importer) {
             $this->auto_importer->run_import();
+        }
+    }
+
+    /**
+     * Daily maintenance (cron callback)
+     */
+    public function run_maintenance() {
+        global $wpdb;
+
+        // Log retention (days, filterable)
+        $retention = apply_filters('dsz_log_retention_days', intval(get_option('dsz_log_retention_days', 30)));
+        if ($this->logger) {
+            $this->logger->cleanup_older_than($retention);
+        }
+
+        // Mappings pointing at deleted products
+        if ($this->product_mapper) {
+            $this->product_mapper->cleanup_orphaned();
+        }
+
+        // Expired DSZ transients (zone/rate caches) that WP never got to reap
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query($wpdb->prepare(
+            "DELETE a, b FROM {$wpdb->options} a
+             INNER JOIN {$wpdb->options} b ON b.option_name = CONCAT('_transient_', SUBSTRING(a.option_name, 20))
+             WHERE a.option_name LIKE %s AND a.option_value < %d",
+            $wpdb->esc_like('_transient_timeout_dsz_') . '%',
+            time()
+        ));
+
+        if ($this->logger) {
+            $this->logger->debug('Maintenance run completed', ['log_retention_days' => $retention]);
         }
     }
 

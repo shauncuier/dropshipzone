@@ -514,6 +514,15 @@ class Cron {
             }
         }
 
+        /**
+         * Filter the calculated price before it is saved.
+         *
+         * @param float $new_price  Calculated price after markup/GST/rounding
+         * @param int   $product_id WooCommerce product ID
+         * @param float $cost       Supplier cost the price was derived from
+         */
+        $new_price = (float) apply_filters('dsz_calculated_price', $new_price, $product->get_id(), $cost);
+
         // Check if price changed
         $current_price = floatval($product->get_regular_price());
         if (abs($current_price - $new_price) < 0.01) {
@@ -522,6 +531,15 @@ class Cron {
 
         // Update price
         $product->set_regular_price($new_price);
+
+        /**
+         * Fires after a product price has been updated by the sync.
+         *
+         * @param int   $product_id    WooCommerce product ID
+         * @param float $current_price Previous regular price
+         * @param float $new_price     New regular price
+         */
+        do_action('dsz_price_updated', $product->get_id(), $current_price, $new_price);
         
         // Handle special/sale price
         if (!empty($api_data['special_price']) && floatval($api_data['special_price']) > 0) {
@@ -551,6 +569,7 @@ class Cron {
         
         // Get stock quantity
         $stock_qty = isset($api_data['stock_qty']) ? intval($api_data['stock_qty']) : 0;
+        $supplier_stock = $stock_qty;
         
         // Check if out of stock based on status
         $status = isset($api_data['status']) ? $api_data['status'] : '';
@@ -567,6 +586,15 @@ class Cron {
         if ($rules['buffer_enabled'] && $rules['buffer_amount'] > 0) {
             $stock_qty = max(0, $stock_qty - $rules['buffer_amount']);
         }
+
+        /**
+         * Filter the calculated stock quantity before it is saved.
+         *
+         * @param int $stock_qty      Calculated stock after availability/buffer rules
+         * @param int $product_id     WooCommerce product ID
+         * @param int $supplier_stock Raw supplier stock from the API
+         */
+        $stock_qty = (int) apply_filters('dsz_calculated_stock', $stock_qty, $product->get_id(), $supplier_stock);
 
         // Check if stock changed
         $current_stock = intval($product->get_stock_quantity());
@@ -661,6 +689,17 @@ class Cron {
         wp_clear_scheduled_hook('dsz_sync_batch_continue');
 
         $this->logger->info('Sync completed', $final_results);
+
+        /**
+         * Fires when a full sync run completes.
+         *
+         * @param array $stats { updated: int, skipped: int, errors: int }
+         */
+        do_action('dsz_sync_completed', [
+            'updated' => isset($final_results['products_updated']) ? intval($final_results['products_updated']) : 0,
+            'skipped' => isset($final_results['skipped']) ? intval($final_results['skipped']) : 0,
+            'errors' => isset($final_results['errors_count']) ? intval($final_results['errors_count']) : 0,
+        ]);
     }
 
     /**

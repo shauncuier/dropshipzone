@@ -258,6 +258,24 @@ class Logger {
     }
 
     /**
+     * Delete logs older than the given number of days
+     *
+     * @param int $days Retention window in days
+     * @return int|false Rows deleted or false on error
+     */
+    public function cleanup_older_than($days) {
+        global $wpdb;
+
+        $days = max(1, intval($days));
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        return $wpdb->query($wpdb->prepare(
+            "DELETE FROM " . $this->table_name . " WHERE created_at < DATE_SUB(NOW(), INTERVAL %d DAY)",
+            $days
+        ));
+    }
+
+    /**
      * Cleanup old logs to maintain max limit
      */
     public function cleanup_old_logs() {

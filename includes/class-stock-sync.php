@@ -204,6 +204,8 @@ class Stock_Sync {
 
             // Calculate final stock with buffer
             $final_stock = $this->calculate_stock($supplier_stock);
+            /** This filter is documented in includes/class-cron.php */
+            $final_stock = (int) apply_filters('dsz_calculated_stock', $final_stock, $product_id, $supplier_stock);
 
             // Get current stock for comparison
             $current_stock = $product->get_stock_quantity();

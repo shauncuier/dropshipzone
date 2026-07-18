@@ -46,6 +46,7 @@ class Auto_Importer {
         'filter_in_stock'       => false, // Disabled - causes API issues, PHP filtering handles this
         'filter_free_shipping'  => false,
         'filter_category_ids'   => [],
+        'exclude_supplier_ids'  => '', // Comma-separated supplier ids to blacklist (API caps at 50)
         'default_product_status'=> 'publish',
     ];
 
@@ -88,10 +89,24 @@ class Auto_Importer {
             'filter_in_stock'       => !empty($settings['filter_in_stock']),
             'filter_free_shipping'  => !empty($settings['filter_free_shipping']),
             'filter_category_ids'   => isset($settings['filter_category_ids']) ? array_map('intval', (array) $settings['filter_category_ids']) : [],
+            'exclude_supplier_ids'  => isset($settings['exclude_supplier_ids']) ? self::sanitize_supplier_ids($settings['exclude_supplier_ids']) : '',
             'default_product_status'=> in_array($settings['default_product_status'], ['publish', 'draft', 'pending']) ? $settings['default_product_status'] : 'publish',
         ];
 
         return update_option('dsz_auto_import_settings', $sanitized);
+    }
+
+    /**
+     * Sanitize a comma-separated supplier id list (numeric ids, API cap 50)
+     *
+     * @param string $value Raw input
+     * @return string Sanitized comma-separated ids
+     */
+    public static function sanitize_supplier_ids($value) {
+        $ids = array_filter(array_map('intval', explode(',', (string) $value)));
+        $ids = array_slice(array_values(array_unique($ids)), 0, 50);
+
+        return implode(',', $ids);
     }
 
     /**
@@ -193,6 +208,10 @@ class Auto_Importer {
 
         if ($settings['filter_in_stock']) {
             $api_params['in_stock'] = true;
+        }
+
+        if (!empty($settings['exclude_supplier_ids'])) {
+            $api_params['exclude_supplier_ids'] = $settings['exclude_supplier_ids'];
         }
 
         if ($settings['filter_free_shipping']) {

@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.7.0
+Stable tag: 2.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -135,6 +135,14 @@ We're constantly improving DropshipZone Sync. Here's what's planned:
 * **Export Tools** - Export product data, mappings, and reports
 
 == Changelog ==
+
+= 2.8.0 =
+* NEW: Developer Hooks. The documented `dsz_calculated_price` and `dsz_calculated_stock` filters and `dsz_sync_completed` / `dsz_price_updated` actions now exist across all sync/import paths.
+* NEW: Daily Maintenance Cron. Log retention (default 30 days), orphaned mapping cleanup, and expired DSZ transient purging.
+* NEW: Supplier Blacklist. Exclude up to 50 supplier IDs from Auto Import (using native API exclude_supplier_ids).
+* NEW: Import Filter Templates. Save, apply, and delete named filter presets on the Product Import page.
+* NEW: Mappings CSV Export. Export all product mappings from the Product Mapping page.
+* CHANGED: Database Indexes. Added composite index on the mapping table (schema v3) for faster sync batch queries.
 
 = 2.7.0 =
 * NEW: New Zealand shipping support. Added flat-rate shipping for NZ destinations (standard scheme `nz` key), bypassing AU postcode mapping.
