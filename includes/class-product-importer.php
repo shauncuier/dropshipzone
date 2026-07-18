@@ -666,8 +666,10 @@ class Product_Importer {
      */
     private function create_categories($categories) {
         if (is_string($categories)) {
-            // Check if it's a comma separated list
-            if (strpos($categories, ',') !== false) {
+            // A hierarchical path ("A > B > C") is a single entry — category
+            // names may legitimately contain commas. Only treat the string as
+            // a comma-separated list when it is not a path.
+            if (strpos($categories, '>') === false && strpos($categories, ',') !== false) {
                 $categories = explode(',', $categories);
             } else {
                 $categories = [$categories];

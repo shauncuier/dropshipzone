@@ -3,7 +3,7 @@
  * Plugin Name: DropshipZone Sync
  * Plugin URI: https://dropshipzone.com.au
  * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.5.1
+ * Version: 2.6.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.5.1');
+define('DSZ_SYNC_VERSION', '2.6.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -215,22 +215,31 @@ final class Dropshipzone_Sync {
      * Create mapping table if it doesn't exist and run migrations
      */
     private function maybe_create_mapping_table() {
+        // Schema version gate — avoids an information_schema query on every load.
+        // Bump DSZ_MAPPING_SCHEMA_VERSION whenever the table structure changes.
+        $schema_version = '2';
+        if (get_option('dsz_mapping_schema_version') === $schema_version) {
+            return;
+        }
+
         global $wpdb;
         $table_name = $wpdb->prefix . 'dsz_product_mapping';
-        
+
         // Check if table exists
         $table_exists = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s",
             DB_NAME,
             $table_name
         ));
-        
+
         if (!$table_exists) {
             Product_Mapper::create_table();
         } else {
             // Run column migration for existing installations
             Product_Mapper::maybe_add_last_resynced_column();
         }
+
+        update_option('dsz_mapping_schema_version', $schema_version, false);
     }
 
     /**

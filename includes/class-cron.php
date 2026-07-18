@@ -172,6 +172,28 @@ class Cron {
      * @return array Batch results
      */
     private function process_sync_batch() {
+        // Prevent concurrent batches (admin AJAX polling vs scheduled continuation)
+        if (get_transient('dsz_sync_batch_lock')) {
+            return [
+                'status' => 'processing',
+                'message' => __('Another sync batch is already running', 'dropshipzone'),
+            ];
+        }
+        set_transient('dsz_sync_batch_lock', 1, 120);
+
+        try {
+            return $this->process_sync_batch_inner();
+        } finally {
+            delete_transient('dsz_sync_batch_lock');
+        }
+    }
+
+    /**
+     * Process a single sync batch (assumes the batch lock is held)
+     *
+     * @return array Batch results
+     */
+    private function process_sync_batch_inner() {
         $settings = get_option('dsz_sync_settings', []);
         $batch_size = isset($settings['batch_size']) ? intval($settings['batch_size']) : 100;
         $current_offset = isset($settings['current_offset']) ? intval($settings['current_offset']) : 0;
@@ -521,7 +543,10 @@ class Cron {
         
         // Check if out of stock based on status
         $status = isset($api_data['status']) ? $api_data['status'] : '';
-        $in_stock = isset($api_data['in_stock']) ? ($api_data['in_stock'] == '1' || $api_data['in_stock'] === true) : true;
+        // When the API omits in_stock, derive availability from the quantity
+        $in_stock = isset($api_data['in_stock'])
+            ? ($api_data['in_stock'] == '1' || $api_data['in_stock'] === true)
+            : ($stock_qty > 0);
         
         if ($rules['zero_on_unavailable'] && ($status === 'Out Of Stock' || !$in_stock)) {
             $stock_qty = 0;

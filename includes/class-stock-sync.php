@@ -189,7 +189,11 @@ class Stock_Sync {
             // Get supplier stock info
             $supplier_stock = isset($api_product['stock_qty']) ? intval($api_product['stock_qty']) : 0;
             $api_status = isset($api_product['status']) ? $api_product['status'] : '';
-            $in_stock = isset($api_product['in_stock']) ? $api_product['in_stock'] : '1';
+            // When the API omits in_stock, derive availability from the quantity
+            // instead of assuming available
+            $in_stock = isset($api_product['in_stock'])
+                ? $api_product['in_stock']
+                : ($supplier_stock > 0 ? '1' : '0');
 
             // Check if product is unavailable
             $is_available = ($in_stock === '1' || $in_stock === 1 || $in_stock === true);
@@ -208,8 +212,9 @@ class Stock_Sync {
             // Determine new stock status
             $new_status = ($final_stock > 0) ? 'instock' : 'outofstock';
             
-            // Check if update is needed
-            $stock_changed = ($current_stock !== $final_stock);
+            // Check if update is needed (get_stock_quantity() can return null or
+            // a string — normalize before comparing to avoid phantom updates)
+            $stock_changed = (intval($current_stock) !== $final_stock);
             $status_changed = ($current_status !== $new_status);
 
             if (!$stock_changed && !$status_changed) {

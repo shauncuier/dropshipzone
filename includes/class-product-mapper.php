@@ -338,7 +338,7 @@ class Product_Mapper {
                 FROM " . $this->table_name . " m
                 LEFT JOIN " . $wpdb->posts . " p ON m.wc_product_id = p.ID
                 WHERE " . $where . "
-                ORDER BY m.{$orderby} {$order}
+                ORDER BY m.{$orderby} {$order}, m.id ASC
                 LIMIT %d OFFSET %d";
 
         $values[] = intval($args['limit']);
@@ -451,15 +451,15 @@ class Product_Mapper {
      */
     public function auto_map_by_sku() {
         global $wpdb;
-        
+
         $results = [
             'mapped' => 0,
             'skipped' => 0,
+            'remaining' => 0,
             'details' => [],
         ];
 
-        // Get all WooCommerce products with SKUs that aren't mapped yet
-        $wc_products = $wpdb->get_results("
+        $unmapped_query = "
             SELECT p.ID, pm.meta_value as sku
             FROM " . $wpdb->posts . " p
             INNER JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
@@ -468,26 +468,55 @@ class Product_Mapper {
             AND p.post_status = 'publish'
             AND pm.meta_value != ''
             AND pm.meta_value IS NOT NULL
-            AND m.id IS NULL
-        ", ARRAY_A);
+            AND m.id IS NULL";
 
-        foreach ($wc_products as $product) {
-            // Create mapping using WC SKU as DSZ SKU (assumes they match)
-            $mapping_id = $this->map($product['ID'], $product['sku'], '');
-            
-            if ($mapping_id) {
-                $results['mapped']++;
-                $results['details'][] = [
-                    'wc_product_id' => $product['ID'],
-                    'sku' => $product['sku'],
-                    'status' => 'mapped',
-                ];
-            } else {
-                $results['skipped']++;
+        // Process in bounded batches with a time guard so large catalogs
+        // cannot run into PHP max_execution_time; re-running continues the job.
+        $start_time = time();
+        $batch_size = 500;
+
+        do {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- query built from safe table names
+            $wc_products = $wpdb->get_results($unmapped_query . $wpdb->prepare(' LIMIT %d', $batch_size), ARRAY_A);
+
+            if (empty($wc_products)) {
+                break;
             }
-        }
 
-        $this->logger->info('Auto-mapping completed', $results);
+            $batch_mapped = 0;
+            foreach ($wc_products as $product) {
+                // Create mapping using WC SKU as DSZ SKU (assumes they match)
+                $mapping_id = $this->map($product['ID'], $product['sku'], '');
+
+                if ($mapping_id) {
+                    $results['mapped']++;
+                    $batch_mapped++;
+                    if (count($results['details']) < 100) {
+                        $results['details'][] = [
+                            'wc_product_id' => $product['ID'],
+                            'sku' => $product['sku'],
+                            'status' => 'mapped',
+                        ];
+                    }
+                } else {
+                    $results['skipped']++;
+                }
+            }
+
+            // Nothing mapped this batch: the same rows would be selected again
+            if ($batch_mapped === 0) {
+                break;
+            }
+        } while (count($wc_products) === $batch_size && (time() - $start_time) < 20);
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- query built from safe table names
+        $results['remaining'] = intval($wpdb->get_var("SELECT COUNT(*) FROM (" . $unmapped_query . ") t"));
+
+        $this->logger->info('Auto-mapping completed', [
+            'mapped' => $results['mapped'],
+            'skipped' => $results['skipped'],
+            'remaining' => $results['remaining'],
+        ]);
         return $results;
     }
 

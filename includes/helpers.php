@@ -238,11 +238,17 @@ function dsz_encrypt($data) {
     if (empty($data)) {
         return '';
     }
-    
+
     $key = wp_salt('auth');
-    $iv = substr(hash('sha256', wp_salt('secure_auth')), 0, 16);
-    
-    return base64_encode(openssl_encrypt($data, 'AES-256-CBC', $key, 0, $iv));
+    $iv = openssl_random_pseudo_bytes(16);
+    $ciphertext = openssl_encrypt($data, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+
+    if ($ciphertext === false) {
+        return '';
+    }
+
+    // Version-prefixed format with random IV prepended to the ciphertext
+    return 'v2:' . base64_encode($iv . $ciphertext);
 }
 
 /**
@@ -255,11 +261,24 @@ function dsz_decrypt($encrypted_data) {
     if (empty($encrypted_data)) {
         return '';
     }
-    
+
     $key = wp_salt('auth');
+
+    // Current format: "v2:" prefix, random IV prepended to raw ciphertext
+    if (strpos($encrypted_data, 'v2:') === 0) {
+        $raw = base64_decode(substr($encrypted_data, 3), true);
+        if ($raw === false || strlen($raw) <= 16) {
+            return '';
+        }
+        $decrypted = openssl_decrypt(substr($raw, 16), 'AES-256-CBC', $key, OPENSSL_RAW_DATA, substr($raw, 0, 16));
+        return ($decrypted === false) ? '' : $decrypted;
+    }
+
+    // Legacy format: static IV derived from the secure_auth salt
     $iv = substr(hash('sha256', wp_salt('secure_auth')), 0, 16);
-    
-    return openssl_decrypt(base64_decode($encrypted_data), 'AES-256-CBC', $key, 0, $iv);
+    $decrypted = openssl_decrypt(base64_decode($encrypted_data), 'AES-256-CBC', $key, 0, $iv);
+
+    return ($decrypted === false) ? '' : $decrypted;
 }
 
 /**

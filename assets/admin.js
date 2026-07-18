@@ -1561,54 +1561,80 @@
             $('#dsz-resync-all-progress-fill').css('width', '0%');
             $('#dsz-resync-all-progress-text').text('Starting resync...');
 
-            $.ajax({
-                url: dsz_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'dsz_resync_all',
-                    nonce: dsz_admin.nonce
-                },
-                success: function (response) {
-                    if (response.success) {
-                        // Update progress to 100%
-                        $('#dsz-resync-all-progress-fill').css('width', '100%');
-                        $('#dsz-resync-all-progress-text').text('Complete!');
+            // Process the catalog in server-side chunks so a single request
+            // never runs long enough to hit PHP execution limits.
+            var totals = { success: 0, errors: 0, skipped: 0 };
 
-                        $message
-                            .removeClass('hidden dsz-message-error')
-                            .addClass('dsz-message-success')
-                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
-
-                        DSZAdmin.createConfetti();
-                        DSZAdmin.showNotification('success', response.data.message);
-                    } else {
-                        $message
-                            .removeClass('hidden dsz-message-success')
-                            .addClass('dsz-message-error')
-                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
-
-                        DSZAdmin.showNotification('error', response.data.message);
-                    }
-                },
-                error: function () {
+            var finish = function (ok, msg) {
+                if (ok) {
+                    $('#dsz-resync-all-progress-fill').css('width', '100%');
+                    $('#dsz-resync-all-progress-text').text('Complete!');
+                    $message
+                        .removeClass('hidden dsz-message-error')
+                        .addClass('dsz-message-success')
+                        .html('<span class="dashicons dashicons-yes-alt"></span> ' + msg);
+                    DSZAdmin.createConfetti();
+                    DSZAdmin.showNotification('success', msg);
+                } else {
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
-
-                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
-                },
-                complete: function () {
-                    DSZAdmin.resyncInProgress = false;
-                    $btn.removeClass('dsz-loading').prop('disabled', false);
-                    $btn.html('<span class="dashicons dashicons-update"></span> Resync All Products');
-
-                    // Hide progress bar after 3 seconds
-                    setTimeout(function () {
-                        $progress.addClass('hidden');
-                    }, 3000);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + msg);
+                    DSZAdmin.showNotification('error', msg);
                 }
-            });
+
+                DSZAdmin.resyncInProgress = false;
+                $btn.removeClass('dsz-loading').prop('disabled', false);
+                $btn.html('<span class="dashicons dashicons-update"></span> Resync All Products');
+
+                // Hide progress bar after 3 seconds
+                setTimeout(function () {
+                    $progress.addClass('hidden');
+                }, 3000);
+            };
+
+            var runChunk = function (offset) {
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_resync_all',
+                        nonce: dsz_admin.nonce,
+                        offset: offset
+                    },
+                    success: function (response) {
+                        if (!response.success) {
+                            finish(false, response.data.message);
+                            return;
+                        }
+
+                        var d = response.data;
+                        totals.success += d.success || 0;
+                        totals.errors += d.errors || 0;
+                        totals.skipped += d.skipped_inactive || 0;
+
+                        var pct = d.total > 0 ? Math.min(100, Math.round((d.next_offset / d.total) * 100)) : 100;
+                        $('#dsz-resync-all-progress-fill').css('width', pct + '%');
+                        $('#dsz-resync-all-progress-text').text(
+                            'Processed ' + Math.min(d.next_offset, d.total) + ' of ' + d.total + ' products...'
+                        );
+
+                        if (d.done) {
+                            var msg = 'Resync complete! ' + totals.success + ' updated'
+                                + (totals.errors ? ', ' + totals.errors + ' errors' : '')
+                                + (totals.skipped ? ', ' + totals.skipped + ' skipped (inactive)' : '') + '.';
+                            finish(true, msg);
+                        } else {
+                            runChunk(d.next_offset);
+                        }
+                    },
+                    error: function () {
+                        finish(false, dsz_admin.strings.error);
+                    }
+                });
+            };
+
+            runChunk(0);
         },
 
         /**
@@ -1649,40 +1675,67 @@
             $btn.find('.dashicons').addClass('dsz-spin');
             $message.removeClass('hidden dsz-message-success dsz-message-error').html('<span class="dashicons dashicons-update dsz-spin"></span> Processing...');
 
-            $.ajax({
-                url: dsz_admin.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'dsz_resync_' + type,
-                    nonce: dsz_admin.nonce
-                },
-                success: function (response) {
-                    if (response.success) {
-                        $message
-                            .removeClass('dsz-message-error')
-                            .addClass('dsz-message-success')
-                            .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
-                        DSZAdmin.showNotification('success', response.data.message);
-                    } else {
-                        $message
-                            .removeClass('dsz-message-success')
-                            .addClass('dsz-message-error')
-                            .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
-                        DSZAdmin.showNotification('error', response.data.message);
-                    }
-                },
-                error: function () {
+            // Chunked processing — keep requesting until the server reports done
+            var totals = { success: 0, errors: 0 };
+
+            var finish = function (ok, msg) {
+                if (ok) {
                     $message
+                        .removeClass('dsz-message-error')
+                        .addClass('dsz-message-success')
+                        .html('<span class="dashicons dashicons-yes-alt"></span> ' + msg);
+                    DSZAdmin.showNotification('success', msg);
+                } else {
+                    $message
+                        .removeClass('dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> Request failed');
-                    DSZAdmin.showNotification('error', 'Request failed');
-                },
-                complete: function () {
-                    DSZAdmin.resyncInProgress = false;
-                    $btn.removeClass('dsz-loading').prop('disabled', false);
-                    $btn.find('.dashicons').removeClass('dsz-spin');
+                        .html('<span class="dashicons dashicons-warning"></span> ' + msg);
+                    DSZAdmin.showNotification('error', msg);
                 }
-            });
+                DSZAdmin.resyncInProgress = false;
+                $btn.removeClass('dsz-loading').prop('disabled', false);
+                $btn.find('.dashicons').removeClass('dsz-spin');
+            };
+
+            var runChunk = function (offset) {
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_resync_' + type,
+                        nonce: dsz_admin.nonce,
+                        offset: offset
+                    },
+                    success: function (response) {
+                        if (!response.success) {
+                            finish(false, response.data.message);
+                            return;
+                        }
+
+                        var d = response.data;
+                        totals.success += d.success || 0;
+                        totals.errors += d.errors || 0;
+
+                        $message.html(
+                            '<span class="dashicons dashicons-update dsz-spin"></span> Processed '
+                            + Math.min(d.next_offset, d.total) + ' of ' + d.total + '...'
+                        );
+
+                        if (d.done) {
+                            var msg = 'Refreshed ' + typeLabel + ' for ' + totals.success + ' products'
+                                + (totals.errors ? ' (' + totals.errors + ' errors)' : '') + '.';
+                            finish(true, msg);
+                        } else {
+                            runChunk(d.next_offset);
+                        }
+                    },
+                    error: function () {
+                        finish(false, 'Request failed');
+                    }
+                });
+            };
+
+            runChunk(0);
         },
 
         /**

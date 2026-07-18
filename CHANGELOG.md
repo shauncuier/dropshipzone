@@ -5,6 +5,24 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-07-18
+
+### Added
+- **Batch Auto-Mapping**: Auto-map by SKU now processes in batches of 500 with a 20-second time guard, preventing timeouts on large catalogs. Reports remaining unmapped count.
+- **Sync Batch Locking**: Transient-based lock prevents concurrent sync batches from overlapping (admin AJAX vs scheduled cron).
+- **Schema Version Gate**: Mapping table migration now checks a stored schema version, avoiding an `information_schema` query on every page load.
+
+### Changed
+- **Encryption Upgrade**: Credentials now use per-encryption random IVs (`v2:` prefixed format) instead of a static IV derived from salts. Legacy encrypted values are transparently decrypted on read.
+- **Admin UI Overhaul**: Refactored admin interface with cleaner layouts and improved JavaScript interactions (~700 lines changed).
+
+### Fixed
+- **Stock Sync Accuracy**: When API omits `in_stock`, availability is now derived from `stock_qty` instead of assuming in-stock. Fixed phantom stock updates caused by type mismatch (`null`/string vs int).
+- **Category Parsing**: Hierarchical category paths containing commas (e.g., "Home, Garden > Tools") are no longer incorrectly split into separate categories.
+- **Mapping Sort Stability**: Added secondary `id ASC` sort to product mapping queries for deterministic pagination.
+
+---
+
 ## [2.5.1] - 2026-07-18
 
 ### Fixed
@@ -448,6 +466,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[2.6.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.6.0
 [2.5.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.5.1
 [2.0.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.1
 [2.0.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v2.0.0

@@ -1258,7 +1258,8 @@ class Admin_UI {
         }
 
         $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-        $password = isset($_POST['password']) ? sanitize_text_field($_POST['password']) : '';
+        // Do not sanitize passwords — sanitize_text_field can silently alter them
+        $password = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
 
         // If password is empty, try to use stored password
         if (empty($password)) {
@@ -1438,11 +1439,11 @@ class Admin_UI {
      */
     public function render_mapping() {
         if (!dsz_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', 'dropshipzone'));
+            wp_die(esc_html__('You do not have permission to access this page.', 'dropshipzone'));
         }
 
         if (!$this->product_mapper) {
-            echo '<div class="notice notice-error"><p>' . __('Product Mapper not initialized.', 'dropshipzone') . '</p></div>';
+            echo '<div class="notice notice-error"><p>' . esc_html__('Product Mapper not initialized.', 'dropshipzone') . '</p></div>';
             return;
         }
 
@@ -1507,28 +1508,43 @@ class Admin_UI {
                             
                             $btn.prop('disabled', true);
                             $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Processing...</span>');
-                            
-                            $.ajax({
-                                url: ajaxurl,
-                                type: 'POST',
-                                data: {
-                                    action: 'dsz_resync_never_synced',
-                                    nonce: dsz_admin.nonce
-                                },
-                                success: function(response) {
-                                    if (response.success) {
-                                        $status.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
-                                        setTimeout(function() { location.reload(); }, 2000);
-                                    } else {
-                                        $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+
+                            // Chunked: synced products leave the "never" set, so the
+                            // cumulative error count is passed as offset to step past failures
+                            var totals = { success: 0, errors: 0 };
+                            var runChunk = function() {
+                                $.ajax({
+                                    url: ajaxurl,
+                                    type: 'POST',
+                                    data: {
+                                        action: 'dsz_resync_never_synced',
+                                        nonce: dsz_admin.nonce,
+                                        offset: totals.errors
+                                    },
+                                    success: function(response) {
+                                        if (!response.success) {
+                                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                                            $btn.prop('disabled', false);
+                                            return;
+                                        }
+                                        var d = response.data;
+                                        totals.success += d.success || 0;
+                                        totals.errors += d.errors || 0;
+                                        if (d.done) {
+                                            $status.html('<span style="color:green;">✓ <?php echo esc_js(__('Resynced', 'dropshipzone')); ?> ' + totals.success + (totals.errors ? ' (' + totals.errors + ' <?php echo esc_js(__('errors', 'dropshipzone')); ?>)' : '') + '</span>');
+                                            setTimeout(function() { location.reload(); }, 2000);
+                                        } else {
+                                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.success + totals.errors) + ' <?php echo esc_js(__('processed...', 'dropshipzone')); ?></span>');
+                                            runChunk();
+                                        }
+                                    },
+                                    error: function() {
+                                        $status.html('<span style="color:red;">Request failed</span>');
                                         $btn.prop('disabled', false);
                                     }
-                                },
-                                error: function() {
-                                    $status.html('<span style="color:red;">Request failed</span>');
-                                    $btn.prop('disabled', false);
-                                }
-                            });
+                                });
+                            };
+                            runChunk();
                         });
                     });
                     </script>
@@ -1560,28 +1576,42 @@ class Admin_UI {
                             
                             $btn.prop('disabled', true);
                             $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Scanning products...</span>');
-                            
-                            $.ajax({
-                                url: ajaxurl,
-                                type: 'POST',
-                                data: {
-                                    action: 'dsz_scan_unmapped_products',
-                                    nonce: dsz_admin.nonce
-                                },
-                                success: function(response) {
-                                    if (response.success) {
-                                        $status.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
-                                        setTimeout(function() { location.reload(); }, 2000);
-                                    } else {
-                                        $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+
+                            // Chunked: scanned products get mapped or flagged, so each
+                            // request consumes the remaining set until done
+                            var totals = { found: 0, notFound: 0 };
+                            var runChunk = function() {
+                                $.ajax({
+                                    url: ajaxurl,
+                                    type: 'POST',
+                                    data: {
+                                        action: 'dsz_scan_unmapped_products',
+                                        nonce: dsz_admin.nonce
+                                    },
+                                    success: function(response) {
+                                        if (!response.success) {
+                                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                                            $btn.prop('disabled', false);
+                                            return;
+                                        }
+                                        var d = response.data;
+                                        totals.found += d.found || 0;
+                                        totals.notFound += d.not_found || 0;
+                                        if (d.done) {
+                                            $status.html('<span style="color:green;">✓ ' + totals.found + ' <?php echo esc_js(__('linked', 'dropshipzone')); ?>, ' + totals.notFound + ' <?php echo esc_js(__('marked as non-DSZ', 'dropshipzone')); ?></span>');
+                                            setTimeout(function() { location.reload(); }, 2000);
+                                        } else {
+                                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.found + totals.notFound) + ' <?php echo esc_js(__('scanned...', 'dropshipzone')); ?></span>');
+                                            runChunk();
+                                        }
+                                    },
+                                    error: function() {
+                                        $status.html('<span style="color:red;">Request failed</span>');
                                         $btn.prop('disabled', false);
                                     }
-                                },
-                                error: function() {
-                                    $status.html('<span style="color:red;">Request failed</span>');
-                                    $btn.prop('disabled', false);
-                                }
-                            });
+                                });
+                            };
+                            runChunk();
                         });
                     });
                     </script>
@@ -1669,7 +1699,7 @@ class Admin_UI {
                                 <?php foreach ($mappings as $mapping): ?>
                                     <tr data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
                                         <td>
-                                            <a href="<?php echo get_edit_post_link($mapping['wc_product_id']); ?>" target="_blank">
+                                            <a href="<?php echo esc_url(get_edit_post_link($mapping['wc_product_id'])); ?>" target="_blank">
                                                 <?php echo esc_html($mapping['wc_product_name'] ?: '#' . $mapping['wc_product_id']); ?>
                                             </a>
                                         </td>
@@ -2240,10 +2270,73 @@ class Admin_UI {
     }
 
     /**
-     * AJAX: Resync all mapped products
-     * 
-     * Skips products that are already inactive (draft + out of stock)
-     * to optimize performance and avoid unnecessary updates.
+     * Fetch API data for a chunk of mappings and resync each product.
+     *
+     * Chunks are bounded (≤100) so this issues a single API request.
+     *
+     * @param array $mappings Mapping rows (wc_product_id, dsz_sku)
+     * @param array $options  Resync options passed to Product_Importer::resync_product()
+     * @return array|\WP_Error ['success' => int, 'errors' => int, 'error_details' => string[]]
+     */
+    private function resync_mapping_chunk($mappings, $options) {
+        $skus = array_column($mappings, 'dsz_sku');
+
+        $response = $this->api_client->get_products_by_skus($skus);
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $api_products = [];
+        if (!empty($response['result'])) {
+            foreach ($response['result'] as $product_data) {
+                if (!empty($product_data['sku'])) {
+                    $api_products[$product_data['sku']] = $product_data;
+                }
+            }
+        }
+
+        $success = 0;
+        $errors = 0;
+        $error_details = [];
+
+        foreach ($mappings as $mapping) {
+            $product_id = $mapping['wc_product_id'];
+            $sku = $mapping['dsz_sku'];
+
+            if (!isset($api_products[$sku])) {
+                $errors++;
+                $error_details[] = sprintf('%s: %s', $sku, __('Not found in Dropshipzone API', 'dropshipzone'));
+                continue;
+            }
+
+            $result = $this->product_importer->resync_product($product_id, $api_products[$sku], $options);
+
+            if (is_wp_error($result)) {
+                $errors++;
+                $error_details[] = sprintf('%s: %s', $sku, $result->get_error_message());
+            } else {
+                $success++;
+            }
+
+            if (dsz_is_memory_near_limit(85)) {
+                $this->logger->warning('Memory limit approaching, stopping chunk early');
+                break;
+            }
+        }
+
+        return [
+            'success' => $success,
+            'errors' => $errors,
+            'error_details' => $error_details,
+        ];
+    }
+
+    /**
+     * AJAX: Resync all mapped products (one bounded chunk per request)
+     *
+     * The client passes `offset` and keeps calling until `done` is true, so
+     * large catalogs never hit PHP max_execution_time in a single request.
+     * Products that are already inactive (draft + out of stock) are skipped.
      */
     public function ajax_resync_all() {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
@@ -2252,151 +2345,58 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
         }
 
-        // Get all mappings
-        $mappings = $this->product_mapper->get_mappings(['limit' => 1000]);
-        
-        if (empty($mappings)) {
+        $offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
+        $chunk_size = 20; // Small: full resync downloads images per product
+
+        $total = $this->product_mapper->get_count();
+
+        if ($total === 0) {
             wp_send_json_error(['message' => __('No mapped products found to resync.', 'dropshipzone')]);
         }
 
-        $total = count($mappings);
-        $success_count = 0;
-        $error_count = 0;
-        $skipped_inactive = 0;
-        $errors = [];
-
-        // First pass: Filter out inactive products (draft + out of stock)
-        // and build list of SKUs that actually need syncing
-        $active_mappings = [];
-        $all_skus = [];
-        
-        foreach ($mappings as $mapping) {
-            $product_id = intval($mapping['wc_product_id']);
-            $sku = $mapping['dsz_sku'];
-            
-            // Load the WooCommerce product to check its status
-            $product = wc_get_product($product_id);
-            
-            if (!$product) {
-                // Product doesn't exist in WooCommerce, skip
-                $this->logger->debug('Skipped resync - product not found in WooCommerce', [
-                    'wc_product_id' => $product_id,
-                    'dsz_sku' => $sku,
-                ]);
-                continue;
-            }
-            
-            $product_status = $product->get_status();
-            $stock_qty = $product->get_stock_quantity();
-            $stock_status = $product->get_stock_status();
-            
-            // Skip products that are already inactive (draft + out of stock)
-            // These products don't need updating since they're already inactive
-            if ($product_status === 'draft' && ($stock_qty <= 0 || $stock_status === 'outofstock')) {
-                $skipped_inactive++;
-                $this->logger->debug('Skipped resync - product already inactive (draft + out of stock)', [
-                    'wc_product_id' => $product_id,
-                    'dsz_sku' => $sku,
-                    'product_name' => $product->get_name(),
-                    'status' => $product_status,
-                    'stock_qty' => $stock_qty,
-                ]);
-                continue;
-            }
-            
-            // This product needs syncing
-            $active_mappings[] = $mapping;
-            $all_skus[] = $sku;
-        }
-        
-        // Log the filtering results
-        $this->logger->info('Resync filtering complete', [
-            'total_mapped' => $total,
-            'active_to_sync' => count($active_mappings),
-            'skipped_inactive' => $skipped_inactive,
+        $mappings = $this->product_mapper->get_mappings([
+            'limit' => $chunk_size,
+            'offset' => $offset,
         ]);
-        
-        // If no active products to sync, return early
-        if (empty($active_mappings)) {
-            $message = sprintf(
-                /* translators: %d: number of skipped products */
-                __('No products need resyncing. %d products skipped (already draft + out of stock).', 'dropshipzone'),
-                $skipped_inactive
-            );
+
+        if (empty($mappings)) {
             wp_send_json_success([
-                'message' => $message,
+                'done' => true,
+                'next_offset' => $offset,
                 'total' => $total,
+                'processed' => 0,
                 'success' => 0,
                 'errors' => 0,
-                'skipped_inactive' => $skipped_inactive,
+                'skipped_inactive' => 0,
                 'error_details' => [],
             ]);
-            return; // Prevent further execution
         }
 
-        // Batch fetch product data from API (100 SKUs per request, processed sequentially)
-        $api_products = [];
-        $sku_chunks = array_chunk($all_skus, 100);
-        
-        $this->logger->info('Starting batch resync - API fetch', [
-            'products_to_sync' => count($active_mappings),
-            'api_batches' => count($sku_chunks),
-            'skipped_inactive' => $skipped_inactive,
-        ]);
+        // Filter out products that are already inactive (draft + out of stock)
+        $active_mappings = [];
+        $skipped_inactive = 0;
 
-        // Process API requests SEQUENTIALLY (one batch at a time)
-        foreach ($sku_chunks as $chunk_index => $chunk) {
-            $this->logger->debug('Fetching API batch', [
-                'batch' => $chunk_index + 1,
-                'total_batches' => count($sku_chunks),
-                'skus_in_batch' => count($chunk),
-            ]);
-            
-            $response = $this->api_client->get_products_by_skus($chunk);
-            
-            if (is_wp_error($response)) {
-                $this->logger->error('Batch fetch failed', [
-                    'batch' => $chunk_index + 1,
-                    'error' => $response->get_error_message(),
-                ]);
+        foreach ($mappings as $mapping) {
+            $product = wc_get_product(intval($mapping['wc_product_id']));
+
+            if (!$product) {
+                $skipped_inactive++;
                 continue;
             }
 
-            if (!empty($response['result'])) {
-                foreach ($response['result'] as $product_data) {
-                    if (!empty($product_data['sku'])) {
-                        $api_products[$product_data['sku']] = $product_data;
-                    }
-                }
-            }
-            
-            $this->logger->debug('API batch complete', [
-                'batch' => $chunk_index + 1,
-                'products_fetched' => isset($response['result']) ? count($response['result']) : 0,
-            ]);
-        }
-
-        $this->logger->info('API batch fetch complete', [
-            'requested_skus' => count($all_skus),
-            'found_products' => count($api_products),
-        ]);
-
-        // Now process each active mapping with pre-fetched data (sequentially)
-        foreach ($active_mappings as $mapping) {
-            $product_id = $mapping['wc_product_id'];
-            $sku = $mapping['dsz_sku'];
-
-            // Check if we have API data for this SKU
-            if (!isset($api_products[$sku])) {
-                $error_count++;
-                $errors[] = sprintf('%s: %s', $sku, __('Not found in Dropshipzone API', 'dropshipzone'));
+            if ($product->get_status() === 'draft'
+                && ($product->get_stock_quantity() <= 0 || $product->get_stock_status() === 'outofstock')) {
+                $skipped_inactive++;
                 continue;
             }
 
-            $api_data = $api_products[$sku];
+            $active_mappings[] = $mapping;
+        }
 
-            // Resync the product with pre-fetched data
-            $result = $this->product_importer->resync_product($product_id, $api_data, [
+        $result = ['success' => 0, 'errors' => 0, 'error_details' => []];
+
+        if (!empty($active_mappings)) {
+            $result = $this->resync_mapping_chunk($active_mappings, [
                 'update_price' => true,
                 'update_stock' => true,
                 'update_images' => true,
@@ -2406,56 +2406,31 @@ class Admin_UI {
             ]);
 
             if (is_wp_error($result)) {
-                $error_count++;
-                $errors[] = sprintf('%s: %s', $sku, $result->get_error_message());
-            } else {
-                $success_count++;
-            }
-
-            // Memory check
-            if (dsz_is_memory_near_limit(85)) {
-                $this->logger->warning('Memory limit approaching, stopping resync early', [
-                    'processed' => $success_count + $error_count,
-                    'total' => count($active_mappings),
-                ]);
-                break;
+                wp_send_json_error(['message' => $result->get_error_message()]);
             }
         }
 
-        // Build success message
-        $message = sprintf(
-            /* translators: %1$d: success count, %2$d: total active count */
-            __('Resync complete! %1$d of %2$d products updated successfully.', 'dropshipzone'),
-            $success_count,
-            count($active_mappings)
-        );
+        $next_offset = $offset + count($mappings);
+        $done = (count($mappings) < $chunk_size) || ($next_offset >= $total);
 
-        if ($skipped_inactive > 0) {
-            /* translators: %d: number of skipped products */
-            $message .= ' ' . sprintf(__('%d inactive products skipped.', 'dropshipzone'), $skipped_inactive);
-        }
-
-        if ($error_count > 0) {
-            /* translators: %d: error count */
-            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone'), $error_count);
-        }
-
-        $this->logger->info('Resync all complete', [
-            'total_mapped' => $total,
-            'active_synced' => count($active_mappings),
-            'success' => $success_count,
-            'errors' => $error_count,
+        $this->logger->info('Resync all chunk complete', [
+            'offset' => $offset,
+            'processed' => count($mappings),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
             'skipped_inactive' => $skipped_inactive,
+            'done' => $done,
         ]);
 
         wp_send_json_success([
-            'message' => $message,
+            'done' => $done,
+            'next_offset' => $next_offset,
             'total' => $total,
-            'active' => count($active_mappings),
-            'success' => $success_count,
-            'errors' => $error_count,
+            'processed' => count($mappings),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
             'skipped_inactive' => $skipped_inactive,
-            'error_details' => array_slice($errors, 0, 10), // Return first 10 errors
+            'error_details' => array_slice($result['error_details'], 0, 10),
         ]);
     }
 
@@ -2485,126 +2460,74 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
         }
 
-        // Get all mappings
-        $mappings = $this->product_mapper->get_mappings(['limit' => 1000]);
-        
-        if (empty($mappings)) {
+        $offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
+        // Image refresh downloads files per product; categories are cheap
+        $chunk_size = ($type === 'images') ? 20 : 50;
+
+        $total = $this->product_mapper->get_count();
+
+        if ($total === 0) {
             wp_send_json_error(['message' => __('No mapped products found.', 'dropshipzone')]);
         }
 
-        $total = count($mappings);
-        $success_count = 0;
-        $error_count = 0;
-        $errors = [];
-
-        // Collect all SKUs for batch API lookup
-        $all_skus = [];
-        $sku_to_mapping = [];
-        foreach ($mappings as $mapping) {
-            $sku = $mapping['dsz_sku'];
-            $all_skus[] = $sku;
-            $sku_to_mapping[$sku] = $mapping;
-        }
-
-        // Batch fetch from API
-        $api_products = [];
-        $sku_chunks = array_chunk($all_skus, 100);
-        
-        $this->logger->info('Starting ' . $type . ' resync - API fetch', [
-            'products_to_sync' => count($mappings),
-            'api_batches' => count($sku_chunks),
+        $mappings = $this->product_mapper->get_mappings([
+            'limit' => $chunk_size,
+            'offset' => $offset,
         ]);
 
-        foreach ($sku_chunks as $chunk_index => $chunk) {
-            $response = $this->api_client->get_products_by_skus($chunk);
-            
-            if (is_wp_error($response)) {
-                $this->logger->error($type . ' resync batch fetch failed', [
-                    'batch' => $chunk_index + 1,
-                    'error' => $response->get_error_message(),
-                ]);
-                continue;
-            }
-
-            if (!empty($response['result'])) {
-                foreach ($response['result'] as $product_data) {
-                    if (!empty($product_data['sku'])) {
-                        $api_products[$product_data['sku']] = $product_data;
-                    }
-                }
-            }
+        if (empty($mappings)) {
+            wp_send_json_success([
+                'done' => true,
+                'next_offset' => $offset,
+                'total' => $total,
+                'processed' => 0,
+                'success' => 0,
+                'errors' => 0,
+                'error_details' => [],
+            ]);
         }
 
-        // Define which options to update based on type
-        $options = [
+        $result = $this->resync_mapping_chunk($mappings, [
             'update_images' => ($type === 'images'),
             'update_categories' => ($type === 'categories'),
             'update_description' => false,
             'update_price' => false,
             'update_stock' => false,
             'update_title' => false,
-        ];
+        ]);
 
-        // Process each product
-        foreach ($mappings as $mapping) {
-            $product_id = $mapping['wc_product_id'];
-            $sku = $mapping['dsz_sku'];
-
-            if (!isset($api_products[$sku])) {
-                $error_count++;
-                $errors[] = sprintf('%s: %s', $sku, __('Not found in API', 'dropshipzone'));
-                continue;
-            }
-
-            $api_data = $api_products[$sku];
-            $result = $this->product_importer->resync_product($product_id, $api_data, $options);
-
-            if (is_wp_error($result)) {
-                $error_count++;
-                $errors[] = sprintf('%s: %s', $sku, $result->get_error_message());
-            } else {
-                $success_count++;
-            }
-
-            // Memory check
-            if (dsz_is_memory_near_limit(85)) {
-                $this->logger->warning($type . ' resync stopped early due to memory limit');
-                break;
-            }
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
         }
 
-        $type_label = ($type === 'images') ? __('images', 'dropshipzone') : __('categories', 'dropshipzone');
-        
-        /* translators: %1$d: success count, %2$d: total count, %3$s: type label */
-        $message = sprintf(
-            __('Refreshed %3$s for %1$d of %2$d products.', 'dropshipzone'),
-            $success_count,
-            $total,
-            $type_label
-        );
+        $next_offset = $offset + count($mappings);
+        $done = (count($mappings) < $chunk_size) || ($next_offset >= $total);
 
-        if ($error_count > 0) {
-            /* translators: %d: error count */
-            $message .= ' ' . sprintf(__('%d errors.', 'dropshipzone'), $error_count);
-        }
-
-        $this->logger->info($type . ' resync complete', [
-            'success' => $success_count,
-            'errors' => $error_count,
+        $this->logger->info($type . ' resync chunk complete', [
+            'offset' => $offset,
+            'processed' => count($mappings),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
+            'done' => $done,
         ]);
 
         wp_send_json_success([
-            'message' => $message,
-            'success' => $success_count,
-            'errors' => $error_count,
-            'error_details' => array_slice($errors, 0, 10),
+            'done' => $done,
+            'next_offset' => $next_offset,
+            'total' => $total,
+            'processed' => count($mappings),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
+            'error_details' => array_slice($result['error_details'], 0, 10),
         ]);
     }
 
     /**
      * AJAX handler for resyncing products that have never been synced
-     * 
-     * Uses batch API fetching to reduce API calls (similar to ajax_resync_all)
+     *
+     * Processes one bounded chunk per request. Successfully synced products
+     * leave the "never" set (last_resynced gets stamped), so the client passes
+     * its cumulative error count as `offset` to step past persistent failures.
      */
     public function ajax_resync_never_synced() {
         check_ajax_referer('dsz_admin_nonce', 'nonce');
@@ -2613,136 +2536,53 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
         }
 
-        // Get all mappings where last_resynced is NULL
+        $offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
+        $chunk_size = 50; // Price/stock only — no image downloads
+
         $never_synced = $this->product_mapper->get_mappings([
             'resync_filter' => 'never',
-            'limit' => 500,
-            'offset' => 0,
+            'limit' => $chunk_size,
+            'offset' => $offset,
         ]);
 
         if (empty($never_synced)) {
             wp_send_json_success([
-                'message' => __('No products to resync.', 'dropshipzone'),
-                'total' => 0,
+                'done' => true,
+                'processed' => 0,
                 'success' => 0,
                 'errors' => 0,
+                'error_details' => [],
             ]);
-            return; // Prevent further execution
         }
 
-        $success_count = 0;
-        $error_count = 0;
-        $errors = [];
-
-        // Collect all SKUs for batch fetching
-        $all_skus = [];
-        foreach ($never_synced as $mapping) {
-            $all_skus[] = $mapping['dsz_sku'];
-        }
-
-        // Batch fetch product data from API (100 SKUs per request)
-        $api_products = [];
-        $sku_chunks = array_chunk($all_skus, 100);
-        
-        $this->logger->info('Starting batch resync for never-synced products - API fetch', [
-            'products_to_sync' => count($never_synced),
-            'api_batches' => count($sku_chunks),
+        $result = $this->resync_mapping_chunk($never_synced, [
+            'update_title' => false,
+            'update_description' => false,
+            'update_images' => false,
+            'update_price' => true,
+            'update_stock' => true,
         ]);
 
-        // Process API requests sequentially (one batch at a time)
-        foreach ($sku_chunks as $chunk_index => $chunk) {
-            $this->logger->debug('Fetching API batch for never-synced', [
-                'batch' => $chunk_index + 1,
-                'total_batches' => count($sku_chunks),
-                'skus_in_batch' => count($chunk),
-            ]);
-            
-            $response = $this->api_client->get_products_by_skus($chunk);
-            
-            if (is_wp_error($response)) {
-                $this->logger->error('Batch fetch failed for never-synced', [
-                    'batch' => $chunk_index + 1,
-                    'error' => $response->get_error_message(),
-                ]);
-                continue;
-            }
-
-            if (!empty($response['result'])) {
-                foreach ($response['result'] as $product_data) {
-                    if (!empty($product_data['sku'])) {
-                        $api_products[$product_data['sku']] = $product_data;
-                    }
-                }
-            }
+        if (is_wp_error($result)) {
+            wp_send_json_error(['message' => $result->get_error_message()]);
         }
 
-        $this->logger->info('API batch fetch complete for never-synced', [
-            'requested_skus' => count($all_skus),
-            'found_products' => count($api_products),
+        $done = count($never_synced) < $chunk_size;
+
+        $this->logger->info('Never-synced resync chunk complete', [
+            'offset' => $offset,
+            'processed' => count($never_synced),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
+            'done' => $done,
         ]);
-
-        // Now process each product with pre-fetched data
-        foreach ($never_synced as $mapping) {
-            $product_id = $mapping['wc_product_id'];
-            $sku = $mapping['dsz_sku'];
-
-            // Check if we have API data for this SKU
-            if (!isset($api_products[$sku])) {
-                $error_count++;
-                $errors[] = [
-                    'product_id' => $product_id,
-                    'sku' => $sku,
-                    'error' => __('Not found in Dropshipzone API', 'dropshipzone'),
-                ];
-                continue;
-            }
-
-            $api_data = $api_products[$sku];
-
-            // Resync with pre-fetched data (price and stock only for never-synced)
-            $result = $this->product_importer->resync_product($product_id, $api_data, [
-                'update_title' => false,
-                'update_description' => false,
-                'update_images' => false,
-                'update_price' => true,
-                'update_stock' => true,
-            ]);
-
-            if (is_wp_error($result)) {
-                $error_count++;
-                $errors[] = [
-                    'product_id' => $product_id,
-                    'sku' => $sku,
-                    'error' => $result->get_error_message(),
-                ];
-            } else {
-                $success_count++;
-            }
-
-            // Memory check
-            if (dsz_is_memory_near_limit(85)) {
-                $this->logger->warning('Memory limit approaching, stopping never-synced resync early', [
-                    'processed' => $success_count + $error_count,
-                    'total' => count($never_synced),
-                ]);
-                break;
-            }
-        }
-
-        /* translators: %1$d: success count, %2$d: total count */
-        $message = sprintf(__('Resynced %1$d of %2$d never-synced products.', 'dropshipzone'), $success_count, count($never_synced));
-
-        if ($error_count > 0) {
-            /* translators: %d: error count */
-            $message .= ' ' . sprintf(__('%d errors occurred.', 'dropshipzone'), $error_count);
-        }
 
         wp_send_json_success([
-            'message' => $message,
-            'total' => count($never_synced),
-            'success' => $success_count,
-            'errors' => $error_count,
-            'error_details' => array_slice($errors, 0, 10),
+            'done' => $done,
+            'processed' => count($never_synced),
+            'success' => $result['success'],
+            'errors' => $result['errors'],
+            'error_details' => array_slice($result['error_details'], 0, 10),
         ]);
     }
 
@@ -2760,25 +2600,30 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', 'dropshipzone')]);
         }
 
-        // Get all WC products that are NOT in our mapping table
+        // Get WC products that are NOT in our mapping table and not already
+        // flagged as non-DSZ. Processing consumes the set (products get mapped
+        // or flagged), so each request re-queries from the top — the client
+        // keeps calling until `done` is true.
         global $wpdb;
         $mapping_table = $wpdb->prefix . 'dsz_product_mapping';
-        
-        // Get products with SKUs that are not already mapped
+        $chunk_size = 50;
+
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         $unmapped_products = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT p.ID, pm.meta_value as sku 
+                "SELECT p.ID, pm.meta_value as sku
                 FROM {$wpdb->posts} p
                 INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
                 LEFT JOIN {$mapping_table} m ON p.ID = m.wc_product_id
+                LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_dsz_not_available'
                 WHERE p.post_type IN ('product', 'product_variation')
                 AND p.post_status != 'trash'
                 AND pm.meta_value != ''
                 AND m.id IS NULL
+                AND pm2.post_id IS NULL
                 ORDER BY p.ID DESC
                 LIMIT %d",
-                500
+                $chunk_size
             ),
             ARRAY_A
         );
@@ -2786,6 +2631,7 @@ class Admin_UI {
         if (empty($unmapped_products)) {
             wp_send_json_success([
                 'message' => __('No unmapped products to scan.', 'dropshipzone'),
+                'done' => true,
                 'found' => 0,
                 'not_found' => 0,
             ]);
@@ -2907,14 +2753,20 @@ class Admin_UI {
             $not_found_count
         );
 
-        $this->logger->info('Unmapped product scan complete', [
+        $this->logger->info('Unmapped product scan chunk complete', [
             'total_scanned' => count($all_skus),
             'found' => $found_count,
             'not_found' => $not_found_count,
         ]);
 
+        // Done when the set is exhausted, or nothing progressed (mapping
+        // failures would otherwise be re-selected forever)
+        $done = (count($unmapped_products) < $chunk_size)
+            || (($found_count + $not_found_count) === 0);
+
         wp_send_json_success([
             'message' => $message,
+            'done' => $done,
             'found' => $found_count,
             'not_found' => $not_found_count,
             'errors' => array_slice($errors, 0, 10),
