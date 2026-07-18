@@ -50,7 +50,7 @@ $Excludes = @(
     "Thumbs.db",
     "*.log",
     "*.md",
-    ".agent"
+    ".agent*"
 )
 
 # Clean up previous build

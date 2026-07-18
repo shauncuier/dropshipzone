@@ -237,8 +237,11 @@ class Admin_UI {
      * Enqueue admin assets
      */
     public function enqueue_assets($hook) {
-        // Only load on our pages
-        if (strpos($hook, 'dsz-sync') === false) {
+        // Load on our pages and on order edit screens (DSZ order meta box)
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        $is_order_screen = $screen && in_array($screen->id, ['shop_order', 'woocommerce_page_wc-orders'], true);
+
+        if (strpos($hook, 'dsz-sync') === false && !$is_order_screen) {
             return;
         }
 
@@ -270,6 +273,20 @@ class Admin_UI {
                 'success' => __('Success!', 'dropshipzone'),
                 'error' => __('Error occurred', 'dropshipzone'),
                 'confirm_clear' => __('Are you sure you want to clear all logs?', 'dropshipzone'),
+                'confirm_never_synced' => __('This will resync all never-synced products. Continue?', 'dropshipzone'),
+                'confirm_scan' => __('This will check all unmapped products against Dropshipzone API. Products found will be linked; products not found will be marked as Non-DSZ. Continue?', 'dropshipzone'),
+                'processing' => __('Processing...', 'dropshipzone'),
+                'scanning' => __('Scanning products...', 'dropshipzone'),
+                'resynced' => __('Resynced', 'dropshipzone'),
+                'errors_word' => __('errors', 'dropshipzone'),
+                'processed' => __('processed...', 'dropshipzone'),
+                'linked' => __('linked', 'dropshipzone'),
+                'non_dsz' => __('marked as non-DSZ', 'dropshipzone'),
+                'scanned' => __('scanned...', 'dropshipzone'),
+                'importing' => __('Importing...', 'dropshipzone'),
+                'submitting' => __('Submitting...', 'dropshipzone'),
+                'request_failed' => __('Request failed', 'dropshipzone'),
+                'rate_wait' => __('Rate limit reached — retrying shortly...', 'dropshipzone'),
             ],
         ]);
     }
@@ -1496,58 +1513,6 @@ class Admin_UI {
                         </button>
                         <span id="dsz-resync-never-synced-status" style="margin-left: 10px;"></span>
                     </div>
-                    <script>
-                    jQuery(function($) {
-                        $('#dsz-resync-never-synced').on('click', function() {
-                            var $btn = $(this);
-                            var $status = $('#dsz-resync-never-synced-status');
-                            
-                            if (!confirm('<?php echo esc_js(__('This will resync all never-synced products. Continue?', 'dropshipzone')); ?>')) {
-                                return;
-                            }
-                            
-                            $btn.prop('disabled', true);
-                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Processing...</span>');
-
-                            // Chunked: synced products leave the "never" set, so the
-                            // cumulative error count is passed as offset to step past failures
-                            var totals = { success: 0, errors: 0 };
-                            var runChunk = function() {
-                                $.ajax({
-                                    url: ajaxurl,
-                                    type: 'POST',
-                                    data: {
-                                        action: 'dsz_resync_never_synced',
-                                        nonce: dsz_admin.nonce,
-                                        offset: totals.errors
-                                    },
-                                    success: function(response) {
-                                        if (!response.success) {
-                                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
-                                            $btn.prop('disabled', false);
-                                            return;
-                                        }
-                                        var d = response.data;
-                                        totals.success += d.success || 0;
-                                        totals.errors += d.errors || 0;
-                                        if (d.done) {
-                                            $status.html('<span style="color:green;">✓ <?php echo esc_js(__('Resynced', 'dropshipzone')); ?> ' + totals.success + (totals.errors ? ' (' + totals.errors + ' <?php echo esc_js(__('errors', 'dropshipzone')); ?>)' : '') + '</span>');
-                                            setTimeout(function() { location.reload(); }, 2000);
-                                        } else {
-                                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.success + totals.errors) + ' <?php echo esc_js(__('processed...', 'dropshipzone')); ?></span>');
-                                            runChunk();
-                                        }
-                                    },
-                                    error: function() {
-                                        $status.html('<span style="color:red;">Request failed</span>');
-                                        $btn.prop('disabled', false);
-                                    }
-                                });
-                            };
-                            runChunk();
-                        });
-                    });
-                    </script>
                     <?php endif; ?>
                     
                     <?php if ($unmapped_count > 0): ?>
@@ -1564,57 +1529,6 @@ class Admin_UI {
                             <?php esc_html_e('Checks if unmapped products exist in Dropshipzone. Found products will be linked; not-found products will be marked as Non-DSZ.', 'dropshipzone'); ?>
                         </p>
                     </div>
-                    <script>
-                    jQuery(function($) {
-                        $('#dsz-scan-unmapped').on('click', function() {
-                            var $btn = $(this);
-                            var $status = $('#dsz-scan-unmapped-status');
-                            
-                            if (!confirm('<?php echo esc_js(__('This will check all unmapped products against Dropshipzone API. Products found will be linked; products not found will be marked as Non-DSZ. Continue?', 'dropshipzone')); ?>')) {
-                                return;
-                            }
-                            
-                            $btn.prop('disabled', true);
-                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> Scanning products...</span>');
-
-                            // Chunked: scanned products get mapped or flagged, so each
-                            // request consumes the remaining set until done
-                            var totals = { found: 0, notFound: 0 };
-                            var runChunk = function() {
-                                $.ajax({
-                                    url: ajaxurl,
-                                    type: 'POST',
-                                    data: {
-                                        action: 'dsz_scan_unmapped_products',
-                                        nonce: dsz_admin.nonce
-                                    },
-                                    success: function(response) {
-                                        if (!response.success) {
-                                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
-                                            $btn.prop('disabled', false);
-                                            return;
-                                        }
-                                        var d = response.data;
-                                        totals.found += d.found || 0;
-                                        totals.notFound += d.not_found || 0;
-                                        if (d.done) {
-                                            $status.html('<span style="color:green;">✓ ' + totals.found + ' <?php echo esc_js(__('linked', 'dropshipzone')); ?>, ' + totals.notFound + ' <?php echo esc_js(__('marked as non-DSZ', 'dropshipzone')); ?></span>');
-                                            setTimeout(function() { location.reload(); }, 2000);
-                                        } else {
-                                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.found + totals.notFound) + ' <?php echo esc_js(__('scanned...', 'dropshipzone')); ?></span>');
-                                            runChunk();
-                                        }
-                                    },
-                                    error: function() {
-                                        $status.html('<span style="color:red;">Request failed</span>');
-                                        $btn.prop('disabled', false);
-                                    }
-                                });
-                            };
-                            runChunk();
-                        });
-                    });
-                    </script>
                     <?php endif; ?>
                 </div>
 
@@ -2332,6 +2246,23 @@ class Admin_UI {
     }
 
     /**
+     * Send a chunk-processing error, passing retry_after through so the
+     * client can wait out a rate limit and retry the same chunk.
+     *
+     * @param \WP_Error $error Error from the API client
+     */
+    private function send_chunk_error($error) {
+        $payload = ['message' => $error->get_error_message()];
+
+        $data = $error->get_error_data();
+        if (is_array($data) && !empty($data['retry_after'])) {
+            $payload['retry_after'] = intval($data['retry_after']);
+        }
+
+        wp_send_json_error($payload);
+    }
+
+    /**
      * AJAX: Resync all mapped products (one bounded chunk per request)
      *
      * The client passes `offset` and keeps calling until `done` is true, so
@@ -2406,7 +2337,7 @@ class Admin_UI {
             ]);
 
             if (is_wp_error($result)) {
-                wp_send_json_error(['message' => $result->get_error_message()]);
+                $this->send_chunk_error($result);
             }
         }
 
@@ -2497,7 +2428,7 @@ class Admin_UI {
         ]);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()]);
+            $this->send_chunk_error($result);
         }
 
         $next_offset = $offset + count($mappings);
@@ -2564,7 +2495,7 @@ class Admin_UI {
         ]);
 
         if (is_wp_error($result)) {
-            wp_send_json_error(['message' => $result->get_error_message()]);
+            $this->send_chunk_error($result);
         }
 
         $done = count($never_synced) < $chunk_size;
@@ -2894,52 +2825,6 @@ class Admin_UI {
             <?php endif; ?>
             <div class="dsz-order-message" style="margin-top: 10px;"></div>
         </div>
-        <style>
-            .dsz-order-box { padding: 5px 0; }
-            .dsz-order-box p { margin: 8px 0; }
-            .dsz-status { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
-            .dsz-status-not_submitted { background: #fff3cd; color: #856404; }
-            .dsz-status-processing { background: #cce5ff; color: #004085; }
-            .dsz-status-complete { background: #d4edda; color: #155724; }
-            .dsz-status-error { background: #f8d7da; color: #721c24; }
-            .dsz-error { color: #dc3545; }
-            .dsz-submit-order-btn .dashicons { vertical-align: middle; margin-right: 3px; }
-        </style>
-        <script>
-        jQuery(function($) {
-            $('.dsz-submit-order-btn').on('click', function() {
-                var $btn = $(this);
-                var orderId = $btn.data('order-id');
-                var $message = $btn.siblings('.dsz-order-message');
-                
-                $btn.prop('disabled', true).find('.dashicons').addClass('spin');
-                $message.html('<span style="color:#666;">Submitting...</span>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'dsz_submit_order',
-                        nonce: $('#dsz_order_nonce').val(),
-                        order_id: orderId
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $message.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
-                            setTimeout(function() { location.reload(); }, 1500);
-                        } else {
-                            $message.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
-                            $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
-                        }
-                    },
-                    error: function() {
-                        $message.html('<span style="color:red;">Request failed</span>');
-                        $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
-                    }
-                });
-            });
-        });
-        </script>
         <?php
     }
 
@@ -3211,78 +3096,6 @@ class Admin_UI {
             </div>
         </div>
 
-        <script>
-        jQuery(function($) {
-            // Save settings
-            $('#dsz-auto-import-form').on('submit', function(e) {
-                e.preventDefault();
-                var $form = $(this);
-                var $btn = $form.find('button[type="submit"]');
-                var $message = $('#dsz-auto-import-message');
-                
-                $btn.prop('disabled', true);
-                
-                $.ajax({
-                    url: dsz_admin.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'dsz_save_auto_import_settings',
-                        nonce: dsz_admin.nonce,
-                        enabled: $form.find('input[name="enabled"]').is(':checked') ? 1 : 0,
-                        frequency: $form.find('select[name="frequency"]').val(),
-                        max_products_per_run: $form.find('input[name="max_products_per_run"]').val(),
-                        min_stock_qty: $form.find('input[name="min_stock_qty"]').val(),
-                        default_product_status: $form.find('select[name="default_product_status"]').val(),
-                        filter_new_arrival: $form.find('input[name="filter_new_arrival"]').is(':checked') ? 1 : 0,
-                        filter_in_stock: $form.find('input[name="filter_in_stock"]').is(':checked') ? 1 : 0,
-                        filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $message.removeClass('hidden dsz-message-error').addClass('dsz-message-success').html('<span class="dashicons dashicons-yes"></span> ' + response.data.message);
-                        } else {
-                            $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').html('<span class="dashicons dashicons-no"></span> ' + response.data.message);
-                        }
-                        $btn.prop('disabled', false);
-                    },
-                    error: function() {
-                        $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').text('Request failed');
-                        $btn.prop('disabled', false);
-                    }
-                });
-            });
-            
-            // Run import now
-            $('#dsz-run-auto-import').on('click', function() {
-                var $btn = $(this);
-                var $result = $('#dsz-auto-import-result');
-                
-                $btn.prop('disabled', true);
-                $result.html('<span class="dashicons dashicons-update spin"></span> <?php echo esc_js(__('Importing...', 'dropshipzone')); ?>');
-                
-                $.ajax({
-                    url: dsz_admin.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'dsz_run_auto_import',
-                        nonce: dsz_admin.nonce
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            $result.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
-                        } else {
-                            $result.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
-                        }
-                        $btn.prop('disabled', false);
-                    },
-                    error: function() {
-                        $result.html('<span style="color:red;">Request failed</span>');
-                        $btn.prop('disabled', false);
-                    }
-                });
-            });
-        });
-        </script>
         <?php
     }
 

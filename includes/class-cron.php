@@ -269,11 +269,22 @@ class Cron {
             $response = $plugin->api_client->get_products_by_skus($chunk);
             
             if (is_wp_error($response)) {
-                $this->logger->error('Failed to fetch from Dropshipzone API', [
+                $this->logger->error('Failed to fetch from Dropshipzone API - aborting batch for retry', [
                     'error' => $response->get_error_message(),
                     'skus_count' => count($chunk),
                 ]);
-                continue;
+
+                // Abort without advancing the offset: treating a failed fetch
+                // as "not found" could wrongly deactivate healthy products.
+                // The continuation event retries this same batch.
+                if (!wp_next_scheduled('dsz_sync_batch_continue')) {
+                    wp_schedule_single_event(time() + 120, 'dsz_sync_batch_continue');
+                }
+
+                return [
+                    'status' => 'error',
+                    'message' => $response->get_error_message(),
+                ];
             }
 
             if (!empty($response['result'])) {

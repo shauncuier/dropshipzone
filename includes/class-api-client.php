@@ -424,40 +424,35 @@ class API_Client {
             ]);
         }
         
-        // Double-check: If we still can't make a request after waiting, something is wrong
+        // Double-check: if we still can't make a request, either do a short
+        // capped wait or hand a retryable error back to the caller — request
+        // threads must never block for minutes
         if (!$this->rate_limiter->can_make_request()) {
             $wait_time = $this->rate_limiter->get_wait_time();
-            
-            // If wait time is reasonable, wait and proceed
-            if ($wait_time <= 120) {
+
+            if ($wait_time <= Rate_Limiter::MAX_BLOCKING_WAIT) {
                 $this->logger->info('Rate limit: Additional wait needed', [
                     'endpoint' => $endpoint,
                     'wait_seconds' => $wait_time,
-                    'status' => $this->rate_limiter->get_status(),
                 ]);
-                
-                if (!$this->rate_limiter->wait_if_needed(120)) {
-                    return new \WP_Error(
-                        'rate_limit_exceeded',
-                        __('API rate limit exceeded. Maximum 60 requests/minute or 600 requests/hour. Please try again later.', 'dropshipzone'),
-                        $this->rate_limiter->get_status()
-                    );
-                }
-            } else {
-                $this->logger->error('Rate limit: Wait time too long', [
+                $this->rate_limiter->wait_if_needed(Rate_Limiter::MAX_BLOCKING_WAIT);
+            }
+
+            if (!$this->rate_limiter->can_make_request()) {
+                $wait_time = max(1, $this->rate_limiter->get_wait_time());
+                $this->logger->warning('Rate limit: Deferring request', [
                     'endpoint' => $endpoint,
-                    'wait_seconds' => $wait_time,
-                    'status' => $this->rate_limiter->get_status(),
+                    'retry_after' => $wait_time,
                 ]);
-                
+
                 return new \WP_Error(
-                    'rate_limit_exceeded',
+                    'rate_limited',
                     sprintf(
-                        /* translators: %d: minutes to wait */
-                        __('API rate limit exceeded. Please wait %d minutes before trying again.', 'dropshipzone'),
-                        ceil($wait_time / 60)
+                        /* translators: %d: seconds to wait */
+                        __('API rate limit reached. Retry in %d seconds.', 'dropshipzone'),
+                        $wait_time
                     ),
-                    $this->rate_limiter->get_status()
+                    ['retry_after' => intval($wait_time)]
                 );
             }
         }
@@ -554,20 +549,23 @@ class API_Client {
         }
 
         if ($response_code === 429) {
-            // Rate limited - use exponential backoff with longer delays
-            if ($retry < $this->max_retries) {
-                $wait_times = [10, 30, 60]; // 10 seconds, 30 seconds, 60 seconds
-                $wait_time = isset($wait_times[$retry]) ? $wait_times[$retry] : 60;
-                
-                $this->logger->warning('Rate limited, waiting...', [
+            // Rate limited by the API. One short in-request retry; anything
+            // longer is returned as a retryable error instead of sleeping
+            if ($retry < 1) {
+                $wait_time = 10;
+                $this->logger->warning('Rate limited (429), waiting...', [
                     'endpoint' => $endpoint,
-                    'retry' => $retry + 1,
                     'wait_seconds' => $wait_time,
                 ]);
                 sleep($wait_time);
                 return $this->make_request($method, $endpoint, $data, $use_auth, $retry + 1);
             }
-            return new \WP_Error('rate_limited', __('API rate limit exceeded. Please try again later.', 'dropshipzone'));
+
+            return new \WP_Error(
+                'rate_limited',
+                __('API rate limit exceeded. Please try again later.', 'dropshipzone'),
+                ['retry_after' => 30]
+            );
         }
 
         if ($response_code >= 400) {
@@ -575,11 +573,8 @@ class API_Client {
             return new \WP_Error('api_error', $error_message, ['code' => $response_code, 'response' => $response_data]);
         }
 
-        // Add small delay after successful request to prevent rate limiting
-        // Only for product/stock endpoints, not auth
-        if ($endpoint !== '/auth') {
-            usleep(500000); // 0.5 second delay between requests
-        }
+        // Request spacing is handled by Rate_Limiter::smart_wait() (adaptive
+        // delay + MIN_DELAY) — no extra fixed sleep needed here
 
         return $response_data;
     }

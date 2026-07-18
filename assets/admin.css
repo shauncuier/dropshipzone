@@ -3762,3 +3762,15 @@ select:focus-visible {
     color: var(--dsz-gray-600);
     font-weight: 500;
 }
+/* ==========================================================================
+   Order edit screen: Dropshipzone meta box
+   ========================================================================== */
+.dsz-order-box { padding: 5px 0; }
+.dsz-order-box p { margin: 8px 0; }
+.dsz-status { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; }
+.dsz-status-not_submitted { background: #fff3cd; color: #856404; }
+.dsz-status-processing { background: #cce5ff; color: #004085; }
+.dsz-status-complete { background: #d4edda; color: #155724; }
+.dsz-status-error { background: #f8d7da; color: #721c24; }
+.dsz-error { color: #dc3545; }
+.dsz-submit-order-btn .dashicons { vertical-align: middle; margin-right: 3px; }

@@ -1604,6 +1604,12 @@
                     },
                     success: function (response) {
                         if (!response.success) {
+                            // Rate limited: wait it out, retry the same chunk
+                            if (response.data && response.data.retry_after) {
+                                $('#dsz-resync-all-progress-text').text(dsz_admin.strings.rate_wait);
+                                setTimeout(function () { runChunk(offset); }, (response.data.retry_after + 2) * 1000);
+                                return;
+                            }
                             finish(false, response.data.message);
                             return;
                         }
@@ -1708,6 +1714,12 @@
                     },
                     success: function (response) {
                         if (!response.success) {
+                            // Rate limited: wait it out, retry the same chunk
+                            if (response.data && response.data.retry_after) {
+                                $message.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait);
+                                setTimeout(function () { runChunk(offset); }, (response.data.retry_after + 2) * 1000);
+                                return;
+                            }
                             finish(false, response.data.message);
                             return;
                         }
@@ -1849,6 +1861,233 @@
                 </style>
             `);
         }
+    });
+
+    /**
+     * Mapping page: resync never-synced products (chunked).
+     * Synced products leave the "never" set, so the cumulative error count
+     * is passed as offset to step past persistent failures.
+     */
+    $(document).ready(function () {
+        $('#dsz-resync-never-synced').on('click', function () {
+            var $btn = $(this);
+            var $status = $('#dsz-resync-never-synced-status');
+
+            if (!confirm(dsz_admin.strings.confirm_never_synced)) {
+                return;
+            }
+
+            $btn.prop('disabled', true);
+            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.processing + '</span>');
+
+            var totals = { success: 0, errors: 0 };
+            var runChunk = function () {
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_resync_never_synced',
+                        nonce: dsz_admin.nonce,
+                        offset: totals.errors
+                    },
+                    success: function (response) {
+                        if (!response.success) {
+                            if (response.data && response.data.retry_after) {
+                                $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                                return;
+                            }
+                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                            $btn.prop('disabled', false);
+                            return;
+                        }
+                        var d = response.data;
+                        totals.success += d.success || 0;
+                        totals.errors += d.errors || 0;
+                        if (d.done) {
+                            $status.html('<span style="color:green;">✓ ' + dsz_admin.strings.resynced + ' ' + totals.success + (totals.errors ? ' (' + totals.errors + ' ' + dsz_admin.strings.errors_word + ')' : '') + '</span>');
+                            setTimeout(function () { location.reload(); }, 2000);
+                        } else {
+                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.success + totals.errors) + ' ' + dsz_admin.strings.processed + '</span>');
+                            runChunk();
+                        }
+                    },
+                    error: function () {
+                        $status.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            };
+            runChunk();
+        });
+    });
+
+    /**
+     * Mapping page: scan unmapped products against the DSZ API (chunked).
+     * Scanned products get mapped or flagged, so each request consumes the
+     * remaining set until the server reports done.
+     */
+    $(document).ready(function () {
+        $('#dsz-scan-unmapped').on('click', function () {
+            var $btn = $(this);
+            var $status = $('#dsz-scan-unmapped-status');
+
+            if (!confirm(dsz_admin.strings.confirm_scan)) {
+                return;
+            }
+
+            $btn.prop('disabled', true);
+            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.scanning + '</span>');
+
+            var totals = { found: 0, notFound: 0 };
+            var runChunk = function () {
+                $.ajax({
+                    url: dsz_admin.ajax_url,
+                    type: 'POST',
+                    data: {
+                        action: 'dsz_scan_unmapped_products',
+                        nonce: dsz_admin.nonce
+                    },
+                    success: function (response) {
+                        if (!response.success) {
+                            if (response.data && response.data.retry_after) {
+                                $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                                return;
+                            }
+                            $status.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                            $btn.prop('disabled', false);
+                            return;
+                        }
+                        var d = response.data;
+                        totals.found += d.found || 0;
+                        totals.notFound += d.not_found || 0;
+                        if (d.done) {
+                            $status.html('<span style="color:green;">✓ ' + totals.found + ' ' + dsz_admin.strings.linked + ', ' + totals.notFound + ' ' + dsz_admin.strings.non_dsz + '</span>');
+                            setTimeout(function () { location.reload(); }, 2000);
+                        } else {
+                            $status.html('<span style="color:#666;"><span class="dashicons dashicons-update spin"></span> ' + (totals.found + totals.notFound) + ' ' + dsz_admin.strings.scanned + '</span>');
+                            runChunk();
+                        }
+                    },
+                    error: function () {
+                        $status.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
+                        $btn.prop('disabled', false);
+                    }
+                });
+            };
+            runChunk();
+        });
+    });
+
+    /**
+     * Order edit screen: submit order to Dropshipzone (meta box).
+     * Uses the meta box's own nonce field (dsz_sync_nonce action).
+     */
+    $(document).ready(function () {
+        $(document).on('click', '.dsz-submit-order-btn', function () {
+            var $btn = $(this);
+            var orderId = $btn.data('order-id');
+            var $message = $btn.siblings('.dsz-order-message');
+
+            $btn.prop('disabled', true).find('.dashicons').addClass('spin');
+            $message.html('<span style="color:#666;">' + dsz_admin.strings.submitting + '</span>');
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_submit_order',
+                    nonce: $('#dsz_order_nonce').val(),
+                    order_id: orderId
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $message.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                        setTimeout(function () { location.reload(); }, 1500);
+                    } else {
+                        $message.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                        $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                    }
+                },
+                error: function () {
+                    $message.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
+                    $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+                }
+            });
+        });
+    });
+
+    /**
+     * Auto Import page: save settings + run now.
+     */
+    $(document).ready(function () {
+        $('#dsz-auto-import-form').on('submit', function (e) {
+            e.preventDefault();
+            var $form = $(this);
+            var $btn = $form.find('button[type="submit"]');
+            var $message = $('#dsz-auto-import-message');
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_save_auto_import_settings',
+                    nonce: dsz_admin.nonce,
+                    enabled: $form.find('input[name="enabled"]').is(':checked') ? 1 : 0,
+                    frequency: $form.find('select[name="frequency"]').val(),
+                    max_products_per_run: $form.find('input[name="max_products_per_run"]').val(),
+                    min_stock_qty: $form.find('input[name="min_stock_qty"]').val(),
+                    default_product_status: $form.find('select[name="default_product_status"]').val(),
+                    filter_new_arrival: $form.find('input[name="filter_new_arrival"]').is(':checked') ? 1 : 0,
+                    filter_in_stock: $form.find('input[name="filter_in_stock"]').is(':checked') ? 1 : 0,
+                    filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $message.removeClass('hidden dsz-message-error').addClass('dsz-message-success').html('<span class="dashicons dashicons-yes"></span> ' + response.data.message);
+                    } else {
+                        $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').html('<span class="dashicons dashicons-no"></span> ' + response.data.message);
+                    }
+                    $btn.prop('disabled', false);
+                },
+                error: function () {
+                    $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').text(dsz_admin.strings.request_failed);
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        $('#dsz-run-auto-import').on('click', function () {
+            var $btn = $(this);
+            var $result = $('#dsz-auto-import-result');
+
+            $btn.prop('disabled', true);
+            $result.html('<span class="dashicons dashicons-update spin"></span> ' + dsz_admin.strings.importing);
+
+            $.ajax({
+                url: dsz_admin.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'dsz_run_auto_import',
+                    nonce: dsz_admin.nonce
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $result.html('<span style="color:green;">✓ ' + response.data.message + '</span>');
+                    } else {
+                        $result.html('<span style="color:red;">✗ ' + response.data.message + '</span>');
+                    }
+                    $btn.prop('disabled', false);
+                },
+                error: function () {
+                    $result.html('<span style="color:red;">' + dsz_admin.strings.request_failed + '</span>');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
     });
 
 })(jQuery);

@@ -53,6 +53,13 @@ class Rate_Limiter {
     const THROTTLE_THRESHOLD = 0.8;
 
     /**
+     * Longest wait a request thread may block on (seconds).
+     * Longer waits return control to the caller as a rate_limited error
+     * so AJAX/cron threads are not tied up sleeping.
+     */
+    const MAX_BLOCKING_WAIT = 15;
+
+    /**
      * Logger instance
      */
     private $logger;
@@ -302,6 +309,19 @@ class Rate_Limiter {
         // First check: Hard rate limit
         $hard_wait = $this->get_wait_time();
         if ($hard_wait > 0) {
+            // Never block a request thread longer than the cap — let the
+            // caller surface a retryable rate_limited error instead
+            if ($hard_wait > self::MAX_BLOCKING_WAIT) {
+                if ($this->logger) {
+                    $this->logger->info('Load balancer: Wait exceeds blocking cap, deferring', [
+                        'wait_seconds' => $hard_wait,
+                    ]);
+                }
+                $wait_info['reason'] = 'over_cap';
+                $wait_info['wait_needed'] = $hard_wait;
+                return $wait_info;
+            }
+
             if ($this->logger) {
                 $this->logger->info('Load balancer: Hard rate limit wait', [
                     'wait_seconds' => $hard_wait,
@@ -309,7 +329,7 @@ class Rate_Limiter {
                     'hour_count' => $this->get_hour_count(),
                 ]);
             }
-            
+
             sleep($hard_wait);
             $wait_info['waited'] = $hard_wait;
             $wait_info['reason'] = 'rate_limit';
