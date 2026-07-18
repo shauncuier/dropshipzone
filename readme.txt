@@ -136,6 +136,51 @@ We're constantly improving DropshipZone Sync. Here's what's planned:
 
 == Changelog ==
 
+= 2.7.0 =
+* NEW: New Zealand shipping support. Added flat-rate shipping for NZ destinations (standard scheme `nz` key), bypassing AU postcode mapping.
+* NEW: Treat $0 Rates as Unavailable. Added an opt-in shipping method setting to use the fallback rate if the API returns a $0 rate for a zone, preventing unintended free shipping.
+* NEW: Negative Caching. Added a 5-minute transient back-off cache on API failures (postcode mapping and zone rate requests) to prevent hammering the API during checkouts.
+* CHANGED: Batched mapping queries. Refactored cart checking to use a single batched query mapping product/variation IDs to SKUs, improving checkout load times.
+* FIXED: Validate and trim AU postcodes (4 digits) before calling the API.
+* FIXED: Correctly resolve variation-level mappings using variation IDs before falling back to parent product IDs.
+
+= 2.6.6 =
+* FIXED: Unified the root folder name inside all ZIP packages to always be `dropshipzone` to prevent WordPress from deactivating the active plugin with a "Plugin file does not exist" error upon updating.
+
+= 2.6.5 =
+* FIXED: Fixed a bug in build.ps1 where the generated ZIP package contained the wrong root plugin folder name (dropshipzone instead of dropshipzone-price-stock-sync).
+
+= 2.6.4 =
+* FIXED: Fixed a bug where a successful "Test Connection" would obtain a token but fail to persist the API email and password.
+
+= 2.6.3 =
+* NEW: Added an opt-in dark theme toggle in the admin header, persisted via localStorage.
+
+= 2.6.2 =
+* IMPROVED: Cleaned up admin UI inline styling and refactored components to use class-based CSS utilities.
+* FIXED: Excluded the doc directory from the distribution ZIP package.
+
+= 2.6.1 =
+* FIXED: Fixed .agents directory being included in distribution zip.
+
+= 2.6.0 =
+* NEW: Batch Auto-Mapping. Auto-map by SKU now processes in batches of 500 with a 20-second time guard, preventing timeouts on large catalogs.
+* NEW: Sync Batch Locking. Transient-based lock prevents concurrent sync batches from overlapping.
+* NEW: Schema Version Gate. Mapping table migration now checks a stored schema version, avoiding an information_schema query on every page load.
+* CHANGED: Credentials encryption now uses per-encryption random IVs instead of a static IV.
+* IMPROVED: Refactored admin interface with cleaner layouts and improved JavaScript interactions.
+* FIXED: Derived stock availability from stock_qty when API omits in_stock.
+* FIXED: Category parsing for hierarchical paths containing commas.
+* FIXED: Added secondary ID sort to product mapping queries for deterministic pagination.
+
+= 2.5.1 =
+* NEW: Allow empty search to browse the full product catalog.
+* NEW: Added detailed skip counters for auto import troubleshooting.
+* FIXED: Auto import defaults changed to be less restrictive.
+* FIXED: Removed API in_stock filter to rely on PHP-side filtering for 0-stock products.
+* IMPROVED: Improved product search UI with default in-stock filter.
+* IMPROVED: Added cache-busting for realtime metrics display.
+
 = 2.5.0 =
 * NEW: Auto Product Import - Scheduled automatic import of new products from Dropshipzone API.
 * NEW: Configurable filters: New Arrivals, In Stock, Free Shipping, Min Stock Qty (default 100).

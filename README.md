@@ -25,16 +25,16 @@ Automatically sync 10,000+ products with real-time pricing, stock levels, and se
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes, or check the [latest release](https://github.com/shauncuier/dropshipzone/releases/latest).
 
-**Version 2.5.0 Highlights:**
-- **🤖 Auto Product Import** - Schedule automatic imports with customizable filters
-- **📊 Import Metrics** - Track import runs with 7-day, 30-day stats and history
-- **⚙️ Minimum Stock Filter** - Only import products with sufficient stock (default: 100+)
+**Version 2.7.0 Highlights:**
+- **🇳🇿 New Zealand Shipping** - Flat-rate shipping support for NZ destinations (standard scheme `nz` key)
+- **🛡️ Treat $0 Rates as Unavailable** - Prevents unintended free shipping when a supplier has not priced a zone
+- **⚡ Performance & Resilience** - Batched mapping queries for cart variations and negative caching to protect checkouts from API downtime
 
 **Previous releases:**
-- **Shipping Zones** - WooCommerce shipping method using DSZ zone mapping
-- **Scan Unmapped Products** - Auto-detect and link existing WC products to DSZ
-- **Granular Resync** - Refresh images, categories, or all data separately
-- **Order Submission** - Submit WooCommerce orders to Dropshipzone for fulfillment
+- **🤖 Auto Product Import** - Schedule automatic imports with customizable filters (v2.5.0)
+- **📊 Import Metrics** - Track import runs with 7-day, 30-day stats and history (v2.5.0)
+- **🚚 Shipping Zones** - WooCommerce shipping method using DSZ zone mapping (v2.4.0)
+- **🔍 Scan Unmapped Products** - Auto-detect and link existing WC products to DSZ (v2.3.0)
 
 ---
 
@@ -45,6 +45,10 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### ✅ Completed Features
 | Feature | Description | Version |
 |---------|-------------|:-------:|
+| **New Zealand Shipping** | Flat-rate shipping support for NZ destinations | v2.7.0 |
+| **Negative Caching** | 5-minute transient back-off cache on API failures | v2.7.0 |
+| **Batch Auto-Mapping** | Process SKU auto-mapping in safe batches of 500 | v2.6.0 |
+| **Admin UI Theme Toggle** | Opt-in dark theme toggle in the header | v2.6.3 |
 | **Auto Product Import** | Scheduled imports with filters and metrics | v2.5.0 |
 | **Shipping Zones** | WooCommerce shipping using DSZ zone rates | v2.4.0 |
 | **Scan Unmapped Products** | Auto-link existing products to DSZ | v2.3.0 |
