@@ -35,32 +35,32 @@ Jashe (shauncuier)
 
 ## Then upload
 
-`build/3s-soft-price-stock-sync-for-dropshipzone-v3.3.0.zip` — 125 KB, 19 entries, root folder matches the slug, no dev files.
+`build/3s-soft-price-stock-sync-for-dropshipzone-v3.3.3.zip` — 128 KB, 19 entries, root folder matches the slug, no dev files.
 
 Form answers:
 
 | Item | Answer |
 |---|---|
 | Read FAQ / guidelines | Yes |
-| Plugin Check run, issues resolved | **Run it first — see below** |
+| Plugin Check run, issues resolved | **Yes — clean run, 2026-07-26, no errors or warnings** |
 | Distinctive name, searched for similar | Yes — vendor prefix, trademark trailing |
 | Permission to upload; account represents owner | Yes — account `shauncuier` |
 | No artificial feature limitations | Yes — no paywall, licence gate, trial or usage cap |
 
-## Run Plugin Check before ticking that box
+## Plugin Check status: clean
 
-The form makes you confirm the plugin was tested with **Plugin Check**. It has not been — a static audit is not the same thing, and ticking it would be a false declaration.
+Run against v3.3.3 on 2026-07-26 — **no errors, no warnings**. Nothing needs declaring as a false positive.
 
-1. Install **Plugin Check** from the directory on dropshipzone.local.
-2. Install this plugin from the 3.3.0 zip.
-3. Tools → Plugin Check → select the plugin → run all checks.
-4. Fix what it reports, or note anything you judge a false positive.
+Three passes got there:
 
-Expect three findings, all understood:
+| Pass | Findings | What changed |
+|---|---|---|
+| First | ~150 | Unescaped output, `fopen()` in the CSV export, missing `wp_unslash()`, translators comment placement |
+| Second | ~30 | Table names moved to the `%i` identifier placeholder; corrected `phpcs:ignore` sniff names that were misspelled and therefore inert |
+| Third | 4 | Final two multi-table search queries converted to `%i` |
+| Now | **0** | — |
 
-- **Text Domain mismatch** — pre-excused in their email: *"You may see a warning regarding the 'Text Domain', as we haven't changed the slug on our side yet. That's fine."*
-- **`Tested up to: 6.7.1`** — genuinely stale. Set it to the current WordPress version before uploading. Worth fixing.
-- **Direct database queries** — legitimate; the plugin owns three custom tables, every query uses `$wpdb->prepare()` and carries a `phpcs:ignore`. Defensible as a false positive.
+The plugin's SQL is now genuinely prepared throughout rather than relying on suppression comments. Minimum WordPress is 6.2, the release that introduced `%i`.
 
 ## Already handled from their email
 
