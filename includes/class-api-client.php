@@ -116,7 +116,7 @@ class API_Client {
         // Validate credentials
         if (empty($email) || empty($password)) {
             $this->logger->error('Authentication failed: Missing credentials');
-            return new \WP_Error('missing_credentials', __('API email and password are required.', 'dropshipzone'));
+            return new \WP_Error('missing_credentials', __('API email and password are required.', 'product-sync-for-dropshipzone'));
         }
 
         // Make authentication request
@@ -151,7 +151,7 @@ class API_Client {
         }
 
         $this->logger->error('Authentication failed: Invalid response', ['response' => $response]);
-        return new \WP_Error('invalid_response', __('Invalid API response. Please check your credentials.', 'dropshipzone'));
+        return new \WP_Error('invalid_response', __('Invalid API response. Please check your credentials.', 'product-sync-for-dropshipzone'));
     }
 
     /**
@@ -342,7 +342,7 @@ class API_Client {
         if ($start_ts && $end_ts && ($end_ts - $start_ts) >= 10 * DAY_IN_SECONDS) {
             return new \WP_Error(
                 'invalid_range',
-                __('Stock history time range must be less than 10 days.', 'dropshipzone')
+                __('Stock history time range must be less than 10 days.', 'product-sync-for-dropshipzone')
             );
         }
 
@@ -392,7 +392,7 @@ class API_Client {
 
         return [
             'success' => true,
-            'message' => __('Connection successful!', 'dropshipzone'),
+            'message' => __('Connection successful!', 'product-sync-for-dropshipzone'),
             'products_available' => isset($products['total']) ? $products['total'] : 0,
         ];
     }
@@ -449,7 +449,7 @@ class API_Client {
                     'rate_limited',
                     sprintf(
                         /* translators: %d: seconds to wait */
-                        __('API rate limit reached. Retry in %d seconds.', 'dropshipzone'),
+                        __('API rate limit reached. Retry in %d seconds.', 'product-sync-for-dropshipzone'),
                         $wait_time
                     ),
                     ['retry_after' => intval($wait_time)]
@@ -545,7 +545,7 @@ class API_Client {
                     'error' => $auth_result->get_error_message(),
                 ]);
             }
-            return new \WP_Error('unauthorized', __('Authentication failed. Please check your credentials.', 'dropshipzone'));
+            return new \WP_Error('unauthorized', __('Authentication failed. Please check your credentials.', 'product-sync-for-dropshipzone'));
         }
 
         if ($response_code === 429) {
@@ -563,13 +563,13 @@ class API_Client {
 
             return new \WP_Error(
                 'rate_limited',
-                __('API rate limit exceeded. Please try again later.', 'dropshipzone'),
+                __('API rate limit exceeded. Please try again later.', 'product-sync-for-dropshipzone'),
                 ['retry_after' => 30]
             );
         }
 
         if ($response_code >= 400) {
-            $error_message = isset($response_data['message']) ? $response_data['message'] : __('API request failed.', 'dropshipzone');
+            $error_message = isset($response_data['message']) ? $response_data['message'] : __('API request failed.', 'product-sync-for-dropshipzone');
             return new \WP_Error('api_error', $error_message, ['code' => $response_code, 'response' => $response_data]);
         }
 
@@ -642,19 +642,19 @@ class API_Client {
                 return new \WP_Error(
                     'missing_field',
                     /* translators: %s: field name */
-                    sprintf(__('Missing required field: %s', 'dropshipzone'), $field)
+                    sprintf(__('Missing required field: %s', 'product-sync-for-dropshipzone'), $field)
                 );
             }
         }
 
         // Validate order_items
         if (!is_array($order_data['order_items']) || empty($order_data['order_items'])) {
-            return new \WP_Error('invalid_items', __('Order items must be a non-empty array', 'dropshipzone'));
+            return new \WP_Error('invalid_items', __('Order items must be a non-empty array', 'product-sync-for-dropshipzone'));
         }
 
         foreach ($order_data['order_items'] as $item) {
             if (empty($item['sku']) || !isset($item['qty'])) {
-                return new \WP_Error('invalid_item', __('Each order item must have sku and qty', 'dropshipzone'));
+                return new \WP_Error('invalid_item', __('Each order item must have sku and qty', 'product-sync-for-dropshipzone'));
             }
         }
 
@@ -682,7 +682,7 @@ class API_Client {
                     continue;
                 }
                 if (!isset($entry['status']) || intval($entry['status']) !== 1) {
-                    $errors[] = $entry['errmsg'] ?? __('Unknown error', 'dropshipzone');
+                    $errors[] = $entry['errmsg'] ?? __('Unknown error', 'product-sync-for-dropshipzone');
                 }
             }
 
@@ -703,7 +703,7 @@ class API_Client {
             return new \WP_Error('order_failed', $error_msg, $response);
         }
 
-        return new \WP_Error('invalid_response', __('Invalid response from Dropshipzone API', 'dropshipzone'));
+        return new \WP_Error('invalid_response', __('Invalid response from Dropshipzone API', 'product-sync-for-dropshipzone'));
     }
 
     /**
@@ -729,7 +729,7 @@ class API_Client {
             if ($start_ts && $end_ts && ($end_ts - $start_ts) > 14 * DAY_IN_SECONDS) {
                 return new \WP_Error(
                     'invalid_range',
-                    __('Order date range must be 14 days or less.', 'dropshipzone')
+                    __('Order date range must be 14 days or less.', 'product-sync-for-dropshipzone')
                 );
             }
         }

@@ -1,12 +1,12 @@
-=== DropshipZone Sync ===
-Contributors: 3s-Soft, dropshipzone
-Tags: woocommerce, dropshipzone, price sync, stock sync, dropshipping
+=== Product Sync for Dropshipzone ===
+Contributors: 3s-Soft
+Tags: woocommerce, dropshipping, price sync, stock sync, inventory
 Requires at least: 6.0
 Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 2.8.0
+Stable tag: 3.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,9 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 == Description ==
 
-**DropshipZone Sync** is a lightweight, enterprise-grade WooCommerce plugin that automatically synchronizes product prices and stock levels from the Dropshipzone API.
+**Product Sync for Dropshipzone** is a WooCommerce plugin that synchronizes product prices, stock levels and shipping rates from the Dropshipzone supplier API, imports catalogue products, and submits orders for fulfilment.
+
+This plugin is an independent integration and is not affiliated with, endorsed by, or sponsored by Dropshipzone Pty Ltd.
 
 = Key Features =
 
@@ -53,9 +55,28 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 * PHP 7.4 or higher
 * Dropshipzone API account
 
+== External Services ==
+
+This plugin connects to the Dropshipzone API, a third-party supplier service operated by Dropshipzone Pty Ltd, to retrieve product data, pricing, stock levels and shipping rates, and to submit orders for fulfilment. The plugin does not function without a Dropshipzone account.
+
+Data is sent to `https://api.dropshipzone.com.au` in the following situations:
+
+* **Authentication** - your Dropshipzone account email and password are sent to obtain an access token. This happens when you save or test your credentials, and whenever the token expires.
+* **Product, price and stock sync** - product SKUs stored in your site are sent so the service can return current cost, stock quantity and product details.
+* **Product import** - search keywords, category IDs and filter selections you enter are sent to retrieve matching catalogue products.
+* **Shipping rate calculation** - at checkout, the customer's destination postcode and the SKUs in their cart are sent to retrieve applicable shipping rates. This occurs only when the Dropshipzone shipping method is enabled for a shipping zone.
+* **Order fulfilment** - when you submit an order (manually, in bulk, or automatically if enabled), the customer's name, shipping address, phone number, order notes and ordered SKUs are sent so Dropshipzone can ship the goods.
+* **Tracking updates** - Dropshipzone order reference numbers are sent to retrieve tracking numbers and order status.
+
+Service provider: Dropshipzone Pty Ltd - https://www.dropshipzone.com.au
+Terms of service: https://www.dropshipzone.com.au/terms-conditions
+Privacy policy: https://www.dropshipzone.com.au/privacy-policy
+
+This plugin is not affiliated with, endorsed by, or sponsored by Dropshipzone Pty Ltd. "Dropshipzone" is a trademark of its respective owner and is used here only to describe the service this plugin integrates with.
+
 == Installation ==
 
-1. Upload the `dropshipzone-price-stock-sync` folder to `/wp-content/plugins/`
+1. Upload the `product-sync-for-dropshipzone` folder to `/wp-content/plugins/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to **DSZ Sync > API Settings** and enter your Dropshipzone credentials
 4. Configure your price and stock rules
@@ -69,7 +90,7 @@ By default, the sync runs every hour. You can change this to twice daily or once
 
 = Will this create new products? =
 
-No. This plugin ONLY updates prices and stock for existing products. Products must already exist in your WooCommerce store with matching SKUs.
+Only when you ask it to. The scheduled sync never creates products - it updates prices and stock for products already linked to a Dropshipzone SKU. New products are created only when you import them from the Product Import page, or when you enable Auto Import.
 
 = What happens if a SKU doesn't match? =
 
@@ -106,35 +127,39 @@ Yes, API passwords are encrypted before storage using WordPress security salts.
 
 == Future Roadmap ==
 
-We're constantly improving DropshipZone Sync. Here's what's planned:
+Here's what's planned:
 
-= High Priority (Coming Soon) =
+= Planned =
 
-* **Tracking Number Sync** - Auto-import tracking numbers from DSZ orders
-* **Webhook Support** - Real-time updates via DSZ webhooks
-* **Advanced Price Rules** - Category-based and supplier-based pricing
-* **Bulk Order Submission** - Submit multiple orders at once
-
-= Medium Priority =
-
-* **Product Variations** - Full support for variable products from DSZ
+* **Product Variations** - Full support for variable products from Dropshipzone
 * **Email Notifications** - Get notified on sync errors, low stock, price changes
-* **Auto-Repricing** - Adjust prices based on competitor analysis
-* **Inventory Alerts** - Low stock warnings with configurable thresholds
-* **Import Scheduling** - Schedule specific import times
-* **Category Mapping** - Map DSZ categories to custom WC categories
+* **Import Scheduling** - Schedule imports at specific times of day
+* **Category Mapping** - Map Dropshipzone categories to your own WooCommerce categories
+* **REST API Endpoints** - Expose sync functionality via the WordPress REST API
+* **WP-CLI Commands** - Run sync and import operations from the command line
+* **Sync Analytics** - Charts showing sync history, errors and trends
 
-= Under Consideration =
-
-* **Multi-currency Support** - Support for AUD, NZD, USD
-* **Profit Calculator** - View margins on product and order level
-* **Multi-supplier Support** - Integrate with multiple dropship suppliers
-* **REST API Endpoints** - Expose sync functionality via REST API
-* **Sync Analytics Dashboard** - Charts showing sync history and trends
-* **Supplier Blacklist** - Exclude specific suppliers from import
-* **Export Tools** - Export product data, mappings, and reports
+Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.1.0 =
+* CHANGED: Plugin renamed to "Product Sync for Dropshipzone" (slug: product-sync-for-dropshipzone) so the trademark appears only in the trailing "for Dropshipzone" position, per WordPress.org plugin directory guidelines. The text domain changed to match.
+* NEW: External Services disclosure documenting every request sent to the Dropshipzone API and what data it carries.
+* SECURITY: Product data posted back from cached catalogue search results is now fully sanitized before import instead of being decoded and used directly.
+* FIXED: Removed debug error_log() calls from the database migration routine.
+* FIXED: Corrected the Plugin URI, removed an inaccurate claim of official affiliation, and updated stale readme content.
+
+= 3.0.0 =
+* NEW: Tracking Number Sync. Twice-daily cron pulls tracking numbers and order status from Dropshipzone into WooCommerce orders, with optional auto-complete.
+* NEW: Bulk Order Submission. Orders-list bulk action plus a chunked "Submit Pending Orders" tool.
+* NEW: Auto-Submit Orders. Optional automatic submission when an order reaches processing.
+* NEW: Profit Calculator. Estimated item profit on orders and a margin column on the products list.
+
+= 2.9.0 =
+* NEW: Advanced Price Rules. Ordered rules matching on category, supplier ID or SKU prefix, overriding the global markup.
+* NEW: Supplier cost tracking for profit reporting.
+* CHANGED: Unified pricing engine across sync, import and resync paths.
 
 = 2.8.0 =
 * NEW: Developer Hooks. The documented `dsz_calculated_price` and `dsz_calculated_stock` filters and `dsz_sync_completed` / `dsz_price_updated` actions now exist across all sync/import paths.

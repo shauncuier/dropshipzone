@@ -84,19 +84,94 @@ class Price_Sync {
     /**
      * Calculate final price based on rules
      *
+     * When $context (raw API product data) is supplied, advanced price rules
+     * are consulted first — the first matching rule (category / supplier /
+     * SKU prefix) overrides the global rules. Without context, or when no
+     * rule matches, the global rules apply.
+     *
      * @param float $supplier_price Original supplier price
+     * @param array $context        Optional raw API product data for rule matching
      * @return float Final calculated price
      */
-    public function calculate_price($supplier_price) {
+    public function calculate_price($supplier_price, $context = []) {
+        $rules = $this->get_rules_for_context($context);
+
         return dsz_calculate_price(
             $supplier_price,
-            $this->price_rules['markup_type'],
-            $this->price_rules['markup_value'],
-            $this->price_rules['gst_enabled'],
-            $this->price_rules['gst_type'],
-            $this->price_rules['rounding_enabled'],
-            $this->price_rules['rounding_type']
+            $rules['markup_type'],
+            $rules['markup_value'],
+            $rules['gst_enabled'],
+            $rules['gst_type'],
+            $rules['rounding_enabled'],
+            $rules['rounding_type']
         );
+    }
+
+    /**
+     * Resolve the effective rule set for a product context.
+     *
+     * @param array $context Raw API product data (category ids/path, vendor_id, sku)
+     * @return array Rule set in the global-rules shape
+     */
+    public function get_rules_for_context($context) {
+        if (empty($context) || !is_array($context)) {
+            return $this->price_rules;
+        }
+
+        $advanced = get_option('dsz_price_rules_v2', []);
+        if (empty($advanced['rules']) || !is_array($advanced['rules'])) {
+            return $this->price_rules;
+        }
+
+        foreach ($advanced['rules'] as $rule) {
+            if ($this->rule_matches($rule, $context)) {
+                // Fill any missing keys from the global rules
+                return wp_parse_args($rule, $this->price_rules);
+            }
+        }
+
+        return $this->price_rules;
+    }
+
+    /**
+     * Check whether an advanced rule matches a product context.
+     *
+     * @param array $rule    Rule (match_type, match_value + pricing keys)
+     * @param array $context Raw API product data
+     * @return bool
+     */
+    private function rule_matches($rule, $context) {
+        $type = isset($rule['match_type']) ? $rule['match_type'] : '';
+        $value = isset($rule['match_value']) ? trim((string) $rule['match_value']) : '';
+
+        if ($value === '') {
+            return false;
+        }
+
+        switch ($type) {
+            case 'category':
+                // Numeric: match any category level id; otherwise match the
+                // "A > B > C" path prefix case-insensitively
+                if (is_numeric($value)) {
+                    foreach (['l1_category_id', 'l2_category_id', 'l3_category_id'] as $key) {
+                        if (isset($context[$key]) && intval($context[$key]) === intval($value)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                $path = isset($context['Category']) ? $context['Category'] : '';
+                return $path !== '' && stripos($path, $value) === 0;
+
+            case 'supplier':
+                return isset($context['vendor_id']) && (string) $context['vendor_id'] === $value;
+
+            case 'sku_prefix':
+                $sku = isset($context['sku']) ? $context['sku'] : '';
+                return $sku !== '' && stripos($sku, $value) === 0;
+        }
+
+        return false;
     }
 
     /**
@@ -203,16 +278,19 @@ class Price_Sync {
                 ];
             }
 
-            // Calculate final prices
-            $calculated_regular = $this->calculate_price($supplier_price);
+            // Calculate final prices (advanced rules resolve via product context)
+            $calculated_regular = $this->calculate_price($supplier_price, $api_product);
             /** This filter is documented in includes/class-cron.php */
             $calculated_regular = (float) apply_filters('dsz_calculated_price', $calculated_regular, $product_id, $supplier_price);
             $calculated_sale = null;
 
             // If there's a special/sale price from supplier
             if ($special_price && $special_price > 0 && $special_price < $supplier_price) {
-                $calculated_sale = $this->calculate_price($special_price);
+                $calculated_sale = $this->calculate_price($special_price, $api_product);
             }
+
+            // Track supplier cost for profit reporting
+            $product->update_meta_data('_dsz_cost', $supplier_price);
 
             // Get current prices for comparison
             $current_regular = floatval($product->get_regular_price());

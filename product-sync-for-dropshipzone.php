@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: DropshipZone Sync
- * Plugin URI: https://dropshipzone.com.au
- * Description: Syncs product prices and stock levels from Dropshipzone API to WooCommerce using SKU matching.
- * Version: 2.8.0
+ * Plugin Name: Product Sync for Dropshipzone
+ * Plugin URI: https://3s-soft.com/plugins/product-sync-for-dropshipzone
+ * Description: Sync product prices, stock levels and shipping rates from the Dropshipzone supplier API into WooCommerce, import catalogue products, and submit orders for fulfilment.
+ * Version: 3.1.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: dropshipzone
+ * Text Domain: product-sync-for-dropshipzone
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '2.8.0');
+define('DSZ_SYNC_VERSION', '3.1.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -90,7 +90,7 @@ final class Dropshipzone_Sync {
     public function woocommerce_missing_notice() {
         ?>
         <div class="notice notice-error">
-            <p><?php esc_html_e('DropshipZone Sync requires WooCommerce to be installed and active.', 'dropshipzone'); ?></p>
+            <p><?php esc_html_e('Product Sync for Dropshipzone requires WooCommerce to be installed and active.', 'product-sync-for-dropshipzone'); ?></p>
         </div>
         <?php
     }
@@ -189,6 +189,15 @@ final class Dropshipzone_Sync {
         if (!wp_next_scheduled('dsz_maintenance_hook')) {
             wp_schedule_event(time() + DAY_IN_SECONDS, 'daily', 'dsz_maintenance_hook');
         }
+
+        // Tracking sync: poll DSZ twice daily for tracking/status on submitted orders
+        add_action('dsz_tracking_sync_hook', [$this, 'run_tracking_sync']);
+        if (!wp_next_scheduled('dsz_tracking_sync_hook')) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'twicedaily', 'dsz_tracking_sync_hook');
+        }
+
+        // Auto-submit paid orders to DSZ when enabled (middleman flow)
+        add_action('woocommerce_order_status_processing', [$this, 'maybe_auto_submit_order'], 20);
         
         if (is_admin()) {
             $this->admin_ui = new Admin_UI($this->api_client, $this->price_sync, $this->stock_sync, $this->cron, $this->logger, $this->product_mapper, $this->product_importer, $this->order_handler, $this->auto_importer);
@@ -313,8 +322,8 @@ final class Dropshipzone_Sync {
         }
 
         $targets = [
-            'AU' => __('Australia', 'dropshipzone'),
-            'NZ' => __('New Zealand', 'dropshipzone'),
+            'AU' => __('Australia', 'product-sync-for-dropshipzone'),
+            'NZ' => __('New Zealand', 'product-sync-for-dropshipzone'),
         ];
 
         foreach ($targets as $country => $label) {
@@ -359,6 +368,7 @@ final class Dropshipzone_Sync {
         wp_clear_scheduled_hook('dsz_sync_cron_hook');
         wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
         wp_clear_scheduled_hook('dsz_maintenance_hook');
+        wp_clear_scheduled_hook('dsz_tracking_sync_hook');
         wp_clear_scheduled_hook('dsz_sync_batch_continue');
         
         // Flush rewrite rules
@@ -371,6 +381,40 @@ final class Dropshipzone_Sync {
     public function run_auto_import() {
         if ($this->auto_importer) {
             $this->auto_importer->run_import();
+        }
+    }
+
+    /**
+     * Tracking sync (cron callback)
+     */
+    public function run_tracking_sync() {
+        if ($this->order_handler) {
+            $this->order_handler->sync_tracking();
+        }
+    }
+
+    /**
+     * Auto-submit a paid order to Dropshipzone when the option is enabled
+     *
+     * @param int $order_id WooCommerce order ID
+     */
+    public function maybe_auto_submit_order($order_id) {
+        $settings = get_option('dsz_order_settings', []);
+        if (empty($settings['auto_submit']) || !$this->order_handler) {
+            return;
+        }
+
+        if (!$this->order_handler->order_has_dsz_products($order_id)) {
+            return;
+        }
+
+        $result = $this->order_handler->submit_order($order_id);
+
+        if (is_wp_error($result) && $result->get_error_code() !== 'already_submitted' && $this->logger) {
+            $this->logger->error('Auto-submit failed', [
+                'order_id' => $order_id,
+                'error' => $result->get_error_message(),
+            ]);
         }
     }
 
@@ -491,7 +535,7 @@ final class Dropshipzone_Sync {
      * Load plugin text domain
      */
     public function load_textdomain() {
-        // load_plugin_textdomain('dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
+        // load_plugin_textdomain('product-sync-for-dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
     }
 
     /**

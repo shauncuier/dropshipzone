@@ -119,13 +119,7 @@ class Product_Mapper {
         
         if (!$column_exists) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange
-            $result = $wpdb->query("ALTER TABLE `{$table_name}` ADD COLUMN `last_resynced` datetime DEFAULT NULL AFTER `last_synced`");
-            
-            if ($result === false) {
-                error_log('DSZ Sync: Failed to add last_resynced column. Error: ' . $wpdb->last_error);
-            } else {
-                error_log('DSZ Sync: Successfully added last_resynced column to ' . $table_name);
-            }
+            $wpdb->query("ALTER TABLE `{$table_name}` ADD COLUMN `last_resynced` datetime DEFAULT NULL AFTER `last_synced`");
         }
     }
 

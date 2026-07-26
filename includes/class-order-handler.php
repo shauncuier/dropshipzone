@@ -89,7 +89,7 @@ class Order_Handler {
         $order = wc_get_order($wc_order_id);
         
         if (!$order) {
-            return new \WP_Error('order_not_found', __('WooCommerce order not found.', 'dropshipzone'));
+            return new \WP_Error('order_not_found', __('WooCommerce order not found.', 'product-sync-for-dropshipzone'));
         }
 
         // Check if already submitted
@@ -98,7 +98,7 @@ class Order_Handler {
             return new \WP_Error(
                 'already_submitted',
                 /* translators: %s: DSZ serial number */
-                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', 'dropshipzone'), $existing['dsz_serial_number'])
+                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', 'product-sync-for-dropshipzone'), $existing['dsz_serial_number'])
             );
         }
 
@@ -106,7 +106,7 @@ class Order_Handler {
         $dsz_items = $this->get_dsz_order_items($order);
         
         if (empty($dsz_items)) {
-            return new \WP_Error('no_dsz_items', __('No Dropshipzone-mapped products in this order.', 'dropshipzone'));
+            return new \WP_Error('no_dsz_items', __('No Dropshipzone-mapped products in this order.', 'product-sync-for-dropshipzone'));
         }
 
         // Map order data for API
@@ -127,7 +127,7 @@ class Order_Handler {
             // Add order note
             $order->add_order_note(
                 /* translators: %s: error message */
-                sprintf(__('Dropshipzone submission failed: %s', 'dropshipzone'), $result->get_error_message()),
+                sprintf(__('Dropshipzone submission failed: %s', 'product-sync-for-dropshipzone'), $result->get_error_message()),
                 false
             );
             
@@ -142,7 +142,7 @@ class Order_Handler {
         // Add order note
         $order->add_order_note(
             /* translators: %s: DSZ serial number */
-            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', 'dropshipzone'), $serial_number),
+            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', 'product-sync-for-dropshipzone'), $serial_number),
             false
         );
 
@@ -159,7 +159,7 @@ class Order_Handler {
         return [
             'success' => true,
             'serial_number' => $serial_number,
-            'message' => __('Order submitted successfully', 'dropshipzone'),
+            'message' => __('Order submitted successfully', 'product-sync-for-dropshipzone'),
         ];
     }
 
@@ -343,5 +343,185 @@ class Order_Handler {
 
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
         return $wpdb->get_results($wpdb->prepare($sql, $values), ARRAY_A);
+    }
+
+    /**
+     * Get paid WC orders with DSZ products that have not been submitted yet
+     *
+     * @param int $limit Max orders to return
+     * @return int[] WooCommerce order IDs
+     */
+    public function get_pending_order_ids($limit = 50) {
+        global $wpdb;
+
+        $orders = wc_get_orders([
+            'status' => ['processing'],
+            'limit' => max(1, min(200, intval($limit)) * 3), // Over-fetch: some orders have no DSZ items
+            'orderby' => 'date',
+            'order' => 'ASC',
+            'return' => 'ids',
+        ]);
+
+        if (empty($orders)) {
+            return [];
+        }
+
+        // Exclude orders already submitted (have a serial)
+        $placeholders = implode(',', array_fill(0, count($orders), '%d'));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $submitted = $wpdb->get_col($wpdb->prepare(
+            "SELECT wc_order_id FROM {$this->table_name} WHERE dsz_serial_number != '' AND wc_order_id IN ({$placeholders})",
+            $orders
+        ));
+        $submitted = array_map('intval', (array) $submitted);
+
+        $pending = [];
+        foreach ($orders as $order_id) {
+            if (in_array(intval($order_id), $submitted, true)) {
+                continue;
+            }
+            if ($this->order_has_dsz_products($order_id)) {
+                $pending[] = intval($order_id);
+            }
+            if (count($pending) >= $limit) {
+                break;
+            }
+        }
+
+        return $pending;
+    }
+
+    /**
+     * Poll Dropshipzone for tracking/status updates on submitted orders.
+     *
+     * The /orders response schema is not documented, so field extraction is
+     * defensive; the first raw entry is logged at debug level for discovery.
+     *
+     * @return array { checked: int, updated: int, errors: int }
+     */
+    public function sync_tracking() {
+        global $wpdb;
+
+        $results = ['checked' => 0, 'updated' => 0, 'errors' => 0];
+
+        // Serials submitted in the last 14 days that aren't complete yet
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $rows = $wpdb->get_results(
+            "SELECT wc_order_id, dsz_serial_number FROM {$this->table_name}
+             WHERE dsz_serial_number != ''
+             AND dsz_status NOT IN ('complete', 'cancelled')
+             AND submitted_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+             ORDER BY submitted_at ASC
+             LIMIT 100",
+            ARRAY_A
+        );
+
+        if (empty($rows)) {
+            return $results;
+        }
+
+        $serial_to_order = [];
+        foreach ($rows as $row) {
+            $serial_to_order[$row['dsz_serial_number']] = intval($row['wc_order_id']);
+        }
+
+        $response = $this->api_client->get_orders([
+            'order_ids' => implode(',', array_keys($serial_to_order)),
+            'limit' => 160,
+        ]);
+
+        if (is_wp_error($response)) {
+            $this->logger->error('Tracking sync: order lookup failed', ['error' => $response->get_error_message()]);
+            $results['errors']++;
+            return $results;
+        }
+
+        $entries = [];
+        if (isset($response['result']) && is_array($response['result'])) {
+            $entries = $response['result'];
+        } elseif (is_array($response) && isset($response[0])) {
+            $entries = $response;
+        }
+
+        if (!empty($entries)) {
+            // Schema discovery aid — remove once field names are confirmed
+            $this->logger->debug('Tracking sync: raw order entry', ['entry' => $entries[0]]);
+        }
+
+        $settings = get_option('dsz_order_settings', []);
+        $auto_complete = !empty($settings['tracking_autocomplete']);
+
+        foreach ($entries as $entry) {
+            $serial = '';
+            foreach (['serial_number', 'order_id', 'order_no', 'id'] as $key) {
+                if (!empty($entry[$key]) && isset($serial_to_order[(string) $entry[$key]])) {
+                    $serial = (string) $entry[$key];
+                    break;
+                }
+            }
+
+            if ($serial === '') {
+                continue;
+            }
+
+            $wc_order_id = $serial_to_order[$serial];
+            $order = wc_get_order($wc_order_id);
+            if (!$order) {
+                continue;
+            }
+
+            $results['checked']++;
+
+            // Defensive tracking field extraction
+            $tracking = '';
+            foreach (['tracking_number', 'tracking_no', 'tracking', 'consignment_number', 'con_note'] as $key) {
+                if (!empty($entry[$key]) && is_string($entry[$key])) {
+                    $tracking = $entry[$key];
+                    break;
+                }
+            }
+            $courier = '';
+            foreach (['courier', 'carrier', 'shipping_company', 'freight_company'] as $key) {
+                if (!empty($entry[$key]) && is_string($entry[$key])) {
+                    $courier = $entry[$key];
+                    break;
+                }
+            }
+            $dsz_status = isset($entry['status']) ? strtolower((string) $entry['status']) : '';
+
+            $changed = false;
+
+            if ($tracking !== '' && $order->get_meta('_dsz_tracking_number') !== $tracking) {
+                $order->update_meta_data('_dsz_tracking_number', $tracking);
+                if ($courier !== '') {
+                    $order->update_meta_data('_dsz_courier', $courier);
+                }
+                $order->add_order_note(sprintf(
+                    /* translators: %1$s: tracking number, %2$s: courier */
+                    __('Dropshipzone tracking: %1$s %2$s', 'product-sync-for-dropshipzone'),
+                    $tracking,
+                    $courier !== '' ? '(' . $courier . ')' : ''
+                ));
+                $changed = true;
+            }
+
+            if ($dsz_status !== '' && in_array($dsz_status, ['processing', 'complete', 'cancelled'], true)) {
+                $this->save_dsz_order($wc_order_id, $serial, $dsz_status);
+
+                if ($dsz_status === 'complete' && $auto_complete && $order->get_status() === 'processing') {
+                    $order->update_status('completed', __('Dropshipzone order complete.', 'product-sync-for-dropshipzone'));
+                    $changed = true;
+                }
+            }
+
+            if ($changed) {
+                $order->save();
+                $results['updated']++;
+            }
+        }
+
+        $this->logger->info('Tracking sync completed', $results);
+
+        return $results;
     }
 }

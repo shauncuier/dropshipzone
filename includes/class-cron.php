@@ -71,7 +71,7 @@ class Cron {
     public function add_cron_schedules($schedules) {
         $schedules['every_six_hours'] = [
             'interval' => 6 * HOUR_IN_SECONDS,
-            'display' => __('Every 6 Hours', 'dropshipzone'),
+            'display' => __('Every 6 Hours', 'product-sync-for-dropshipzone'),
         ];
         return $schedules;
     }
@@ -143,7 +143,7 @@ class Cron {
                 $this->logger->warning('Sync already in progress, skipping');
                 return [
                     'status' => 'skipped',
-                    'message' => __('Sync already in progress', 'dropshipzone'),
+                    'message' => __('Sync already in progress', 'product-sync-for-dropshipzone'),
                 ];
             }
             // Reset stuck sync
@@ -176,7 +176,7 @@ class Cron {
         if (get_transient('dsz_sync_batch_lock')) {
             return [
                 'status' => 'processing',
-                'message' => __('Another sync batch is already running', 'dropshipzone'),
+                'message' => __('Another sync batch is already running', 'product-sync-for-dropshipzone'),
             ];
         }
         set_transient('dsz_sync_batch_lock', 1, 120);
@@ -219,7 +219,7 @@ class Cron {
             $this->complete_sync(['message' => 'No mapped products to sync']);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', 'dropshipzone'),
+                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', 'product-sync-for-dropshipzone'),
                 'products_updated' => 0,
                 'errors_count' => 0,
             ];
@@ -236,7 +236,7 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', 'dropshipzone'),
+                'message' => __('Sync completed', 'product-sync-for-dropshipzone'),
                 'products_updated' => isset($settings['products_updated']) ? $settings['products_updated'] : 0,
                 'errors_count' => isset($settings['errors_count']) ? $settings['errors_count'] : 0,
             ];
@@ -436,7 +436,7 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', 'dropshipzone'),
+                'message' => __('Sync completed', 'product-sync-for-dropshipzone'),
                 'products_updated' => $settings['products_updated'],
                 'errors_count' => $settings['errors_count'],
             ];
@@ -464,7 +464,7 @@ class Cron {
         return [
             'status' => 'processing',
             /* translators: %1$d: current batch number, %2$d: total batches */
-            'message' => sprintf(__('Processing batch %1$d of %2$d', 'dropshipzone'), $current_batch, $total_batches),
+            'message' => sprintf(__('Processing batch %1$d of %2$d', 'product-sync-for-dropshipzone'), $current_batch, $total_batches),
             'progress' => $progress,
             'products_updated' => $settings['products_updated'],
             'errors_count' => $settings['errors_count'],
@@ -479,9 +479,6 @@ class Cron {
      * @return bool Whether price was updated
      */
     private function update_product_price($product, $api_data) {
-        // Get price rules
-        $rules = $this->price_sync->get_rules();
-        
         // Get supplier cost from API (shared source with import/price sync paths)
         $cost = dsz_get_api_cost($api_data);
 
@@ -489,30 +486,12 @@ class Cron {
             return false;
         }
 
-        // Calculate price with markup
-        $new_price = $cost;
-        
-        if ($rules['markup_type'] === 'percentage') {
-            $new_price = $cost * (1 + ($rules['markup_value'] / 100));
-        } else {
-            $new_price = $cost + $rules['markup_value'];
-        }
+        // Shared pricing engine — advanced rules (category/supplier/SKU prefix)
+        // resolve via the product context, falling back to global rules
+        $new_price = $this->price_sync->calculate_price($cost, $api_data);
 
-        // Apply GST if needed
-        if ($rules['gst_enabled'] && $rules['gst_type'] === 'exclude') {
-            $new_price = $new_price * 1.1; // Add 10% GST
-        }
-
-        // Apply rounding if enabled
-        if ($rules['rounding_enabled']) {
-            if ($rules['rounding_type'] === '99') {
-                $new_price = floor($new_price) + 0.99;
-            } elseif ($rules['rounding_type'] === '95') {
-                $new_price = floor($new_price) + 0.95;
-            } else {
-                $new_price = round($new_price);
-            }
-        }
+        // Track supplier cost for profit reporting
+        $product->update_meta_data('_dsz_cost', $cost);
 
         /**
          * Filter the calculated price before it is saved.
@@ -541,16 +520,12 @@ class Cron {
          */
         do_action('dsz_price_updated', $product->get_id(), $current_price, $new_price);
         
-        // Handle special/sale price
+        // Handle special/sale price with the same rule set
         if (!empty($api_data['special_price']) && floatval($api_data['special_price']) > 0) {
-            $special = floatval($api_data['special_price']);
-            // Apply same markup to special price
-            if ($rules['markup_type'] === 'percentage') {
-                $special = $special * (1 + ($rules['markup_value'] / 100));
-            } else {
-                $special = $special + $rules['markup_value'];
+            $special = $this->price_sync->calculate_price(floatval($api_data['special_price']), $api_data);
+            if ($special < $new_price) {
+                $product->set_sale_price($special);
             }
-            $product->set_sale_price($special);
         }
 
         return true;
@@ -788,7 +763,7 @@ class Cron {
         if (empty($settings['sync_in_progress'])) {
             return [
                 'status' => 'complete',
-                'message' => __('Sync not in progress', 'dropshipzone'),
+                'message' => __('Sync not in progress', 'product-sync-for-dropshipzone'),
             ];
         }
 

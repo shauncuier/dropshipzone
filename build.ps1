@@ -11,7 +11,7 @@ Set-Location $ScriptDir
 
 # If no version provided, extract from main plugin file
 if ([string]::IsNullOrEmpty($Version)) {
-    $PluginContent = Get-Content "dropshipzone-price-stock-sync.php" -Raw
+    $PluginContent = Get-Content "product-sync-for-dropshipzone.php" -Raw
     if ($PluginContent -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
         $Version = $Matches[1]
     } else {
@@ -21,14 +21,16 @@ if ([string]::IsNullOrEmpty($Version)) {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Dropshipzone Plugin Build Script" -ForegroundColor Cyan
+Write-Host "  Product Sync for Dropshipzone - Build" -ForegroundColor Cyan
 Write-Host "  Version: $Version" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Define paths
-$PluginFolder = "dropshipzone"
-$ZipName = "dropshipzone-price-stock-sync"
+# Folder name MUST match the WordPress.org slug — WordPress uses it as the
+# plugin directory on install and update.
+$PluginFolder = "product-sync-for-dropshipzone"
+$ZipName = "product-sync-for-dropshipzone"
 $BuildDir = Join-Path $ScriptDir "build"
 $DistDir = Join-Path $BuildDir $PluginFolder
 $ZipFile = Join-Path $BuildDir "$ZipName-v$Version.zip"

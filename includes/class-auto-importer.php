@@ -121,7 +121,7 @@ class Auto_Importer {
             $this->logger->info('Auto import is disabled, skipping');
             return [
                 'status'   => 'skipped',
-                'message'  => __('Auto import is disabled', 'dropshipzone'),
+                'message'  => __('Auto import is disabled', 'product-sync-for-dropshipzone'),
                 'imported' => 0,
                 'skipped'  => 0,
                 'errors'   => 0,
@@ -138,7 +138,7 @@ class Auto_Importer {
                 $this->logger->warning('Auto import already in progress, skipping');
                 return [
                     'status'   => 'skipped',
-                    'message'  => __('Import already in progress', 'dropshipzone'),
+                    'message'  => __('Import already in progress', 'product-sync-for-dropshipzone'),
                     'imported' => 0,
                     'skipped'  => 0,
                     'errors'   => 0,
@@ -173,7 +173,7 @@ class Auto_Importer {
             $this->complete_import(['message' => 'No new products to import']);
             return [
                 'status'   => 'complete',
-                'message'  => __('No new products to import', 'dropshipzone'),
+                'message'  => __('No new products to import', 'product-sync-for-dropshipzone'),
                 'imported' => 0,
                 'skipped'  => 0,
                 'errors'   => 0,
@@ -363,7 +363,7 @@ class Auto_Importer {
             'status'         => 'complete',
             'message'        => sprintf(
                 /* translators: %1$d: imported count, %2$d: skipped count, %3$d: error count */
-                __('Import complete: %1$d imported, %2$d skipped, %3$d errors', 'dropshipzone'),
+                __('Import complete: %1$d imported, %2$d skipped, %3$d errors', 'product-sync-for-dropshipzone'),
                 $imported,
                 $skipped,
                 $errors

@@ -2176,6 +2176,169 @@
     });
 
     /**
+     * Sync Center: order automation (settings, bulk submit, tracking check).
+     */
+    $(document).ready(function () {
+        if (!$('#dsz-submit-pending-orders').length) {
+            return;
+        }
+
+        var $message = $('#dsz-order-automation-message');
+
+        var showMsg = function (ok, msg) {
+            $message
+                .removeClass('hidden dsz-message-success dsz-message-error')
+                .addClass(ok ? 'dsz-message-success' : 'dsz-message-error')
+                .html('<span class="dashicons ' + (ok ? 'dashicons-yes-alt' : 'dashicons-warning') + '"></span> ' + msg);
+        };
+
+        $('#dsz-save-order-settings').on('click', function () {
+            var $btn = $(this).prop('disabled', true);
+            $.post(dsz_admin.ajax_url, {
+                action: 'dsz_save_settings',
+                nonce: dsz_admin.nonce,
+                type: 'orders',
+                settings: {
+                    auto_submit: $('#dsz-order-auto-submit').is(':checked') ? 1 : 0,
+                    tracking_autocomplete: $('#dsz-order-autocomplete').is(':checked') ? 1 : 0
+                }
+            }, function (response) {
+                $btn.prop('disabled', false);
+                showMsg(response.success, response.data.message);
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                showMsg(false, dsz_admin.strings.request_failed);
+            });
+        });
+
+        $('#dsz-run-tracking-sync').on('click', function () {
+            var $btn = $(this).prop('disabled', true);
+            $btn.find('.dashicons').addClass('dsz-spin');
+            $.post(dsz_admin.ajax_url, {
+                action: 'dsz_run_tracking_sync',
+                nonce: dsz_admin.nonce
+            }, function (response) {
+                $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
+                showMsg(response.success, response.data.message);
+            }).fail(function () {
+                $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
+                showMsg(false, dsz_admin.strings.request_failed);
+            });
+        });
+
+        $('#dsz-submit-pending-orders').on('click', function () {
+            var $btn = $(this);
+
+            DSZAdmin.confirm('Submit all pending paid orders to Dropshipzone? Orders are created as "Not Submitted" and must be paid in the DSZ portal.').then(function (ok) {
+                if (!ok) {
+                    return;
+                }
+
+                $btn.prop('disabled', true).find('.dashicons').addClass('dsz-spin');
+                var totals = { submitted: 0, errors: 0 };
+
+                var finish = function (okFlag, msg) {
+                    $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
+                    showMsg(okFlag, msg);
+                    DSZAdmin.showNotification(okFlag ? 'success' : 'error', msg);
+                };
+
+                var runChunk = function () {
+                    $.post(dsz_admin.ajax_url, {
+                        action: 'dsz_submit_pending_orders',
+                        nonce: dsz_admin.nonce
+                    }, function (response) {
+                        if (!response.success) {
+                            if (response.data && response.data.retry_after) {
+                                showMsg(true, dsz_admin.strings.rate_wait);
+                                setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
+                                return;
+                            }
+                            finish(false, response.data.message);
+                            return;
+                        }
+
+                        var d = response.data;
+                        totals.submitted += d.submitted || 0;
+                        totals.errors += d.errors || 0;
+
+                        if (d.done) {
+                            finish(totals.errors === 0, 'Submitted ' + totals.submitted + ' orders'
+                                + (totals.errors ? ', ' + totals.errors + ' failed (see logs)' : '') + '.');
+                        } else {
+                            showMsg(true, 'Submitted ' + totals.submitted + ' so far...');
+                            runChunk();
+                        }
+                    }).fail(function () {
+                        finish(false, dsz_admin.strings.request_failed);
+                    });
+                };
+
+                runChunk();
+            });
+        });
+    });
+
+    /**
+     * Price Rules page: advanced rules repeater (add/remove/save).
+     */
+    $(document).ready(function () {
+        var $table = $('#dsz-adv-rules-table');
+        if (!$table.length) {
+            return;
+        }
+
+        $('#dsz-add-adv-rule').on('click', function () {
+            var $row = $table.find('.dsz-adv-rule-proto').clone();
+            $row.removeClass('dsz-adv-rule-proto hidden');
+            $table.find('tbody').append($row);
+        });
+
+        $table.on('click', '.dsz-rule-remove', function () {
+            $(this).closest('tr').remove();
+        });
+
+        $('#dsz-save-adv-rules').on('click', function () {
+            var $btn = $(this);
+            var $message = $('#dsz-adv-rules-message');
+            var rules = [];
+
+            $table.find('.dsz-adv-rule').not('.dsz-adv-rule-proto').each(function () {
+                var $row = $(this);
+                rules.push({
+                    name: $row.find('.dsz-rule-name').val() || '',
+                    match_type: $row.find('.dsz-rule-match-type').val(),
+                    match_value: $row.find('.dsz-rule-match-value').val() || '',
+                    markup_type: $row.find('.dsz-rule-markup-type').val(),
+                    markup_value: $row.find('.dsz-rule-markup-value').val() || 0
+                });
+            });
+
+            $btn.prop('disabled', true);
+
+            $.post(dsz_admin.ajax_url, {
+                action: 'dsz_save_advanced_price_rules',
+                nonce: dsz_admin.nonce,
+                rules: rules
+            }, function (response) {
+                $btn.prop('disabled', false);
+                if (response.success) {
+                    $message.removeClass('hidden dsz-message-error').addClass('dsz-message-success')
+                        .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                    DSZAdmin.showNotification('success', response.data.message);
+                } else {
+                    $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error')
+                        .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                    DSZAdmin.showNotification('error', response.data.message);
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                DSZAdmin.showNotification('error', dsz_admin.strings.request_failed);
+            });
+        });
+    });
+
+    /**
      * Mapping page: export all mappings as CSV.
      */
     $(document).ready(function () {

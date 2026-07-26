@@ -5,6 +5,51 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-07-27
+
+WordPress.org plugin directory compliance release.
+
+### Changed
+- **Plugin renamed** to `Product Sync for Dropshipzone` (slug `product-sync-for-dropshipzone`, text domain `product-sync-for-dropshipzone`). WordPress.org does not permit a plugin slug to *begin* with a trademark the author does not own; the trailing "for Dropshipzone" construction is explicitly allowed. Main plugin file, `.pot`, build script and release workflow renamed to match.
+- **Plugin URI** now points to a page the author controls instead of the supplier's website.
+- Removed the "official integration plugin" claim and added a clear non-affiliation notice.
+
+### Added
+- **External Services disclosure** in `readme.txt`, documenting every request made to the Dropshipzone API, the data each carries, and links to the provider's terms and privacy policy (required for directory listing).
+
+### Security
+- Product data posted back from browser-cached catalogue search results is now recursively sanitized via `dsz_sanitize_api_product()` before import. Previously it was `json_decode`d from `$_POST` and used directly.
+
+### Fixed
+- Removed `error_log()` debug calls from the mapping table migration.
+- Corrected stale readme content (install path, inaccurate "never creates products" FAQ, roadmap listing already-shipped features).
+
+---
+
+## [3.0.0] - 2026-07-19
+
+### Added
+- **Tracking Number Sync**: Twice-daily cron polls Dropshipzone for tracking/status on submitted orders (14-day window), saves tracking to order meta, adds order notes, and optionally auto-completes WC orders when DSZ marks them complete. Manual "Check Tracking Now" button in Sync Center.
+- **Bulk Order Submission**: "Submit to Dropshipzone" bulk action on the orders list (HPOS + legacy) and a chunked "Submit Pending Orders" tool in Sync Center with rate-limit retry.
+- **Auto-Submit Orders**: Optional (off by default) automatic submission to DSZ when an order reaches processing.
+- **Profit Calculator**: Estimated item profit (revenue − supplier cost) in the order meta box and a "DSZ Margin" column on the products list.
+
+### Notes
+- The `/orders` API response schema is undocumented; tracking field extraction is defensive and the first raw entry is logged at debug level for verification.
+
+---
+
+## [2.9.0] - 2026-07-19
+
+### Added
+- **Advanced Price Rules**: Ordered rule list on the Price Rules page — match by Dropshipzone category (numeric ID or path prefix), supplier ID, or SKU prefix; first match overrides the global markup. GST/rounding inherit from global rules.
+- **Supplier Cost Tracking**: `_dsz_cost` meta saved on every price write (sync, import, resync) — foundation for profit reporting.
+
+### Changed
+- **Unified Pricing Engine**: The scheduled sync now uses the same `Price_Sync::calculate_price()` engine as import/resync (removes duplicated markup math); sale prices go through the full rule set and are only applied when below the regular price.
+
+---
+
 ## [2.8.0] - 2026-07-19
 
 ### Added

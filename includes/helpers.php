@@ -125,11 +125,11 @@ function dsz_validate_credentials($email, $password) {
     $password = sanitize_text_field($password);
     
     if (empty($email) || !is_email($email)) {
-        return new \WP_Error('invalid_email', __('Please enter a valid email address.', 'dropshipzone'));
+        return new \WP_Error('invalid_email', __('Please enter a valid email address.', 'product-sync-for-dropshipzone'));
     }
     
     if (empty($password)) {
-        return new \WP_Error('empty_password', __('Password cannot be empty.', 'dropshipzone'));
+        return new \WP_Error('empty_password', __('Password cannot be empty.', 'product-sync-for-dropshipzone'));
     }
     
     return [
@@ -146,7 +146,7 @@ function dsz_validate_credentials($email, $password) {
  */
 function dsz_format_datetime($timestamp) {
     if (empty($timestamp)) {
-        return __('Never', 'dropshipzone');
+        return __('Never', 'product-sync-for-dropshipzone');
     }
     
     if (is_string($timestamp)) {
@@ -164,7 +164,7 @@ function dsz_format_datetime($timestamp) {
  */
 function dsz_time_ago($datetime) {
     if (empty($datetime)) {
-        return __('Never', 'dropshipzone');
+        return __('Never', 'product-sync-for-dropshipzone');
     }
     
     // Convert datetime string to Unix timestamp if needed
@@ -176,10 +176,10 @@ function dsz_time_ago($datetime) {
     
     // Check for invalid timestamp
     if (!$timestamp || $timestamp <= 0) {
-        return __('Never', 'dropshipzone');
+        return __('Never', 'product-sync-for-dropshipzone');
     }
     
-    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', 'dropshipzone');
+    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', 'product-sync-for-dropshipzone');
 }
 
 /**
@@ -299,6 +299,58 @@ function dsz_get_api_cost($api_data) {
     }
 
     return $cost;
+}
+
+/**
+ * Recursively sanitize an API product payload received from client input.
+ *
+ * Product data is cached browser-side during catalogue searches and posted
+ * back on import to avoid a second API call. It must never be trusted:
+ * every scalar is sanitized and the structure depth is bounded.
+ *
+ * @param mixed $data  Raw decoded payload
+ * @param int   $depth Current recursion depth (internal)
+ * @return mixed Sanitized payload
+ */
+function dsz_sanitize_api_product($data, $depth = 0) {
+    if ($depth > 5) {
+        return null;
+    }
+
+    if (is_array($data)) {
+        $clean = [];
+        foreach ($data as $key => $value) {
+            // Keys keep their original case - the API uses mixed-case field
+            // names (Category, RrpPrice) that the importer looks up verbatim
+            $clean_key = is_int($key) ? $key : preg_replace('/[^A-Za-z0-9_\-]/', '', (string) $key);
+            if ($clean_key === '') {
+                continue;
+            }
+            $clean[$clean_key] = dsz_sanitize_api_product($value, $depth + 1);
+        }
+        return $clean;
+    }
+
+    if (is_bool($data) || is_int($data) || is_float($data) || is_null($data)) {
+        return $data;
+    }
+
+    if (!is_string($data)) {
+        return null;
+    }
+
+    // Image and product URLs must survive sanitization intact
+    if (preg_match('#^https?://#i', $data)) {
+        return esc_url_raw($data);
+    }
+
+    // Product descriptions carry markup; keep it but strip anything unsafe.
+    // Everything else is plain text.
+    if ($data !== wp_strip_all_tags($data)) {
+        return wp_kses_post($data);
+    }
+
+    return sanitize_text_field($data);
 }
 
 /**

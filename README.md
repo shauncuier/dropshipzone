@@ -1,4 +1,4 @@
-# 🇦🇺 DropshipZone Sync for WooCommerce
+# 🇦🇺 Product Sync for Dropshipzone
 
 <div align="center">
 
@@ -9,7 +9,9 @@
 [![License](https://img.shields.io/badge/license-GPL--2.0%2B-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**The official integration plugin for Australian dropshippers using [Dropshipzone](https://dropshipzone.com.au).**
+**A WooCommerce integration for Australian dropshippers using [Dropshipzone](https://www.dropshipzone.com.au).**
+
+*Not affiliated with, endorsed by, or sponsored by Dropshipzone Pty Ltd.*
 
 Automatically sync 10,000+ products with real-time pricing, stock levels, and seamless product imports.
 
@@ -49,6 +51,12 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### ✅ Completed Features
 | Feature | Description | Version |
 |---------|-------------|:-------:|
+| **Tracking Number Sync** | Auto-import tracking from DSZ orders into WC | v3.0.0 |
+| **Bulk Order Submission** | Orders-list bulk action + Sync Center tool | v3.0.0 |
+| **Auto-Submit Orders** | Optional submit-on-payment automation | v3.0.0 |
+| **Profit Calculator** | Order profit + products-list margin column | v3.0.0 |
+| **Advanced Price Rules** | Category/supplier/SKU-prefix pricing overrides | v2.9.0 |
+| **Markup by Category** | Included in Advanced Price Rules | v2.9.0 |
 | **Developer Hooks** | Price/stock filters + sync lifecycle actions | v2.8.0 |
 | **Scheduled Maintenance** | Auto-cleanup of old logs, orphaned mappings, stale caches | v2.8.0 |
 | **Supplier Blacklist** | Exclude specific suppliers from import | v2.8.0 |
@@ -69,9 +77,6 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### 🔴 High Priority (Coming Soon)
 | Feature | Description | Status |
 |---------|-------------|:------:|
-| **Advanced Price Rules** | Category-based and supplier-based pricing | 🚧 In Progress |
-| **Tracking Number Sync** | Auto-import tracking numbers from DSZ orders and update WC orders | 📋 Planned |
-| **Bulk Order Submission** | Submit multiple orders to DSZ at once | 📋 Planned |
 | **Webhook Support** | Real-time updates via DSZ webhooks | ⏸️ Waiting on DSZ (no webhook API exists yet) |
 
 ### 🟡 Medium Priority
@@ -87,12 +92,10 @@ We're constantly working to improve DropshipZone Sync! Here's our comprehensive 
 ### 🟢 Low Priority / Under Consideration
 | Feature | Description | Status |
 |---------|-------------|:------:|
-| **Profit Calculator** | View margins on product and order level | 📋 Planned |
 | **REST API Endpoints** | Expose sync functionality via REST API | 📋 Planned |
 | **Sync Analytics Dashboard** | Charts showing sync history, errors, trends | 📋 Planned |
 | **Product Compare** | Compare local product data with DSZ data | 📋 Planned |
 | **Auto-Discontinue** | Automatically handle discontinued products | 📋 Planned (surfacing of existing deactivate-if-not-found) |
-| **Markup by Category** | Different markup rules per product category | 🚧 Part of Advanced Price Rules |
 
 **Not pursuing** (with reasons): Auto-Repricing (no competitor data source in the API), Multi-supplier (out of scope for a DSZ integration), Multi-currency (API is AUD-only; currency plugins handle display), Redis/Memcached layer (transient caching is already object-cache backed), WooCommerce Blocks (plugin has no frontend surface).
 
