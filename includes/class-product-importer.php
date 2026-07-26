@@ -73,7 +73,7 @@ class Product_Importer {
 
             if (empty($response['result'])) {
                 /* translators: %s: product SKU */
-                return new \WP_Error('product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-product-sync-for-dropshipzone'), $sku));
+                return new \WP_Error('product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-soft-price-stock-sync-for-dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];
@@ -81,7 +81,7 @@ class Product_Importer {
 
         // Validate required data
         if (empty($data['sku'])) {
-            return new \WP_Error('missing_sku', __('Product data is missing SKU.', '3s-product-sync-for-dropshipzone'));
+            return new \WP_Error('missing_sku', __('Product data is missing SKU.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
         $sku = trim($data['sku']);
@@ -90,7 +90,7 @@ class Product_Importer {
         $existing_id = wc_get_product_id_by_sku($sku);
         if ($existing_id) {
             /* translators: %1$s: product SKU, %2$d: WooCommerce product ID */
-            return new \WP_Error('product_exists', sprintf(__('Product with SKU %1$s already exists in WooCommerce (ID: %2$d).', '3s-product-sync-for-dropshipzone'), $sku, $existing_id));
+            return new \WP_Error('product_exists', sprintf(__('Product with SKU %1$s already exists in WooCommerce (ID: %2$d).', '3s-soft-price-stock-sync-for-dropshipzone'), $sku, $existing_id));
         }
 
         $this->logger->info('Starting product import', [
@@ -115,7 +115,7 @@ class Product_Importer {
         $product->set_name($product_name);
         
         // Get default status from settings
-        $import_settings = get_option('dsz_sync_import_settings', ['default_status' => 'publish']);
+        $import_settings = get_option('dszsync_import_settings', ['default_status' => 'publish']);
         $product_status = isset($import_settings['default_status']) ? $import_settings['default_status'] : 'publish';
         $product->set_status($product_status); 
 
@@ -139,13 +139,13 @@ class Product_Importer {
         $product->set_sku($sku);
         
         // Use Price Sync logic to set price (shared cost source with cron sync path)
-        $cost_price = dsz_get_api_cost($data);
+        $cost_price = dszsync_get_api_cost($data);
         $final_price = $this->price_sync->calculate_price($cost_price, $data);
         /** This filter is documented in includes/class-cron.php (product not yet saved: ID 0) */
-        $final_price = (float) apply_filters('dsz_calculated_price', $final_price, 0, $cost_price);
+        $final_price = (float) apply_filters('dszsync_calculated_price', $final_price, 0, $cost_price);
         $product->set_regular_price($final_price);
         // Track supplier cost for profit reporting
-        $product->update_meta_data('_dsz_cost', $cost_price);
+        $product->update_meta_data('_dszsync_cost', $cost_price);
 
         // Use Stock Sync logic to set stock - check multiple possible field names
         $api_stock = 0;
@@ -160,7 +160,7 @@ class Product_Importer {
         }
         $final_stock = $this->stock_sync->calculate_stock($api_stock);
         /** This filter is documented in includes/class-cron.php (product not yet saved: ID 0) */
-        $final_stock = (int) apply_filters('dsz_calculated_stock', $final_stock, 0, $api_stock);
+        $final_stock = (int) apply_filters('dszsync_calculated_stock', $final_stock, 0, $api_stock);
         $product->set_manage_stock(true);
         $product->set_stock_quantity($final_stock);
         
@@ -218,7 +218,7 @@ class Product_Importer {
 
         if (!$product_id) {
             $this->logger->error('Failed to create WooCommerce product', ['sku' => $sku]);
-            return new \WP_Error('save_failed', __('Failed to save WooCommerce product.', '3s-product-sync-for-dropshipzone'));
+            return new \WP_Error('save_failed', __('Failed to save WooCommerce product.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
         // Handle Image - check multiple possible field names
@@ -305,7 +305,7 @@ class Product_Importer {
         // Get the product
         $product = wc_get_product($product_id);
         if (!$product) {
-            return new \WP_Error('product_not_found', __('WooCommerce product not found.', '3s-product-sync-for-dropshipzone'));
+            return new \WP_Error('product_not_found', __('WooCommerce product not found.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
         $sku = $product->get_sku();
@@ -318,7 +318,7 @@ class Product_Importer {
             }
 
             if (empty($sku)) {
-                return new \WP_Error('no_sku', __('Product has no SKU or mapping to resync from.', '3s-product-sync-for-dropshipzone'));
+                return new \WP_Error('no_sku', __('Product has no SKU or mapping to resync from.', '3s-soft-price-stock-sync-for-dropshipzone'));
             }
 
             // Fetch from API
@@ -330,7 +330,7 @@ class Product_Importer {
 
             if (empty($response['result'])) {
                 /* translators: %s: product SKU */
-                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-product-sync-for-dropshipzone'), $sku));
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-soft-price-stock-sync-for-dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];
@@ -347,7 +347,7 @@ class Product_Importer {
 
             if (empty($response['result'])) {
                 /* translators: %s: product SKU */
-                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-product-sync-for-dropshipzone'), $sku));
+                return new \WP_Error('api_product_not_found', sprintf(__('Product with SKU %s not found in Dropshipzone API.', '3s-soft-price-stock-sync-for-dropshipzone'), $sku));
             }
 
             $data = $response['result'][0];
@@ -396,14 +396,14 @@ class Product_Importer {
 
         // Update price if enabled
         if ($options['update_price']) {
-            $cost_price = dsz_get_api_cost($data);
+            $cost_price = dszsync_get_api_cost($data);
             if ($cost_price > 0) {
                 $final_price = $this->price_sync->calculate_price($cost_price, $data);
                 /** This filter is documented in includes/class-cron.php */
-                $final_price = (float) apply_filters('dsz_calculated_price', $final_price, $product_id, $cost_price);
+                $final_price = (float) apply_filters('dszsync_calculated_price', $final_price, $product_id, $cost_price);
                 $product->set_regular_price($final_price);
                 // Track supplier cost for profit reporting
-                $product->update_meta_data('_dsz_cost', $cost_price);
+                $product->update_meta_data('_dszsync_cost', $cost_price);
             }
         }
 
@@ -486,7 +486,7 @@ class Product_Importer {
             // images are detached from the product but kept.
             $existing_thumbnail_id = get_post_thumbnail_id($product_id);
             if ($existing_thumbnail_id) {
-                if (get_post_meta($existing_thumbnail_id, '_dsz_imported_image', true)) {
+                if (get_post_meta($existing_thumbnail_id, '_dszsync_imported_image', true)) {
                     wp_delete_attachment($existing_thumbnail_id, true);
                 } else {
                     delete_post_thumbnail($product_id);
@@ -498,7 +498,7 @@ class Product_Importer {
                 $gallery_ids = explode(',', $existing_gallery);
                 foreach ($gallery_ids as $gallery_id) {
                     $gallery_id = intval($gallery_id);
-                    if ($gallery_id && get_post_meta($gallery_id, '_dsz_imported_image', true)) {
+                    if ($gallery_id && get_post_meta($gallery_id, '_dszsync_imported_image', true)) {
                         wp_delete_attachment($gallery_id, true);
                     }
                 }
@@ -587,7 +587,7 @@ class Product_Importer {
         }
 
         // Mark as plugin-imported so resync knows it is safe to delete
-        update_post_meta($id, '_dsz_imported_image', 1);
+        update_post_meta($id, '_dszsync_imported_image', 1);
 
         // Set as featured image only if requested
         if ($set_featured) {

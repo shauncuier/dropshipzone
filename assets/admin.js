@@ -179,13 +179,13 @@
             $message.removeClass('dsz-message-success dsz-message-error').addClass('hidden');
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_test_connection',
-                    nonce: dsz_admin.nonce,
-                    email: $('#dsz_api_email').val(),
-                    password: $('#dsz_api_password').val()
+                    action: 'dszsync_test_connection',
+                    nonce: dszsync_admin.nonce,
+                    email: $('#dszsync_api_email').val(),
+                    password: $('#dszsync_api_password').val()
                 },
                 success: function (response) {
                     if (response.success) {
@@ -210,7 +210,7 @@
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
 
                     DSZAdmin.shakeElement($btn);
                 },
@@ -315,9 +315,9 @@
                 var $dialog = $('<div class="dsz-confirm-dialog" role="alertdialog" aria-modal="true"></div>');
                 var $ok = $('<button type="button"></button>')
                     .addClass('button button-primary dsz-confirm-ok' + (opts.danger ? ' dsz-confirm-danger' : ''))
-                    .text(opts.okText || dsz_admin.strings.confirm_ok || 'Confirm');
+                    .text(opts.okText || dszsync_admin.strings.confirm_ok || 'Confirm');
                 var $cancel = $('<button type="button" class="button dsz-confirm-cancel"></button>')
-                    .text(opts.cancelText || dsz_admin.strings.confirm_cancel || 'Cancel');
+                    .text(opts.cancelText || dszsync_admin.strings.confirm_cancel || 'Cancel');
 
                 if (opts.title) {
                     $dialog.append($('<h3 class="dsz-confirm-title"></h3>').text(opts.title));
@@ -363,15 +363,15 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_save_settings',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_save_settings',
+                    nonce: dszsync_admin.nonce,
                     type: 'api',
                     settings: {
-                        email: $('#dsz_api_email').val(),
-                        password: $('#dsz_api_password').val()
+                        email: $('#dszsync_api_email').val(),
+                        password: $('#dszsync_api_password').val()
                     }
                 },
                 success: function (response) {
@@ -393,19 +393,19 @@
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
                 },
                 complete: function () {
                     // Also save import settings
                     $.ajax({
-                        url: dsz_admin.ajax_url,
+                        url: dszsync_admin.ajax_url,
                         type: 'POST',
                         data: {
-                            action: 'dsz_save_settings',
-                            nonce: dsz_admin.nonce,
+                            action: 'dszsync_save_settings',
+                            nonce: dszsync_admin.nonce,
                             type: 'import_settings',
                             settings: {
-                                default_status: $('#dsz_import_status').val()
+                                default_status: $('#dszsync_import_status').val()
                             }
                         }
                     });
@@ -448,11 +448,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_save_settings',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_save_settings',
+                    nonce: dszsync_admin.nonce,
                     type: type,
                     settings: settings
                 },
@@ -476,7 +476,7 @@
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -511,11 +511,11 @@
             $('#dsz-progress-fill').css('box-shadow', '0 0 20px rgba(102, 126, 234, 0.5)');
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_run_sync',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_run_sync',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success) {
@@ -533,7 +533,7 @@
                     $message
                         .removeClass('hidden')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
@@ -557,11 +557,11 @@
          */
         pollSyncStatus: function () {
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_continue_sync',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_continue_sync',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success) {
@@ -608,7 +608,7 @@
 
             // Update status text with pulse
             $('#sync-status-text')
-                .text(dsz_admin.strings.syncing)
+                .text(dszsync_admin.strings.syncing)
                 .closest('.dsz-sync-card')
                 .removeClass('dsz-card-idle')
                 .addClass('dsz-card-syncing');
@@ -749,7 +749,7 @@
             e.preventDefault();
 
             if (!e.dszConfirmed) {
-                DSZAdmin.confirm(dsz_admin.strings.confirm_clear, { danger: true }).then(function (ok) {
+                DSZAdmin.confirm(dszsync_admin.strings.confirm_clear, { danger: true }).then(function (ok) {
                     if (ok) {
                         e.dszConfirmed = true;
                         DSZAdmin.clearLogs(e);
@@ -762,11 +762,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_clear_logs',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_clear_logs',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success) {
@@ -776,7 +776,7 @@
                     }
                 },
                 error: function () {
-                    alert(dsz_admin.strings.error);
+                    alert(dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -796,11 +796,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_export_logs',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_export_logs',
+                    nonce: dszsync_admin.nonce,
                     level: level
                 },
                 success: function (response) {
@@ -823,7 +823,7 @@
                     }
                 },
                 error: function () {
-                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                    DSZAdmin.showNotification('error', dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -884,11 +884,11 @@
             $message.addClass('hidden');
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_auto_map',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_auto_map',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success) {
@@ -913,7 +913,7 @@
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -943,13 +943,13 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_map_product',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_map_product',
+                    nonce: dszsync_admin.nonce,
                     wc_product_id: wcProductId,
-                    dsz_sku: dszSku
+                    dszsync_sku: dszSku
                 },
                 success: function (response) {
                     if (response.success) {
@@ -977,7 +977,7 @@
                     $message
                         .removeClass('hidden dsz-message-success')
                         .addClass('dsz-message-error')
-                        .html('<span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.error);
+                        .html('<span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -1007,11 +1007,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_unmap_product',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_unmap_product',
+                    nonce: dszsync_admin.nonce,
                     wc_product_id: wcProductId
                 },
                 success: function (response) {
@@ -1032,7 +1032,7 @@
                     }
                 },
                 error: function () {
-                    alert(dsz_admin.strings.error);
+                    alert(dszsync_admin.strings.error);
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -1061,11 +1061,11 @@
 
                 searchTimeout = setTimeout(function () {
                     $.ajax({
-                        url: dsz_admin.ajax_url,
+                        url: dszsync_admin.ajax_url,
                         type: 'POST',
                         data: {
-                            action: 'dsz_search_wc_products',
-                            nonce: dsz_admin.nonce,
+                            action: 'dszsync_search_wc_products',
+                            nonce: dszsync_admin.nonce,
                             search: search
                         },
                         success: function (response) {
@@ -1227,11 +1227,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_get_categories',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_get_categories',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success && response.data.categories) {
@@ -1286,11 +1286,11 @@
             `);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_search_api_products',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_search_api_products',
+                    nonce: dszsync_admin.nonce,
                     search: search,
                     category_id: categoryId,
                     in_stock: inStock.toString(),
@@ -1329,7 +1329,7 @@
                 },
                 error: function () {
                     $searchInfo.addClass('hidden');
-                    $results.html('<div class="dsz-message dsz-message-error">' + dsz_admin.strings.error + '</div>');
+                    $results.html('<div class="dsz-message dsz-message-error">' + dszsync_admin.strings.error + '</div>');
                 },
                 complete: function () {
                     $btn.removeClass('dsz-loading').prop('disabled', false);
@@ -1492,11 +1492,11 @@
             $btn.addClass('dsz-loading').prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_import_product',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_import_product',
+                    nonce: dszsync_admin.nonce,
                     sku: sku,
                     product_data: productData ? JSON.stringify(productData) : ''
                 },
@@ -1515,7 +1515,7 @@
                     }
                 },
                 error: function () {
-                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                    DSZAdmin.showNotification('error', dszsync_admin.strings.error);
                     $btn.removeClass('dsz-loading').prop('disabled', false);
                 }
             });
@@ -1592,18 +1592,18 @@
 
             var runChunk = function (offset) {
                 $.ajax({
-                    url: dsz_admin.ajax_url,
+                    url: dszsync_admin.ajax_url,
                     type: 'POST',
                     data: {
-                        action: 'dsz_resync_all',
-                        nonce: dsz_admin.nonce,
+                        action: 'dszsync_resync_all',
+                        nonce: dszsync_admin.nonce,
                         offset: offset
                     },
                     success: function (response) {
                         if (!response.success) {
                             // Rate limited: wait it out, retry the same chunk
                             if (response.data && response.data.retry_after) {
-                                $('#dsz-resync-all-progress-text').text(dsz_admin.strings.rate_wait);
+                                $('#dsz-resync-all-progress-text').text(dszsync_admin.strings.rate_wait);
                                 setTimeout(function () { runChunk(offset); }, (response.data.retry_after + 2) * 1000);
                                 return;
                             }
@@ -1632,7 +1632,7 @@
                         }
                     },
                     error: function () {
-                        finish(false, dsz_admin.strings.error);
+                        finish(false, dszsync_admin.strings.error);
                     }
                 });
             };
@@ -1707,18 +1707,18 @@
 
             var runChunk = function (offset) {
                 $.ajax({
-                    url: dsz_admin.ajax_url,
+                    url: dszsync_admin.ajax_url,
                     type: 'POST',
                     data: {
-                        action: 'dsz_resync_' + type,
-                        nonce: dsz_admin.nonce,
+                        action: 'dszsync_resync_' + type,
+                        nonce: dszsync_admin.nonce,
                         offset: offset
                     },
                     success: function (response) {
                         if (!response.success) {
                             // Rate limited: wait it out, retry the same chunk
                             if (response.data && response.data.retry_after) {
-                                $message.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait);
+                                $message.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.rate_wait);
                                 setTimeout(function () { runChunk(offset); }, (response.data.retry_after + 2) * 1000);
                                 return;
                             }
@@ -1774,11 +1774,11 @@
             $btn.html('<span class="dashicons dashicons-update dsz-spin"></span> Syncing...');
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_resync_product',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_resync_product',
+                    nonce: dszsync_admin.nonce,
                     product_id: productId,
                     sku: sku,
                     product_data: productData ? JSON.stringify(productData) : '',
@@ -1816,7 +1816,7 @@
                     }
                 },
                 error: function () {
-                    DSZAdmin.showNotification('error', dsz_admin.strings.error);
+                    DSZAdmin.showNotification('error', dszsync_admin.strings.error);
                     $btn.removeClass('dsz-loading')
                         .html('<span class="dashicons dashicons-update"></span> Resync')
                         .prop('disabled', false);
@@ -1849,28 +1849,28 @@
             var $btn = $(this);
             var $status = $('#dsz-resync-never-synced-status');
 
-            DSZAdmin.confirm(dsz_admin.strings.confirm_never_synced).then(function (proceed) {
+            DSZAdmin.confirm(dszsync_admin.strings.confirm_never_synced).then(function (proceed) {
                 if (!proceed) {
                     return;
                 }
 
                 $btn.prop('disabled', true);
-                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.processing + '</span>');
+                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.processing + '</span>');
 
                 var totals = { success: 0, errors: 0 };
                 var runChunk = function () {
                     $.ajax({
-                        url: dsz_admin.ajax_url,
+                        url: dszsync_admin.ajax_url,
                         type: 'POST',
                         data: {
-                            action: 'dsz_resync_never_synced',
-                            nonce: dsz_admin.nonce,
+                            action: 'dszsync_resync_never_synced',
+                            nonce: dszsync_admin.nonce,
                             offset: totals.errors
                         },
                         success: function (response) {
                             if (!response.success) {
                                 if (response.data && response.data.retry_after) {
-                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.rate_wait + '</span>');
                                     setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
                                     return;
                                 }
@@ -1882,15 +1882,15 @@
                             totals.success += d.success || 0;
                             totals.errors += d.errors || 0;
                             if (d.done) {
-                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + dsz_admin.strings.resynced + ' ' + totals.success + (totals.errors ? ' (' + totals.errors + ' ' + dsz_admin.strings.errors_word + ')' : '') + '</span>');
+                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + dszsync_admin.strings.resynced + ' ' + totals.success + (totals.errors ? ' (' + totals.errors + ' ' + dszsync_admin.strings.errors_word + ')' : '') + '</span>');
                                 setTimeout(function () { location.reload(); }, 2000);
                             } else {
-                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.success + totals.errors) + ' ' + dsz_admin.strings.processed + '</span>');
+                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.success + totals.errors) + ' ' + dszsync_admin.strings.processed + '</span>');
                                 runChunk();
                             }
                         },
                         error: function () {
-                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
+                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.request_failed + '</span>');
                             $btn.prop('disabled', false);
                         }
                     });
@@ -1910,27 +1910,27 @@
             var $btn = $(this);
             var $status = $('#dsz-scan-unmapped-status');
 
-            DSZAdmin.confirm(dsz_admin.strings.confirm_scan).then(function (proceed) {
+            DSZAdmin.confirm(dszsync_admin.strings.confirm_scan).then(function (proceed) {
                 if (!proceed) {
                     return;
                 }
 
                 $btn.prop('disabled', true);
-                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.scanning + '</span>');
+                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.scanning + '</span>');
 
                 var totals = { found: 0, notFound: 0 };
                 var runChunk = function () {
                     $.ajax({
-                        url: dsz_admin.ajax_url,
+                        url: dszsync_admin.ajax_url,
                         type: 'POST',
                         data: {
-                            action: 'dsz_scan_unmapped_products',
-                            nonce: dsz_admin.nonce
+                            action: 'dszsync_scan_unmapped_products',
+                            nonce: dszsync_admin.nonce
                         },
                         success: function (response) {
                             if (!response.success) {
                                 if (response.data && response.data.retry_after) {
-                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.rate_wait + '</span>');
+                                    $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.rate_wait + '</span>');
                                     setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
                                     return;
                                 }
@@ -1942,15 +1942,15 @@
                             totals.found += d.found || 0;
                             totals.notFound += d.not_found || 0;
                             if (d.done) {
-                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + totals.found + ' ' + dsz_admin.strings.linked + ', ' + totals.notFound + ' ' + dsz_admin.strings.non_dsz + '</span>');
+                                $status.html('<span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> ' + totals.found + ' ' + dszsync_admin.strings.linked + ', ' + totals.notFound + ' ' + dszsync_admin.strings.non_dsz + '</span>');
                                 setTimeout(function () { location.reload(); }, 2000);
                             } else {
-                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.found + totals.notFound) + ' ' + dsz_admin.strings.scanned + '</span>');
+                                $status.html('<span class="dsz-text-muted"><span class="dashicons dashicons-update dsz-spin"></span> ' + (totals.found + totals.notFound) + ' ' + dszsync_admin.strings.scanned + '</span>');
                                 runChunk();
                             }
                         },
                         error: function () {
-                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
+                            $status.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.request_failed + '</span>');
                             $btn.prop('disabled', false);
                         }
                     });
@@ -1962,7 +1962,7 @@
 
     /**
      * Order edit screen: submit order to Dropshipzone (meta box).
-     * Uses the meta box's own nonce field (dsz_sync_nonce action).
+     * Uses the meta box's own nonce field (dszsync_nonce action).
      */
     $(document).ready(function () {
         $(document).on('click', '.dsz-submit-order-btn', function () {
@@ -1971,14 +1971,14 @@
             var $message = $btn.siblings('.dsz-order-message');
 
             $btn.prop('disabled', true).find('.dashicons').addClass('dsz-spin');
-            $message.html('<span class="dsz-text-muted">' + dsz_admin.strings.submitting + '</span>');
+            $message.html('<span class="dsz-text-muted">' + dszsync_admin.strings.submitting + '</span>');
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_submit_order',
-                    nonce: $('#dsz_order_nonce').val(),
+                    action: 'dszsync_submit_order',
+                    nonce: $('#dszsync_order_nonce').val(),
                     order_id: orderId
                 },
                 success: function (response) {
@@ -1991,7 +1991,7 @@
                     }
                 },
                 error: function () {
-                    $message.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
+                    $message.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.request_failed + '</span>');
                     $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
                 }
             });
@@ -2011,11 +2011,11 @@
             $btn.prop('disabled', true);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_save_auto_import_settings',
-                    nonce: dsz_admin.nonce,
+                    action: 'dszsync_save_auto_import_settings',
+                    nonce: dszsync_admin.nonce,
                     enabled: $form.find('input[name="enabled"]').is(':checked') ? 1 : 0,
                     frequency: $form.find('select[name="frequency"]').val(),
                     max_products_per_run: $form.find('input[name="max_products_per_run"]').val(),
@@ -2035,7 +2035,7 @@
                     $btn.prop('disabled', false);
                 },
                 error: function () {
-                    $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').text(dsz_admin.strings.request_failed);
+                    $message.removeClass('hidden dsz-message-success').addClass('dsz-message-error').text(dszsync_admin.strings.request_failed);
                     $btn.prop('disabled', false);
                 }
             });
@@ -2046,14 +2046,14 @@
             var $result = $('#dsz-auto-import-result');
 
             $btn.prop('disabled', true);
-            $result.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dsz_admin.strings.importing);
+            $result.html('<span class="dashicons dashicons-update dsz-spin"></span> ' + dszsync_admin.strings.importing);
 
             $.ajax({
-                url: dsz_admin.ajax_url,
+                url: dszsync_admin.ajax_url,
                 type: 'POST',
                 data: {
-                    action: 'dsz_run_auto_import',
-                    nonce: dsz_admin.nonce
+                    action: 'dszsync_run_auto_import',
+                    nonce: dszsync_admin.nonce
                 },
                 success: function (response) {
                     if (response.success) {
@@ -2064,7 +2064,7 @@
                     $btn.prop('disabled', false);
                 },
                 error: function () {
-                    $result.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dsz_admin.strings.request_failed + '</span>');
+                    $result.html('<span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> ' + dszsync_admin.strings.request_failed + '</span>');
                     $btn.prop('disabled', false);
                 }
             });
@@ -2085,7 +2085,7 @@
         var rebuildOptions = function (selected) {
             var $sel = $('#dsz-import-template');
             $sel.find('option:not(:first)').remove();
-            $.each(dsz_admin.import_templates || {}, function (name) {
+            $.each(dszsync_admin.import_templates || {}, function (name) {
                 $sel.append($('<option></option>').val(name).text(name));
             });
             $sel.val(selected || '');
@@ -2093,7 +2093,7 @@
 
         $('#dsz-import-template').on('change', function () {
             var name = $(this).val();
-            var tpl = (dsz_admin.import_templates || {})[name];
+            var tpl = (dszsync_admin.import_templates || {})[name];
             if (!tpl) {
                 return;
             }
@@ -2123,9 +2123,9 @@
                 return;
             }
 
-            $.post(dsz_admin.ajax_url, {
-                action: 'dsz_save_import_template',
-                nonce: dsz_admin.nonce,
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_save_import_template',
+                nonce: dszsync_admin.nonce,
                 name: name,
                 filters: {
                     category: $('#dsz-filter-category').val() || '',
@@ -2137,7 +2137,7 @@
                 }
             }, function (response) {
                 if (response.success) {
-                    dsz_admin.import_templates = response.data.templates;
+                    dszsync_admin.import_templates = response.data.templates;
                     rebuildOptions(name);
                     DSZAdmin.showNotification('success', response.data.message);
                 } else {
@@ -2157,13 +2157,13 @@
                 if (!ok) {
                     return;
                 }
-                $.post(dsz_admin.ajax_url, {
-                    action: 'dsz_delete_import_template',
-                    nonce: dsz_admin.nonce,
+                $.post(dszsync_admin.ajax_url, {
+                    action: 'dszsync_delete_import_template',
+                    nonce: dszsync_admin.nonce,
                     name: name
                 }, function (response) {
                     if (response.success) {
-                        dsz_admin.import_templates = response.data.templates;
+                        dszsync_admin.import_templates = response.data.templates;
                         rebuildOptions('');
                         $('#dsz-import-template-name').val('');
                         DSZAdmin.showNotification('success', response.data.message);
@@ -2194,9 +2194,9 @@
 
         $('#dsz-save-order-settings').on('click', function () {
             var $btn = $(this).prop('disabled', true);
-            $.post(dsz_admin.ajax_url, {
-                action: 'dsz_save_settings',
-                nonce: dsz_admin.nonce,
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_save_settings',
+                nonce: dszsync_admin.nonce,
                 type: 'orders',
                 settings: {
                     auto_submit: $('#dsz-order-auto-submit').is(':checked') ? 1 : 0,
@@ -2207,22 +2207,22 @@
                 showMsg(response.success, response.data.message);
             }).fail(function () {
                 $btn.prop('disabled', false);
-                showMsg(false, dsz_admin.strings.request_failed);
+                showMsg(false, dszsync_admin.strings.request_failed);
             });
         });
 
         $('#dsz-run-tracking-sync').on('click', function () {
             var $btn = $(this).prop('disabled', true);
             $btn.find('.dashicons').addClass('dsz-spin');
-            $.post(dsz_admin.ajax_url, {
-                action: 'dsz_run_tracking_sync',
-                nonce: dsz_admin.nonce
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_run_tracking_sync',
+                nonce: dszsync_admin.nonce
             }, function (response) {
                 $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
                 showMsg(response.success, response.data.message);
             }).fail(function () {
                 $btn.prop('disabled', false).find('.dashicons').removeClass('dsz-spin');
-                showMsg(false, dsz_admin.strings.request_failed);
+                showMsg(false, dszsync_admin.strings.request_failed);
             });
         });
 
@@ -2244,13 +2244,13 @@
                 };
 
                 var runChunk = function () {
-                    $.post(dsz_admin.ajax_url, {
-                        action: 'dsz_submit_pending_orders',
-                        nonce: dsz_admin.nonce
+                    $.post(dszsync_admin.ajax_url, {
+                        action: 'dszsync_submit_pending_orders',
+                        nonce: dszsync_admin.nonce
                     }, function (response) {
                         if (!response.success) {
                             if (response.data && response.data.retry_after) {
-                                showMsg(true, dsz_admin.strings.rate_wait);
+                                showMsg(true, dszsync_admin.strings.rate_wait);
                                 setTimeout(runChunk, (response.data.retry_after + 2) * 1000);
                                 return;
                             }
@@ -2270,7 +2270,7 @@
                             runChunk();
                         }
                     }).fail(function () {
-                        finish(false, dsz_admin.strings.request_failed);
+                        finish(false, dszsync_admin.strings.request_failed);
                     });
                 };
 
@@ -2316,9 +2316,9 @@
 
             $btn.prop('disabled', true);
 
-            $.post(dsz_admin.ajax_url, {
-                action: 'dsz_save_advanced_price_rules',
-                nonce: dsz_admin.nonce,
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_save_advanced_price_rules',
+                nonce: dszsync_admin.nonce,
                 rules: rules
             }, function (response) {
                 $btn.prop('disabled', false);
@@ -2333,7 +2333,7 @@
                 }
             }).fail(function () {
                 $btn.prop('disabled', false);
-                DSZAdmin.showNotification('error', dsz_admin.strings.request_failed);
+                DSZAdmin.showNotification('error', dszsync_admin.strings.request_failed);
             });
         });
     });
@@ -2346,9 +2346,9 @@
             var $btn = $(this);
             $btn.prop('disabled', true);
 
-            $.post(dsz_admin.ajax_url, {
-                action: 'dsz_export_mappings',
-                nonce: dsz_admin.nonce
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_export_mappings',
+                nonce: dszsync_admin.nonce
             }, function (response) {
                 $btn.prop('disabled', false);
                 if (!response.success) {
@@ -2372,7 +2372,7 @@
                 DSZAdmin.showNotification('success', 'Mappings exported.');
             }).fail(function () {
                 $btn.prop('disabled', false);
-                DSZAdmin.showNotification('error', dsz_admin.strings.request_failed);
+                DSZAdmin.showNotification('error', dszsync_admin.strings.request_failed);
             });
         });
     });

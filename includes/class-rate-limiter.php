@@ -40,7 +40,7 @@ class Rate_Limiter {
     /**
      * Option name for storing rate limit data
      */
-    const OPTION_NAME = 'dsz_rate_limit_data';
+    const OPTION_NAME = 'dszsync_rate_limit_data';
 
     /**
      * Minimum delay between requests (seconds) to prevent bursting

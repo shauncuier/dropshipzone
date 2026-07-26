@@ -47,26 +47,26 @@ jobs:
       - name: Validate plugin files
         run: |
           # Check main plugin file exists
-          if [ ! -f "3s-product-sync-for-dropshipzone.php" ]; then
+          if [ ! -f "3s-soft-price-stock-sync-for-dropshipzone.php" ]; then
             echo "Main plugin file not found!"
             exit 1
           fi
           
           # Check version in main plugin file
-          PLUGIN_VERSION=$(grep -m 1 "Version:" 3s-product-sync-for-dropshipzone.php | awk '{print $2}')
+          PLUGIN_VERSION=$(grep -m 1 "Version:" 3s-soft-price-stock-sync-for-dropshipzone.php | awk '{print $2}')
           echo "Plugin version in file: $PLUGIN_VERSION"
 
       - name: Create plugin directory structure
         run: |
-          mkdir -p build/3s-product-sync-for-dropshipzone
+          mkdir -p build/3s-soft-price-stock-sync-for-dropshipzone
           
           # Copy plugin files (excluding dev files; markdown docs stay repo-only)
-          cp -r assets build/3s-product-sync-for-dropshipzone/
-          cp -r includes build/3s-product-sync-for-dropshipzone/
-          cp -r languages build/3s-product-sync-for-dropshipzone/
-          cp 3s-product-sync-for-dropshipzone.php build/3s-product-sync-for-dropshipzone/
-          cp readme.txt build/3s-product-sync-for-dropshipzone/
-          cp LICENSE build/3s-product-sync-for-dropshipzone/
+          cp -r assets build/3s-soft-price-stock-sync-for-dropshipzone/
+          cp -r includes build/3s-soft-price-stock-sync-for-dropshipzone/
+          cp -r languages build/3s-soft-price-stock-sync-for-dropshipzone/
+          cp 3s-soft-price-stock-sync-for-dropshipzone.php build/3s-soft-price-stock-sync-for-dropshipzone/
+          cp readme.txt build/3s-soft-price-stock-sync-for-dropshipzone/
+          cp LICENSE build/3s-soft-price-stock-sync-for-dropshipzone/
           
           # Remove any development files
           find build -name "*.map" -delete
@@ -77,7 +77,7 @@ jobs:
       - name: Create ZIP archive
         run: |
           cd build
-          zip -r ../3s-product-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip 3s-product-sync-for-dropshipzone
+          zip -r ../3s-soft-price-stock-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip 3s-soft-price-stock-sync-for-dropshipzone
           cd ..
           ls -la *.zip
 
@@ -93,10 +93,10 @@ jobs:
             CHANGELOG=$(awk "/## \[?$VERSION\]?|## \[?v$VERSION\]?/{flag=1; next} /## \[?[0-9]+\.[0-9]+/{if(flag) exit} flag" CHANGELOG.md)
             
             if [ -z "$CHANGELOG" ]; then
-              CHANGELOG="Release version $VERSION of 3S Product Sync for Dropshipzone."
+              CHANGELOG="Release version $VERSION of 3S Soft Price & Stock Sync for Dropshipzone."
             fi
           else
-            CHANGELOG="Release version $VERSION of 3S Product Sync for Dropshipzone."
+            CHANGELOG="Release version $VERSION of 3S Soft Price & Stock Sync for Dropshipzone."
           fi
           
           # Write to file for multiline output
@@ -114,12 +114,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get_version.outputs.tag_name }}
-          name: 3S Product Sync for Dropshipzone v${{ steps.get_version.outputs.version }}
+          name: 3S Soft Price & Stock Sync for Dropshipzone v${{ steps.get_version.outputs.version }}
           body_path: changelog_body.txt
           draft: false
           prerelease: ${{ contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'rc') }}
           files: |
-            3s-product-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip
+            3s-soft-price-stock-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -127,6 +127,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: 3s-product-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}
-          path: 3s-product-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip
+          name: 3s-soft-price-stock-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}
+          path: 3s-soft-price-stock-sync-for-dropshipzone-${{ steps.get_version.outputs.version }}.zip
           retention-days: 30

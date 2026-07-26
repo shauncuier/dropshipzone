@@ -69,7 +69,7 @@ class Auto_Importer {
      * @return array Settings
      */
     public function get_settings() {
-        $settings = get_option('dsz_auto_import_settings', []);
+        $settings = get_option('dszsync_auto_import_settings', []);
         return wp_parse_args($settings, $this->default_settings);
     }
 
@@ -93,7 +93,7 @@ class Auto_Importer {
             'default_product_status'=> in_array($settings['default_product_status'], ['publish', 'draft', 'pending']) ? $settings['default_product_status'] : 'publish',
         ];
 
-        return update_option('dsz_auto_import_settings', $sanitized);
+        return update_option('dszsync_auto_import_settings', $sanitized);
     }
 
     /**
@@ -121,7 +121,7 @@ class Auto_Importer {
             $this->logger->info('Auto import is disabled, skipping');
             return [
                 'status'   => 'skipped',
-                'message'  => __('Auto import is disabled', '3s-product-sync-for-dropshipzone'),
+                'message'  => __('Auto import is disabled', '3s-soft-price-stock-sync-for-dropshipzone'),
                 'imported' => 0,
                 'skipped'  => 0,
                 'errors'   => 0,
@@ -131,14 +131,14 @@ class Auto_Importer {
         $this->logger->info('Starting auto import', $settings);
 
         // Check if import is already in progress
-        $import_state = get_option('dsz_auto_import_state', []);
+        $import_state = get_option('dszsync_auto_import_state', []);
         if (!empty($import_state['in_progress'])) {
             $last_update = isset($import_state['last_update']) ? $import_state['last_update'] : 0;
             if ((time() - $last_update) < 1800) { // 30 minutes
                 $this->logger->warning('Auto import already in progress, skipping');
                 return [
                     'status'   => 'skipped',
-                    'message'  => __('Import already in progress', '3s-product-sync-for-dropshipzone'),
+                    'message'  => __('Import already in progress', '3s-soft-price-stock-sync-for-dropshipzone'),
                     'imported' => 0,
                     'skipped'  => 0,
                     'errors'   => 0,
@@ -149,7 +149,7 @@ class Auto_Importer {
         }
 
         // Mark as in progress
-        update_option('dsz_auto_import_state', [
+        update_option('dszsync_auto_import_state', [
             'in_progress' => true,
             'last_update' => time(),
             'started_at'  => time(),
@@ -173,7 +173,7 @@ class Auto_Importer {
             $this->complete_import(['message' => 'No new products to import']);
             return [
                 'status'   => 'complete',
-                'message'  => __('No new products to import', '3s-product-sync-for-dropshipzone'),
+                'message'  => __('No new products to import', '3s-soft-price-stock-sync-for-dropshipzone'),
                 'imported' => 0,
                 'skipped'  => 0,
                 'errors'   => 0,
@@ -303,15 +303,15 @@ class Auto_Importer {
         $error_messages = [];
 
         // Temporarily set default status for imported products
-        $original_import_settings = get_option('dsz_sync_import_settings', []);
-        update_option('dsz_sync_import_settings', array_merge($original_import_settings, [
+        $original_import_settings = get_option('dszsync_import_settings', []);
+        update_option('dszsync_import_settings', array_merge($original_import_settings, [
             'default_status' => $settings['default_product_status'],
         ]));
 
         foreach ($products as $product) {
             try {
                 // Update state
-                update_option('dsz_auto_import_state', [
+                update_option('dszsync_auto_import_state', [
                     'in_progress'    => true,
                     'last_update'    => time(),
                     'current_sku'    => $product['sku'],
@@ -341,7 +341,7 @@ class Auto_Importer {
                 }
 
                 // Memory check
-                if (dsz_is_memory_near_limit(85)) {
+                if (dszsync_is_memory_near_limit(85)) {
                     $this->logger->warning('Memory limit approaching, stopping import early');
                     break;
                 }
@@ -357,13 +357,13 @@ class Auto_Importer {
         }
 
         // Restore original import settings
-        update_option('dsz_sync_import_settings', $original_import_settings);
+        update_option('dszsync_import_settings', $original_import_settings);
 
         return [
             'status'         => 'complete',
             'message'        => sprintf(
                 /* translators: %1$d: imported count, %2$d: skipped count, %3$d: error count */
-                __('Import complete: %1$d imported, %2$d skipped, %3$d errors', '3s-product-sync-for-dropshipzone'),
+                __('Import complete: %1$d imported, %2$d skipped, %3$d errors', '3s-soft-price-stock-sync-for-dropshipzone'),
                 $imported,
                 $skipped,
                 $errors
@@ -388,7 +388,7 @@ class Auto_Importer {
             'last_results'   => $results,
         ];
 
-        update_option('dsz_auto_import_state', $state);
+        update_option('dszsync_auto_import_state', $state);
         
         // Save to history for metrics tracking
         $this->save_to_history($results);
@@ -400,7 +400,7 @@ class Auto_Importer {
      * Reset import state (for stuck imports)
      */
     public function reset_import_state() {
-        update_option('dsz_auto_import_state', [
+        update_option('dszsync_auto_import_state', [
             'in_progress' => false,
             'last_update' => time(),
         ]);
@@ -414,7 +414,7 @@ class Auto_Importer {
      * @return array Import status
      */
     public function get_status() {
-        $state = get_option('dsz_auto_import_state', []);
+        $state = get_option('dszsync_auto_import_state', []);
         $settings = $this->get_settings();
 
         return [
@@ -432,11 +432,11 @@ class Auto_Importer {
      * @param string $frequency Frequency (hourly, twicedaily, daily)
      */
     public function schedule_import($frequency = 'daily') {
-        wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
+        wp_clear_scheduled_hook('dszsync_auto_import_cron_hook');
 
         $valid_frequencies = ['hourly', 'twicedaily', 'daily'];
         if (in_array($frequency, $valid_frequencies)) {
-            wp_schedule_event(time() + 60, $frequency, 'dsz_auto_import_cron_hook');
+            wp_schedule_event(time() + 60, $frequency, 'dszsync_auto_import_cron_hook');
             $this->logger->info('Auto import scheduled', ['frequency' => $frequency]);
         }
     }
@@ -445,7 +445,7 @@ class Auto_Importer {
      * Unschedule auto import cron
      */
     public function unschedule_import() {
-        wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
+        wp_clear_scheduled_hook('dszsync_auto_import_cron_hook');
         $this->logger->info('Auto import unscheduled');
     }
 
@@ -455,7 +455,7 @@ class Auto_Importer {
      * @return int|false Next run timestamp or false
      */
     public function get_next_scheduled() {
-        return wp_next_scheduled('dsz_auto_import_cron_hook');
+        return wp_next_scheduled('dszsync_auto_import_cron_hook');
     }
 
     /**
@@ -464,7 +464,7 @@ class Auto_Importer {
      * @param array $results Import results
      */
     private function save_to_history($results) {
-        $history = get_option('dsz_auto_import_history', []);
+        $history = get_option('dszsync_auto_import_history', []);
         
         // Add new entry
         $entry = [
@@ -480,7 +480,7 @@ class Auto_Importer {
         // Keep only last 30 runs
         $history = array_slice($history, 0, 30);
         
-        update_option('dsz_auto_import_history', $history);
+        update_option('dszsync_auto_import_history', $history);
     }
 
     /**
@@ -490,7 +490,7 @@ class Auto_Importer {
      * @return array Import history
      */
     public function get_history($limit = 10) {
-        $history = get_option('dsz_auto_import_history', []);
+        $history = get_option('dszsync_auto_import_history', []);
         return array_slice($history, 0, $limit);
     }
 
@@ -500,7 +500,7 @@ class Auto_Importer {
      * @return array Total stats
      */
     public function get_stats() {
-        $history = get_option('dsz_auto_import_history', []);
+        $history = get_option('dszsync_auto_import_history', []);
         
         $stats = [
             'total_runs'     => count($history),
@@ -544,7 +544,7 @@ class Auto_Importer {
      * Clear import history
      */
     public function clear_history() {
-        delete_option('dsz_auto_import_history');
+        delete_option('dszsync_auto_import_history');
         $this->logger->info('Auto import history cleared');
     }
 }

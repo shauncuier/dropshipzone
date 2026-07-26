@@ -1,4 +1,4 @@
-# 🇦🇺 3S Product Sync for Dropshipzone
+# 🇦🇺 3S Soft Price & Stock Sync for Dropshipzone
 
 <div align="center">
 

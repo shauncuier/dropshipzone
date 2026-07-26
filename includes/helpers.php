@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
  * @param string $round_type     Rounding type (99, 95, nearest)
  * @return float Calculated final price
  */
-function dsz_calculate_price($base_price, $markup_type = 'percentage', $markup_value = 0, $gst_enabled = false, $gst_type = 'include', $round_enabled = false, $round_type = '99') {
+function dszsync_calculate_price($base_price, $markup_type = 'percentage', $markup_value = 0, $gst_enabled = false, $gst_type = 'include', $round_enabled = false, $round_type = '99') {
     $price = floatval($base_price);
     
     // Apply markup
@@ -46,7 +46,7 @@ function dsz_calculate_price($base_price, $markup_type = 'percentage', $markup_v
     
     // Apply rounding
     if ($round_enabled) {
-        $price = dsz_round_price($price, $round_type);
+        $price = dszsync_round_price($price, $round_type);
     }
     
     return round($price, 2);
@@ -59,7 +59,7 @@ function dsz_calculate_price($base_price, $markup_type = 'percentage', $markup_v
  * @param string $round_type Rounding type (99, 95, nearest)
  * @return float Rounded price
  */
-function dsz_round_price($price, $round_type = '99') {
+function dszsync_round_price($price, $round_type = '99') {
     $whole = floor($price);
     
     switch ($round_type) {
@@ -82,7 +82,7 @@ function dsz_round_price($price, $round_type = '99') {
  * @param int  $buffer_amount Buffer amount to subtract
  * @return int Final stock quantity (minimum 0)
  */
-function dsz_calculate_stock($stock, $buffer_enabled = false, $buffer_amount = 0) {
+function dszsync_calculate_stock($stock, $buffer_enabled = false, $buffer_amount = 0) {
     $quantity = intval($stock);
     
     if ($buffer_enabled && $buffer_amount > 0) {
@@ -97,7 +97,7 @@ function dsz_calculate_stock($stock, $buffer_enabled = false, $buffer_amount = 0
  *
  * @return bool
  */
-function dsz_current_user_can_manage() {
+function dszsync_current_user_can_manage() {
     return current_user_can('manage_woocommerce');
 }
 
@@ -108,7 +108,7 @@ function dsz_current_user_can_manage() {
  * @param mixed  $default Default value
  * @return mixed
  */
-function dsz_get_option($key, $default = null) {
+function dszsync_get_option($key, $default = null) {
     $value = get_option($key, $default);
     return $value !== false ? $value : $default;
 }
@@ -120,16 +120,16 @@ function dsz_get_option($key, $default = null) {
  * @param string $password Password
  * @return array|WP_Error Sanitized credentials or error
  */
-function dsz_validate_credentials($email, $password) {
+function dszsync_validate_credentials($email, $password) {
     $email = sanitize_email($email);
     $password = sanitize_text_field($password);
     
     if (empty($email) || !is_email($email)) {
-        return new \WP_Error('invalid_email', __('Please enter a valid email address.', '3s-product-sync-for-dropshipzone'));
+        return new \WP_Error('invalid_email', __('Please enter a valid email address.', '3s-soft-price-stock-sync-for-dropshipzone'));
     }
     
     if (empty($password)) {
-        return new \WP_Error('empty_password', __('Password cannot be empty.', '3s-product-sync-for-dropshipzone'));
+        return new \WP_Error('empty_password', __('Password cannot be empty.', '3s-soft-price-stock-sync-for-dropshipzone'));
     }
     
     return [
@@ -144,9 +144,9 @@ function dsz_validate_credentials($email, $password) {
  * @param int|string $timestamp Timestamp or datetime string
  * @return string Formatted date/time
  */
-function dsz_format_datetime($timestamp) {
+function dszsync_format_datetime($timestamp) {
     if (empty($timestamp)) {
-        return __('Never', '3s-product-sync-for-dropshipzone');
+        return __('Never', '3s-soft-price-stock-sync-for-dropshipzone');
     }
     
     if (is_string($timestamp)) {
@@ -162,9 +162,9 @@ function dsz_format_datetime($timestamp) {
  * @param string|int $datetime DateTime string or Unix timestamp
  * @return string Human-readable time difference
  */
-function dsz_time_ago($datetime) {
+function dszsync_time_ago($datetime) {
     if (empty($datetime)) {
-        return __('Never', '3s-product-sync-for-dropshipzone');
+        return __('Never', '3s-soft-price-stock-sync-for-dropshipzone');
     }
     
     // Convert datetime string to Unix timestamp if needed
@@ -176,10 +176,10 @@ function dsz_time_ago($datetime) {
     
     // Check for invalid timestamp
     if (!$timestamp || $timestamp <= 0) {
-        return __('Never', '3s-product-sync-for-dropshipzone');
+        return __('Never', '3s-soft-price-stock-sync-for-dropshipzone');
     }
     
-    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', '3s-product-sync-for-dropshipzone');
+    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', '3s-soft-price-stock-sync-for-dropshipzone');
 }
 
 /**
@@ -188,7 +188,7 @@ function dsz_time_ago($datetime) {
  * @param int $threshold_percent Percentage of memory limit to trigger (default 80%)
  * @return bool True if near memory limit
  */
-function dsz_is_memory_near_limit($threshold_percent = 80) {
+function dszsync_is_memory_near_limit($threshold_percent = 80) {
     $memory_limit = ini_get('memory_limit');
     
     // Convert to bytes
@@ -218,7 +218,7 @@ function dsz_is_memory_near_limit($threshold_percent = 80) {
  * @param string $sku Product SKU
  * @return WC_Product|null Product object or null if not found
  */
-function dsz_get_product_by_sku($sku) {
+function dszsync_get_product_by_sku($sku) {
     $product_id = wc_get_product_id_by_sku($sku);
     
     if ($product_id) {
@@ -234,7 +234,7 @@ function dsz_get_product_by_sku($sku) {
  * @param string $data Data to encrypt
  * @return string Encrypted data
  */
-function dsz_encrypt($data) {
+function dszsync_encrypt($data) {
     if (empty($data)) {
         return '';
     }
@@ -257,7 +257,7 @@ function dsz_encrypt($data) {
  * @param string $encrypted_data Encrypted data
  * @return string Decrypted data
  */
-function dsz_decrypt($encrypted_data) {
+function dszsync_decrypt($encrypted_data) {
     if (empty($encrypted_data)) {
         return '';
     }
@@ -291,7 +291,7 @@ function dsz_decrypt($encrypted_data) {
  * @param array $api_data Product data from the Dropshipzone API
  * @return float Supplier cost (0 if unavailable)
  */
-function dsz_get_api_cost($api_data) {
+function dszsync_get_api_cost($api_data) {
     $cost = isset($api_data['cost']) ? floatval($api_data['cost']) : 0;
 
     if ($cost <= 0) {
@@ -312,7 +312,7 @@ function dsz_get_api_cost($api_data) {
  * @param int   $depth Current recursion depth (internal)
  * @return mixed Sanitized payload
  */
-function dsz_sanitize_api_product($data, $depth = 0) {
+function dszsync_sanitize_api_product($data, $depth = 0) {
     if ($depth > 5) {
         return null;
     }
@@ -326,7 +326,7 @@ function dsz_sanitize_api_product($data, $depth = 0) {
             if ($clean_key === '') {
                 continue;
             }
-            $clean[$clean_key] = dsz_sanitize_api_product($value, $depth + 1);
+            $clean[$clean_key] = dszsync_sanitize_api_product($value, $depth + 1);
         }
         return $clean;
     }
@@ -360,8 +360,8 @@ function dsz_sanitize_api_product($data, $depth = 0) {
  * @param string $message Log message
  * @param array  $context Additional context
  */
-function dsz_log($level, $message, $context = []) {
-    $plugin = dsz_sync();
+function dszsync_log($level, $message, $context = []) {
+    $plugin = dszsync_sync();
     
     if ($plugin && isset($plugin->logger)) {
         $plugin->logger->log($level, $message, $context);
@@ -373,9 +373,9 @@ function dsz_log($level, $message, $context = []) {
  *
  * @return array Sync status data
  */
-function dsz_get_sync_status() {
-    $settings = dsz_get_option('dsz_sync_settings', []);
-    $token_expiry = dsz_get_option('dsz_sync_token_expiry', 0);
+function dszsync_get_sync_status() {
+    $settings = dszsync_get_option('dszsync_settings', []);
+    $token_expiry = dszsync_get_option('dszsync_token_expiry', 0);
     
     return [
         'last_sync' => isset($settings['last_sync']) ? $settings['last_sync'] : null,

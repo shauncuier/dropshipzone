@@ -5,6 +5,24 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-07-27
+
+Addresses the plugin review team's January feedback.
+
+### Changed
+- **Renamed to `3S Soft Price & Stock Sync for Dropshipzone`** (slug `3s-soft-price-stock-sync-for-dropshipzone`), matching the name the review team's tooling suggested. Their guidance rejects short distinguishing terms — the previous `3S` prefix was the same two-letter pattern their examples call out as insufficient.
+- **Widened the code prefix from `dsz_` to `dszsync_`** to meet the four-character minimum: functions, constants, options, post meta, cron hooks, filters/actions, AJAX actions, nonces, transients and the shipping method id. Database table and column names deliberately keep the `dsz_` form — they are scoped inside plugin-owned tables, cannot collide with anything, and renaming them would mean an `ALTER TABLE` on live data for no benefit.
+- **`Contributors`** now lists the WordPress.org account that owns the submission (`shauncuier`) rather than a display name that matched no account.
+
+### Added
+- **One-time prefix migration** on load: copies every renamed option and post meta key (including HPOS order meta), re-points configured WooCommerce shipping zone instances and their per-instance settings at the new method id, and clears the old cron hooks. Existing installs keep their credentials, rules, mappings and schedules.
+
+### Security
+- The resync handler decoded `product_data` from `$_POST` and passed it into product updates unsanitized — the same flaw already fixed on the import path. It now goes through `dszsync_sanitize_api_product()`.
+- API password input is explicitly constrained to a scalar string. It is deliberately not run through `sanitize_text_field()`, which would corrupt valid passwords; it is never output and is encrypted at rest.
+
+---
+
 ## [3.2.0] - 2026-07-27
 
 ### Changed

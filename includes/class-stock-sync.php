@@ -60,7 +60,7 @@ class Stock_Sync {
         ];
 
         $this->stock_rules = wp_parse_args(
-            get_option('dsz_sync_stock_rules', []),
+            get_option('dszsync_stock_rules', []),
             $defaults
         );
     }
@@ -88,7 +88,7 @@ class Stock_Sync {
      * @return int Final calculated stock
      */
     public function calculate_stock($supplier_stock) {
-        return dsz_calculate_stock(
+        return dszsync_calculate_stock(
             $supplier_stock,
             $this->stock_rules['buffer_enabled'],
             $this->stock_rules['buffer_amount']
@@ -137,7 +137,7 @@ class Stock_Sync {
             $results['details'][] = $result;
 
             // Check memory usage
-            if (dsz_is_memory_near_limit(85)) {
+            if (dszsync_is_memory_near_limit(85)) {
                 $this->logger->warning('Memory limit approaching, stopping batch early');
                 break;
             }
@@ -205,7 +205,7 @@ class Stock_Sync {
             // Calculate final stock with buffer
             $final_stock = $this->calculate_stock($supplier_stock);
             /** This filter is documented in includes/class-cron.php */
-            $final_stock = (int) apply_filters('dsz_calculated_stock', $final_stock, $product_id, $supplier_stock);
+            $final_stock = (int) apply_filters('dszsync_calculated_stock', $final_stock, $product_id, $supplier_stock);
 
             // Get current stock for comparison
             $current_stock = $product->get_stock_quantity();

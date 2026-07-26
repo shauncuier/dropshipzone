@@ -56,7 +56,7 @@ class Cron {
         $this->logger = $logger;
 
         // Register cron hook
-        add_action('dsz_sync_cron_hook', [$this, 'run_scheduled_sync']);
+        add_action('dszsync_cron_hook', [$this, 'run_scheduled_sync']);
         
         // Add custom cron schedules
         add_filter('cron_schedules', [$this, 'add_cron_schedules']);
@@ -71,7 +71,7 @@ class Cron {
     public function add_cron_schedules($schedules) {
         $schedules['every_six_hours'] = [
             'interval' => 6 * HOUR_IN_SECONDS,
-            'display' => __('Every 6 Hours', '3s-product-sync-for-dropshipzone'),
+            'display' => __('Every 6 Hours', '3s-soft-price-stock-sync-for-dropshipzone'),
         ];
         return $schedules;
     }
@@ -92,11 +92,11 @@ class Cron {
      */
     public function schedule_sync($frequency = 'hourly') {
         // Clear existing schedule
-        wp_clear_scheduled_hook('dsz_sync_cron_hook');
+        wp_clear_scheduled_hook('dszsync_cron_hook');
 
         // Schedule new cron
         if (array_key_exists($frequency, $this->frequencies)) {
-            wp_schedule_event(time(), $frequency, 'dsz_sync_cron_hook');
+            wp_schedule_event(time(), $frequency, 'dszsync_cron_hook');
             $this->logger->info('Sync scheduled', ['frequency' => $frequency]);
         }
     }
@@ -105,7 +105,7 @@ class Cron {
      * Unschedule sync cron
      */
     public function unschedule_sync() {
-        wp_clear_scheduled_hook('dsz_sync_cron_hook');
+        wp_clear_scheduled_hook('dszsync_cron_hook');
         $this->logger->info('Sync unscheduled');
     }
 
@@ -115,7 +115,7 @@ class Cron {
      * @return int|false Next run timestamp or false
      */
     public function get_next_scheduled() {
-        return wp_next_scheduled('dsz_sync_cron_hook');
+        return wp_next_scheduled('dszsync_cron_hook');
     }
 
     /**
@@ -133,7 +133,7 @@ class Cron {
      * @return array Sync results
      */
     public function run_sync($is_manual = false) {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         
         // Check if sync is already in progress
         if (!empty($settings['sync_in_progress'])) {
@@ -143,7 +143,7 @@ class Cron {
                 $this->logger->warning('Sync already in progress, skipping');
                 return [
                     'status' => 'skipped',
-                    'message' => __('Sync already in progress', '3s-product-sync-for-dropshipzone'),
+                    'message' => __('Sync already in progress', '3s-soft-price-stock-sync-for-dropshipzone'),
                 ];
             }
             // Reset stuck sync
@@ -153,7 +153,7 @@ class Cron {
         // Mark sync as in progress
         $settings['sync_in_progress'] = true;
         $settings['last_batch_time'] = time();
-        update_option('dsz_sync_settings', $settings);
+        update_option('dszsync_settings', $settings);
 
         $results = $this->process_sync_batch();
 
@@ -173,18 +173,18 @@ class Cron {
      */
     private function process_sync_batch() {
         // Prevent concurrent batches (admin AJAX polling vs scheduled continuation)
-        if (get_transient('dsz_sync_batch_lock')) {
+        if (get_transient('dszsync_batch_lock')) {
             return [
                 'status' => 'processing',
-                'message' => __('Another sync batch is already running', '3s-product-sync-for-dropshipzone'),
+                'message' => __('Another sync batch is already running', '3s-soft-price-stock-sync-for-dropshipzone'),
             ];
         }
-        set_transient('dsz_sync_batch_lock', 1, 120);
+        set_transient('dszsync_batch_lock', 1, 120);
 
         try {
             return $this->process_sync_batch_inner();
         } finally {
-            delete_transient('dsz_sync_batch_lock');
+            delete_transient('dszsync_batch_lock');
         }
     }
 
@@ -194,12 +194,12 @@ class Cron {
      * @return array Batch results
      */
     private function process_sync_batch_inner() {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         $batch_size = isset($settings['batch_size']) ? intval($settings['batch_size']) : 100;
         $current_offset = isset($settings['current_offset']) ? intval($settings['current_offset']) : 0;
 
         // Get plugin instances
-        $plugin = dsz_sync();
+        $plugin = dszsync_sync();
         if (!$plugin || !$plugin->api_client) {
             $this->complete_sync(['error' => 'Plugin not initialized']);
             return ['status' => 'error', 'message' => 'Plugin not initialized'];
@@ -219,7 +219,7 @@ class Cron {
             $this->complete_sync(['message' => 'No mapped products to sync']);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', '3s-product-sync-for-dropshipzone'),
+                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', '3s-soft-price-stock-sync-for-dropshipzone'),
                 'products_updated' => 0,
                 'errors_count' => 0,
             ];
@@ -236,7 +236,7 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', '3s-product-sync-for-dropshipzone'),
+                'message' => __('Sync completed', '3s-soft-price-stock-sync-for-dropshipzone'),
                 'products_updated' => isset($settings['products_updated']) ? $settings['products_updated'] : 0,
                 'errors_count' => isset($settings['errors_count']) ? $settings['errors_count'] : 0,
             ];
@@ -277,8 +277,8 @@ class Cron {
                 // Abort without advancing the offset: treating a failed fetch
                 // as "not found" could wrongly deactivate healthy products.
                 // The continuation event retries this same batch.
-                if (!wp_next_scheduled('dsz_sync_batch_continue')) {
-                    wp_schedule_single_event(time() + 120, 'dsz_sync_batch_continue');
+                if (!wp_next_scheduled('dszsync_batch_continue')) {
+                    wp_schedule_single_event(time() + 120, 'dszsync_batch_continue');
                 }
 
                 return [
@@ -403,7 +403,7 @@ class Cron {
             }
 
             // Memory check
-            if (dsz_is_memory_near_limit(85)) {
+            if (dszsync_is_memory_near_limit(85)) {
                 $this->logger->warning('Memory limit approaching, stopping batch early');
                 break;
             }
@@ -419,7 +419,7 @@ class Cron {
 
 
         // Update settings with batch results
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         $settings['products_updated'] = (isset($settings['products_updated']) ? $settings['products_updated'] : 0) + $updated;
         $settings['errors_count'] = (isset($settings['errors_count']) ? $settings['errors_count'] : 0) + $errors;
         // Advance by the number actually processed (a memory-limit break can end the batch early)
@@ -436,17 +436,17 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', '3s-product-sync-for-dropshipzone'),
+                'message' => __('Sync completed', '3s-soft-price-stock-sync-for-dropshipzone'),
                 'products_updated' => $settings['products_updated'],
                 'errors_count' => $settings['errors_count'],
             ];
         }
 
-        update_option('dsz_sync_settings', $settings);
+        update_option('dszsync_settings', $settings);
 
         // Schedule the next batch so scheduled syncs progress without manual AJAX polling
-        if (!wp_next_scheduled('dsz_sync_batch_continue')) {
-            wp_schedule_single_event(time() + 60, 'dsz_sync_batch_continue');
+        if (!wp_next_scheduled('dszsync_batch_continue')) {
+            wp_schedule_single_event(time() + 60, 'dszsync_batch_continue');
         }
 
         // Return progress status
@@ -464,7 +464,7 @@ class Cron {
         return [
             'status' => 'processing',
             /* translators: %1$d: current batch number, %2$d: total batches */
-            'message' => sprintf(__('Processing batch %1$d of %2$d', '3s-product-sync-for-dropshipzone'), $current_batch, $total_batches),
+            'message' => sprintf(__('Processing batch %1$d of %2$d', '3s-soft-price-stock-sync-for-dropshipzone'), $current_batch, $total_batches),
             'progress' => $progress,
             'products_updated' => $settings['products_updated'],
             'errors_count' => $settings['errors_count'],
@@ -480,7 +480,7 @@ class Cron {
      */
     private function update_product_price($product, $api_data) {
         // Get supplier cost from API (shared source with import/price sync paths)
-        $cost = dsz_get_api_cost($api_data);
+        $cost = dszsync_get_api_cost($api_data);
 
         if ($cost <= 0) {
             return false;
@@ -491,7 +491,7 @@ class Cron {
         $new_price = $this->price_sync->calculate_price($cost, $api_data);
 
         // Track supplier cost for profit reporting
-        $product->update_meta_data('_dsz_cost', $cost);
+        $product->update_meta_data('_dszsync_cost', $cost);
 
         /**
          * Filter the calculated price before it is saved.
@@ -500,7 +500,7 @@ class Cron {
          * @param int   $product_id WooCommerce product ID
          * @param float $cost       Supplier cost the price was derived from
          */
-        $new_price = (float) apply_filters('dsz_calculated_price', $new_price, $product->get_id(), $cost);
+        $new_price = (float) apply_filters('dszsync_calculated_price', $new_price, $product->get_id(), $cost);
 
         // Check if price changed
         $current_price = floatval($product->get_regular_price());
@@ -518,7 +518,7 @@ class Cron {
          * @param float $current_price Previous regular price
          * @param float $new_price     New regular price
          */
-        do_action('dsz_price_updated', $product->get_id(), $current_price, $new_price);
+        do_action('dszsync_price_updated', $product->get_id(), $current_price, $new_price);
         
         // Handle special/sale price with the same rule set
         if (!empty($api_data['special_price']) && floatval($api_data['special_price']) > 0) {
@@ -569,7 +569,7 @@ class Cron {
          * @param int $product_id     WooCommerce product ID
          * @param int $supplier_stock Raw supplier stock from the API
          */
-        $stock_qty = (int) apply_filters('dsz_calculated_stock', $stock_qty, $product->get_id(), $supplier_stock);
+        $stock_qty = (int) apply_filters('dszsync_calculated_stock', $stock_qty, $product->get_id(), $supplier_stock);
 
         // Check if stock changed
         $current_stock = intval($product->get_stock_quantity());
@@ -641,7 +641,7 @@ class Cron {
      * @param array $final_results Final results to log
      */
     private function complete_sync($final_results = []) {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         $settings['sync_in_progress'] = false;
         $settings['current_offset'] = 0;
         $settings['last_sync'] = time();
@@ -658,10 +658,10 @@ class Cron {
         $settings['products_updated'] = 0;
         $settings['errors_count'] = 0;
 
-        update_option('dsz_sync_settings', $settings);
+        update_option('dszsync_settings', $settings);
 
         // No further batches needed
-        wp_clear_scheduled_hook('dsz_sync_batch_continue');
+        wp_clear_scheduled_hook('dszsync_batch_continue');
 
         $this->logger->info('Sync completed', $final_results);
 
@@ -670,7 +670,7 @@ class Cron {
          *
          * @param array $stats { updated: int, skipped: int, errors: int }
          */
-        do_action('dsz_sync_completed', [
+        do_action('dszsync_completed', [
             'updated' => isset($final_results['products_updated']) ? intval($final_results['products_updated']) : 0,
             'skipped' => isset($final_results['skipped']) ? intval($final_results['skipped']) : 0,
             'errors' => isset($final_results['errors_count']) ? intval($final_results['errors_count']) : 0,
@@ -681,13 +681,13 @@ class Cron {
      * Reset sync state (for stuck syncs)
      */
     public function reset_sync_state() {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         $settings['sync_in_progress'] = false;
         $settings['current_offset'] = 0;
         $settings['last_batch_time'] = null;
-        update_option('dsz_sync_settings', $settings);
+        update_option('dszsync_settings', $settings);
 
-        wp_clear_scheduled_hook('dsz_sync_batch_continue');
+        wp_clear_scheduled_hook('dszsync_batch_continue');
 
         $this->logger->info('Sync state reset');
     }
@@ -698,7 +698,7 @@ class Cron {
      * @return array Sync status
      */
     public function get_sync_status() {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         $next_scheduled = $this->get_next_scheduled();
 
         return [
@@ -722,7 +722,7 @@ class Cron {
      * @return int Progress percentage (0-100)
      */
     public function get_progress() {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         
         if (empty($settings['sync_in_progress'])) {
             return 100;
@@ -758,12 +758,12 @@ class Cron {
      * @return array Batch results
      */
     public function continue_batch() {
-        $settings = get_option('dsz_sync_settings', []);
+        $settings = get_option('dszsync_settings', []);
         
         if (empty($settings['sync_in_progress'])) {
             return [
                 'status' => 'complete',
-                'message' => __('Sync not in progress', '3s-product-sync-for-dropshipzone'),
+                'message' => __('Sync not in progress', '3s-soft-price-stock-sync-for-dropshipzone'),
             ];
         }
 
@@ -772,8 +772,8 @@ class Cron {
 }
 
 // Register batch continuation hook
-add_action('dsz_sync_batch_continue', function() {
-    $plugin = dsz_sync();
+add_action('dszsync_batch_continue', function() {
+    $plugin = dszsync_sync();
     if ($plugin && $plugin->cron) {
         $plugin->cron->continue_batch();
     }

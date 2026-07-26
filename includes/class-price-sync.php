@@ -60,7 +60,7 @@ class Price_Sync {
         ];
 
         $this->price_rules = wp_parse_args(
-            get_option('dsz_sync_price_rules', []),
+            get_option('dszsync_price_rules', []),
             $defaults
         );
     }
@@ -96,7 +96,7 @@ class Price_Sync {
     public function calculate_price($supplier_price, $context = []) {
         $rules = $this->get_rules_for_context($context);
 
-        return dsz_calculate_price(
+        return dszsync_calculate_price(
             $supplier_price,
             $rules['markup_type'],
             $rules['markup_value'],
@@ -118,7 +118,7 @@ class Price_Sync {
             return $this->price_rules;
         }
 
-        $advanced = get_option('dsz_price_rules_v2', []);
+        $advanced = get_option('dszsync_price_rules_v2', []);
         if (empty($advanced['rules']) || !is_array($advanced['rules'])) {
             return $this->price_rules;
         }
@@ -216,7 +216,7 @@ class Price_Sync {
             $results['details'][] = $result;
 
             // Check memory usage
-            if (dsz_is_memory_near_limit(85)) {
+            if (dszsync_is_memory_near_limit(85)) {
                 $this->logger->warning('Memory limit approaching, stopping batch early');
                 break;
             }
@@ -266,7 +266,7 @@ class Price_Sync {
 
         try {
             // Get supplier prices (shared cost source with cron sync path)
-            $supplier_price = dsz_get_api_cost($api_product);
+            $supplier_price = dszsync_get_api_cost($api_product);
             $special_price = isset($api_product['special_price']) ? floatval($api_product['special_price']) : null;
             $rrp_price = isset($api_product['RrpPrice']) ? floatval($api_product['RrpPrice']) : null;
 
@@ -281,7 +281,7 @@ class Price_Sync {
             // Calculate final prices (advanced rules resolve via product context)
             $calculated_regular = $this->calculate_price($supplier_price, $api_product);
             /** This filter is documented in includes/class-cron.php */
-            $calculated_regular = (float) apply_filters('dsz_calculated_price', $calculated_regular, $product_id, $supplier_price);
+            $calculated_regular = (float) apply_filters('dszsync_calculated_price', $calculated_regular, $product_id, $supplier_price);
             $calculated_sale = null;
 
             // If there's a special/sale price from supplier
@@ -290,7 +290,7 @@ class Price_Sync {
             }
 
             // Track supplier cost for profit reporting
-            $product->update_meta_data('_dsz_cost', $supplier_price);
+            $product->update_meta_data('_dszsync_cost', $supplier_price);
 
             // Get current prices for comparison
             $current_regular = floatval($product->get_regular_price());
@@ -320,7 +320,7 @@ class Price_Sync {
             $product->set_regular_price($calculated_regular);
 
             /** This action is documented in includes/class-cron.php */
-            do_action('dsz_price_updated', $product_id, $current_regular, $calculated_regular);
+            do_action('dszsync_price_updated', $product_id, $current_regular, $calculated_regular);
             
             if ($calculated_sale !== null) {
                 $product->set_sale_price($calculated_sale);
@@ -429,7 +429,7 @@ class Price_Sync {
         // Calculate final with rounding
         $final = $after_gst;
         if ($this->price_rules['rounding_enabled']) {
-            $final = dsz_round_price($after_gst, $this->price_rules['rounding_type']);
+            $final = dszsync_round_price($after_gst, $this->price_rules['rounding_type']);
         }
 
         return [

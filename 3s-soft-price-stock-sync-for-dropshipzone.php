@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: 3S Product Sync for Dropshipzone
- * Plugin URI: https://3s-soft.com/plugins/3s-product-sync-for-dropshipzone
+ * Plugin Name: 3S Soft Price & Stock Sync for Dropshipzone
+ * Plugin URI: https://3s-soft.com/plugins/3s-soft-price-stock-sync-for-dropshipzone
  * Description: Sync product prices, stock levels and shipping rates from the Dropshipzone supplier API into WooCommerce, import catalogue products, and submit orders for fulfilment.
- * Version: 3.2.0
+ * Version: 3.3.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: 3s-product-sync-for-dropshipzone
+ * Text Domain: 3s-soft-price-stock-sync-for-dropshipzone
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -24,11 +24,11 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '3.2.0');
-define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
-define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('DSZ_SYNC_PLUGIN_BASENAME', plugin_basename(__FILE__));
+define('DSZSYNC_VERSION', '3.3.0');
+define('DSZSYNC_PLUGIN_FILE', __FILE__);
+define('DSZSYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('DSZSYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('DSZSYNC_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
  * Main Plugin Class
@@ -90,7 +90,7 @@ final class Dropshipzone_Sync {
     public function woocommerce_missing_notice() {
         ?>
         <div class="notice notice-error">
-            <p><?php esc_html_e('3S Product Sync for Dropshipzone requires WooCommerce to be installed and active.', '3s-product-sync-for-dropshipzone'); ?></p>
+            <p><?php esc_html_e('3S Soft Price & Stock Sync for Dropshipzone requires WooCommerce to be installed and active.', '3s-soft-price-stock-sync-for-dropshipzone'); ?></p>
         </div>
         <?php
     }
@@ -100,24 +100,24 @@ final class Dropshipzone_Sync {
      */
     private function includes() {
         // Helpers
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/helpers.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/helpers.php';
         
         // Core classes
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-logger.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-rate-limiter.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-api-client.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-price-sync.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-stock-sync.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-cron.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-auto-importer.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-logger.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-rate-limiter.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-api-client.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-price-sync.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-stock-sync.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-cron.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-product-mapper.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-product-importer.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-order-handler.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-auto-importer.php';
         // Note: class-shipping-method.php is loaded via woocommerce_shipping_init hook
         
         // Admin UI
         if (is_admin()) {
-            require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-admin-ui.php';
+            require_once DSZSYNC_PLUGIN_DIR . 'includes/class-admin-ui.php';
         }
     }
 
@@ -126,8 +126,8 @@ final class Dropshipzone_Sync {
      */
     private function init_hooks() {
         // Activation/Deactivation hooks
-        register_activation_hook(DSZ_SYNC_PLUGIN_FILE, [$this, 'activate']);
-        register_deactivation_hook(DSZ_SYNC_PLUGIN_FILE, [$this, 'deactivate']);
+        register_activation_hook(DSZSYNC_PLUGIN_FILE, [$this, 'activate']);
+        register_deactivation_hook(DSZSYNC_PLUGIN_FILE, [$this, 'deactivate']);
 
         // Initialize components after plugins loaded
         add_action('plugins_loaded', [$this, 'init_components'], 20);
@@ -179,21 +179,25 @@ final class Dropshipzone_Sync {
         $this->auto_importer = new Auto_Importer($this->product_importer, $this->api_client, $this->logger);
         
         // Ensure mapping table exists (for upgrades from older versions)
+        // Move any data still stored under the old `dsz_` prefix before
+        // anything tries to read it
+        $this->maybe_migrate_prefix();
+
         $this->maybe_create_mapping_table();
         
         // Register auto import cron hook
-        add_action('dsz_auto_import_cron_hook', [$this, 'run_auto_import']);
+        add_action('dszsync_auto_import_cron_hook', [$this, 'run_auto_import']);
 
         // Daily maintenance (log retention, orphaned mappings, stale transients)
-        add_action('dsz_maintenance_hook', [$this, 'run_maintenance']);
-        if (!wp_next_scheduled('dsz_maintenance_hook')) {
-            wp_schedule_event(time() + DAY_IN_SECONDS, 'daily', 'dsz_maintenance_hook');
+        add_action('dszsync_maintenance_hook', [$this, 'run_maintenance']);
+        if (!wp_next_scheduled('dszsync_maintenance_hook')) {
+            wp_schedule_event(time() + DAY_IN_SECONDS, 'daily', 'dszsync_maintenance_hook');
         }
 
         // Tracking sync: poll DSZ twice daily for tracking/status on submitted orders
-        add_action('dsz_tracking_sync_hook', [$this, 'run_tracking_sync']);
-        if (!wp_next_scheduled('dsz_tracking_sync_hook')) {
-            wp_schedule_event(time() + HOUR_IN_SECONDS, 'twicedaily', 'dsz_tracking_sync_hook');
+        add_action('dszsync_tracking_sync_hook', [$this, 'run_tracking_sync']);
+        if (!wp_next_scheduled('dszsync_tracking_sync_hook')) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'twicedaily', 'dszsync_tracking_sync_hook');
         }
 
         // Auto-submit paid orders to DSZ when enabled (middleman flow)
@@ -215,7 +219,7 @@ final class Dropshipzone_Sync {
      * Load the shipping method class after WooCommerce is ready
      */
     public function load_shipping_method() {
-        require_once DSZ_SYNC_PLUGIN_DIR . 'includes/class-shipping-method.php';
+        require_once DSZSYNC_PLUGIN_DIR . 'includes/class-shipping-method.php';
     }
 
     /**
@@ -225,8 +229,119 @@ final class Dropshipzone_Sync {
      * @return array Modified shipping methods.
      */
     public function register_shipping_method($methods) {
-        $methods['dsz_shipping'] = 'Dropshipzone\\Shipping_Method';
+        $methods['dszsync_shipping'] = 'Dropshipzone\\Shipping_Method';
         return $methods;
+    }
+
+    /**
+     * Migrate data stored under the old `dsz_` prefix to `dszsync_`.
+     *
+     * The prefix was widened to satisfy the plugin directory's four-character
+     * minimum. Options, post meta, cron hooks and the shipping method id all
+     * moved; database table and column names did not, because they are scoped
+     * inside plugin-owned tables and cannot collide with anything.
+     *
+     * Runs once, gated by an option flag.
+     */
+    private function maybe_migrate_prefix() {
+        if (get_option('dszsync_prefix_migrated')) {
+            return;
+        }
+
+        global $wpdb;
+
+        // Options: copy old value across, then drop the old row
+        $option_map = [
+            'dsz_sync_settings' => 'dszsync_settings',
+            'dsz_sync_price_rules' => 'dszsync_price_rules',
+            'dsz_sync_stock_rules' => 'dszsync_stock_rules',
+            'dsz_sync_import_settings' => 'dszsync_import_settings',
+            'dsz_sync_api_email' => 'dszsync_api_email',
+            'dsz_sync_api_password' => 'dszsync_api_password',
+            'dsz_sync_api_token' => 'dszsync_api_token',
+            'dsz_sync_token_expiry' => 'dszsync_token_expiry',
+            'dsz_auto_import_settings' => 'dszsync_auto_import_settings',
+            'dsz_auto_import_state' => 'dszsync_auto_import_state',
+            'dsz_auto_import_history' => 'dszsync_auto_import_history',
+            'dsz_rate_limit_data' => 'dszsync_rate_limit_data',
+            'dsz_order_settings' => 'dszsync_order_settings',
+            'dsz_import_templates' => 'dszsync_import_templates',
+            'dsz_price_rules_v2' => 'dszsync_price_rules_v2',
+            'dsz_log_retention_days' => 'dszsync_log_retention_days',
+            'dsz_mapping_schema_version' => 'dszsync_mapping_schema_version',
+            'dsz_setup_shipping_pending' => 'dszsync_setup_shipping_pending',
+        ];
+
+        foreach ($option_map as $old => $new) {
+            $value = get_option($old, null);
+            if ($value !== null && get_option($new, null) === null) {
+                update_option($new, $value, false);
+            }
+            delete_option($old);
+        }
+
+        // Post meta
+        $meta_map = [
+            '_dsz_cost' => '_dszsync_cost',
+            '_dsz_serial_number' => '_dszsync_serial_number',
+            '_dsz_submitted_at' => '_dszsync_submitted_at',
+            '_dsz_not_available' => '_dszsync_not_available',
+            '_dsz_imported_image' => '_dszsync_imported_image',
+            '_dsz_tracking_number' => '_dszsync_tracking_number',
+            '_dsz_courier' => '_dszsync_courier',
+        ];
+
+        foreach ($meta_map as $old => $new) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update($wpdb->postmeta, ['meta_key' => $new], ['meta_key' => $old], ['%s'], ['%s']);
+        }
+
+        // Order meta lives in its own table under HPOS
+        $hpos_meta = $wpdb->prefix . 'wc_orders_meta';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $hpos_meta)) === $hpos_meta) {
+            foreach ($meta_map as $old => $new) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                $wpdb->update($hpos_meta, ['meta_key' => $new], ['meta_key' => $old], ['%s'], ['%s']);
+            }
+        }
+
+        // Shipping method id, so configured zones keep working
+        $zone_methods = $wpdb->prefix . 'woocommerce_shipping_zone_methods';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $zone_methods)) === $zone_methods) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->update($zone_methods, ['method_id' => 'dszsync_shipping'], ['method_id' => 'dsz_shipping'], ['%s'], ['%s']);
+        }
+
+        // Per-instance shipping settings are stored as options named
+        // woocommerce_<method_id>_<instance_id>_settings
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        $shipping_options = $wpdb->get_col($wpdb->prepare(
+            "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $wpdb->esc_like('woocommerce_dsz_shipping_') . '%'
+        ));
+        foreach ((array) $shipping_options as $old_name) {
+            $new_name = str_replace('woocommerce_dsz_shipping_', 'woocommerce_dszsync_shipping_', $old_name);
+            $value = get_option($old_name, null);
+            if ($value !== null && get_option($new_name, null) === null) {
+                update_option($new_name, $value, false);
+            }
+            delete_option($old_name);
+        }
+
+        // Old cron hooks: clear them; the new ones are scheduled on init
+        foreach ([
+            'dsz_sync_cron_hook',
+            'dsz_auto_import_cron_hook',
+            'dsz_maintenance_hook',
+            'dsz_tracking_sync_hook',
+            'dsz_sync_batch_continue',
+        ] as $old_hook) {
+            wp_clear_scheduled_hook($old_hook);
+        }
+
+        update_option('dszsync_prefix_migrated', 1, false);
     }
 
     /**
@@ -237,7 +352,7 @@ final class Dropshipzone_Sync {
         // Bump whenever the table structure changes.
         // v3: composite index (sync_enabled, last_synced)
         $schema_version = '3';
-        if (get_option('dsz_mapping_schema_version') === $schema_version) {
+        if (get_option('dszsync_mapping_schema_version') === $schema_version) {
             return;
         }
 
@@ -259,7 +374,7 @@ final class Dropshipzone_Sync {
             Product_Mapper::maybe_add_indexes();
         }
 
-        update_option('dsz_mapping_schema_version', $schema_version, false);
+        update_option('dszsync_mapping_schema_version', $schema_version, false);
     }
 
     /**
@@ -279,13 +394,13 @@ final class Dropshipzone_Sync {
         $this->create_default_options();
         
         // Schedule cron
-        if (!wp_next_scheduled('dsz_sync_cron_hook')) {
-            wp_schedule_event(time(), 'hourly', 'dsz_sync_cron_hook');
+        if (!wp_next_scheduled('dszsync_cron_hook')) {
+            wp_schedule_event(time(), 'hourly', 'dszsync_cron_hook');
         }
 
         // Defer shipping zone setup to the next admin load — WooCommerce's
         // shipping registry is not reliably available during activation
-        update_option('dsz_setup_shipping_pending', 1, false);
+        update_option('dszsync_setup_shipping_pending', 1, false);
 
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -300,7 +415,7 @@ final class Dropshipzone_Sync {
      * the method (merchants can still remove/re-arrange it manually).
      */
     public function maybe_setup_shipping_zones() {
-        if (!get_option('dsz_setup_shipping_pending')) {
+        if (!get_option('dszsync_setup_shipping_pending')) {
             return;
         }
 
@@ -308,22 +423,22 @@ final class Dropshipzone_Sync {
             return; // WooCommerce not ready — retry next admin load
         }
 
-        delete_option('dsz_setup_shipping_pending');
+        delete_option('dszsync_setup_shipping_pending');
 
         $zones = \WC_Shipping_Zones::get_zones();
 
         // Already attached somewhere? Respect the merchant's setup.
         foreach ($zones as $zone_data) {
             foreach ($zone_data['shipping_methods'] as $method) {
-                if ($method->id === 'dsz_shipping') {
+                if ($method->id === 'dszsync_shipping') {
                     return;
                 }
             }
         }
 
         $targets = [
-            'AU' => __('Australia', '3s-product-sync-for-dropshipzone'),
-            'NZ' => __('New Zealand', '3s-product-sync-for-dropshipzone'),
+            'AU' => __('Australia', '3s-soft-price-stock-sync-for-dropshipzone'),
+            'NZ' => __('New Zealand', '3s-soft-price-stock-sync-for-dropshipzone'),
         ];
 
         foreach ($targets as $country => $label) {
@@ -349,7 +464,7 @@ final class Dropshipzone_Sync {
                 $target_zone->save();
             }
 
-            $target_zone->add_shipping_method('dsz_shipping');
+            $target_zone->add_shipping_method('dszsync_shipping');
 
             if ($this->logger) {
                 $this->logger->info('DSZ shipping method attached to zone', [
@@ -365,11 +480,11 @@ final class Dropshipzone_Sync {
      */
     public function deactivate() {
         // Clear scheduled cron
-        wp_clear_scheduled_hook('dsz_sync_cron_hook');
-        wp_clear_scheduled_hook('dsz_auto_import_cron_hook');
-        wp_clear_scheduled_hook('dsz_maintenance_hook');
-        wp_clear_scheduled_hook('dsz_tracking_sync_hook');
-        wp_clear_scheduled_hook('dsz_sync_batch_continue');
+        wp_clear_scheduled_hook('dszsync_cron_hook');
+        wp_clear_scheduled_hook('dszsync_auto_import_cron_hook');
+        wp_clear_scheduled_hook('dszsync_maintenance_hook');
+        wp_clear_scheduled_hook('dszsync_tracking_sync_hook');
+        wp_clear_scheduled_hook('dszsync_batch_continue');
         
         // Flush rewrite rules
         flush_rewrite_rules();
@@ -399,12 +514,12 @@ final class Dropshipzone_Sync {
      * @param int $order_id WooCommerce order ID
      */
     public function maybe_auto_submit_order($order_id) {
-        $settings = get_option('dsz_order_settings', []);
+        $settings = get_option('dszsync_order_settings', []);
         if (empty($settings['auto_submit']) || !$this->order_handler) {
             return;
         }
 
-        if (!$this->order_handler->order_has_dsz_products($order_id)) {
+        if (!$this->order_handler->order_has_dszsync_products($order_id)) {
             return;
         }
 
@@ -425,7 +540,7 @@ final class Dropshipzone_Sync {
         global $wpdb;
 
         // Log retention (days, filterable)
-        $retention = apply_filters('dsz_log_retention_days', intval(get_option('dsz_log_retention_days', 30)));
+        $retention = apply_filters('dszsync_log_retention_days', intval(get_option('dszsync_log_retention_days', 30)));
         if ($this->logger) {
             $this->logger->cleanup_older_than($retention);
         }
@@ -441,7 +556,7 @@ final class Dropshipzone_Sync {
             "DELETE a, b FROM {$wpdb->options} a
              INNER JOIN {$wpdb->options} b ON b.option_name = CONCAT('_transient_', SUBSTRING(a.option_name, 20))
              WHERE a.option_name LIKE %s AND a.option_value < %d",
-            $wpdb->esc_like('_transient_timeout_dsz_') . '%',
+            $wpdb->esc_like('_transient_timeout_dszsync_') . '%',
             time()
         ));
 
@@ -479,17 +594,17 @@ final class Dropshipzone_Sync {
      */
     private function create_default_options() {
         // API Settings
-        if (!get_option('dsz_sync_api_email')) {
-            add_option('dsz_sync_api_email', '');
+        if (!get_option('dszsync_api_email')) {
+            add_option('dszsync_api_email', '');
         }
-        if (!get_option('dsz_sync_api_password')) {
-            add_option('dsz_sync_api_password', '');
+        if (!get_option('dszsync_api_password')) {
+            add_option('dszsync_api_password', '');
         }
-        if (!get_option('dsz_sync_api_token')) {
-            add_option('dsz_sync_api_token', '');
+        if (!get_option('dszsync_api_token')) {
+            add_option('dszsync_api_token', '');
         }
-        if (!get_option('dsz_sync_token_expiry')) {
-            add_option('dsz_sync_token_expiry', 0);
+        if (!get_option('dszsync_token_expiry')) {
+            add_option('dszsync_token_expiry', 0);
         }
 
         // Price Rules
@@ -501,8 +616,8 @@ final class Dropshipzone_Sync {
             'gst_enabled' => true,
             'gst_type' => 'include', // include or exclude
         ];
-        if (!get_option('dsz_sync_price_rules')) {
-            add_option('dsz_sync_price_rules', $price_defaults);
+        if (!get_option('dszsync_price_rules')) {
+            add_option('dszsync_price_rules', $price_defaults);
         }
 
         // Stock Rules
@@ -512,8 +627,8 @@ final class Dropshipzone_Sync {
             'zero_on_unavailable' => true,
             'auto_out_of_stock' => true,
         ];
-        if (!get_option('dsz_sync_stock_rules')) {
-            add_option('dsz_sync_stock_rules', $stock_defaults);
+        if (!get_option('dszsync_stock_rules')) {
+            add_option('dszsync_stock_rules', $stock_defaults);
         }
 
         // Sync Settings
@@ -526,8 +641,8 @@ final class Dropshipzone_Sync {
             'products_updated' => 0,
             'errors_count' => 0,
         ];
-        if (!get_option('dsz_sync_settings')) {
-            add_option('dsz_sync_settings', $sync_defaults);
+        if (!get_option('dszsync_settings')) {
+            add_option('dszsync_settings', $sync_defaults);
         }
     }
 
@@ -535,7 +650,7 @@ final class Dropshipzone_Sync {
      * Load plugin text domain
      */
     public function load_textdomain() {
-        // load_plugin_textdomain('3s-product-sync-for-dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
+        // load_plugin_textdomain('3s-soft-price-stock-sync-for-dropshipzone', false, dirname(DSZSYNC_PLUGIN_BASENAME) . '/languages');
     }
 
     /**
@@ -543,7 +658,7 @@ final class Dropshipzone_Sync {
      */
     public function declare_hpos_compatibility() {
         if (class_exists(\Automattic\WooCommerce\Utilities\FeaturesUtil::class)) {
-            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', DSZ_SYNC_PLUGIN_FILE, true);
+            \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', DSZSYNC_PLUGIN_FILE, true);
         }
     }
 }
@@ -551,9 +666,9 @@ final class Dropshipzone_Sync {
 /**
  * Initialize the plugin
  */
-function dsz_sync() {
+function dszsync_sync() {
     return Dropshipzone_Sync::instance();
 }
 
 // Start the plugin
-dsz_sync();
+dszsync_sync();

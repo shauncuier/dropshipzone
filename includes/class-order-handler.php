@@ -89,32 +89,32 @@ class Order_Handler {
         $order = wc_get_order($wc_order_id);
         
         if (!$order) {
-            return new \WP_Error('order_not_found', __('WooCommerce order not found.', '3s-product-sync-for-dropshipzone'));
+            return new \WP_Error('order_not_found', __('WooCommerce order not found.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
         // Check if already submitted
-        $existing = $this->get_dsz_order($wc_order_id);
+        $existing = $this->get_dszsync_order($wc_order_id);
         if ($existing && !empty($existing['dsz_serial_number'])) {
             return new \WP_Error(
                 'already_submitted',
                 /* translators: %s: DSZ serial number */
-                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', '3s-product-sync-for-dropshipzone'), $existing['dsz_serial_number'])
+                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', '3s-soft-price-stock-sync-for-dropshipzone'), $existing['dsz_serial_number'])
             );
         }
 
         // Get DSZ order items (only mapped products)
-        $dsz_items = $this->get_dsz_order_items($order);
+        $dszsync_items = $this->get_dszsync_order_items($order);
         
-        if (empty($dsz_items)) {
-            return new \WP_Error('no_dsz_items', __('No Dropshipzone-mapped products in this order.', '3s-product-sync-for-dropshipzone'));
+        if (empty($dszsync_items)) {
+            return new \WP_Error('no_dszsync_items', __('No Dropshipzone-mapped products in this order.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
         // Map order data for API
-        $order_data = $this->map_order_data($order, $dsz_items);
+        $order_data = $this->map_order_data($order, $dszsync_items);
 
         $this->logger->info('Submitting order to Dropshipzone', [
             'wc_order_id' => $wc_order_id,
-            'items' => count($dsz_items),
+            'items' => count($dszsync_items),
         ]);
 
         // Submit to API
@@ -122,12 +122,12 @@ class Order_Handler {
 
         if (is_wp_error($result)) {
             // Save error
-            $this->save_dsz_order($wc_order_id, '', 'error', $result->get_error_message());
+            $this->save_dszsync_order($wc_order_id, '', 'error', $result->get_error_message());
             
             // Add order note
             $order->add_order_note(
                 /* translators: %s: error message */
-                sprintf(__('Dropshipzone submission failed: %s', '3s-product-sync-for-dropshipzone'), $result->get_error_message()),
+                sprintf(__('Dropshipzone submission failed: %s', '3s-soft-price-stock-sync-for-dropshipzone'), $result->get_error_message()),
                 false
             );
             
@@ -137,29 +137,29 @@ class Order_Handler {
         $serial_number = $result['serial_number'] ?? '';
         
         // Save success
-        $this->save_dsz_order($wc_order_id, $serial_number, 'not_submitted');
+        $this->save_dszsync_order($wc_order_id, $serial_number, 'not_submitted');
         
         // Add order note
         $order->add_order_note(
             /* translators: %s: DSZ serial number */
-            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', '3s-product-sync-for-dropshipzone'), $serial_number),
+            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', '3s-soft-price-stock-sync-for-dropshipzone'), $serial_number),
             false
         );
 
         // Save DSZ serial to order meta
-        $order->update_meta_data('_dsz_serial_number', $serial_number);
-        $order->update_meta_data('_dsz_submitted_at', current_time('mysql'));
+        $order->update_meta_data('_dszsync_serial_number', $serial_number);
+        $order->update_meta_data('_dszsync_submitted_at', current_time('mysql'));
         $order->save();
 
         $this->logger->info('Order submitted successfully', [
             'wc_order_id' => $wc_order_id,
-            'dsz_serial' => $serial_number,
+            'dszsync_serial' => $serial_number,
         ]);
 
         return [
             'success' => true,
             'serial_number' => $serial_number,
-            'message' => __('Order submitted successfully', '3s-product-sync-for-dropshipzone'),
+            'message' => __('Order submitted successfully', '3s-soft-price-stock-sync-for-dropshipzone'),
         ];
     }
 
@@ -169,8 +169,8 @@ class Order_Handler {
      * @param WC_Order $order WooCommerce order
      * @return array Array of DSZ order items with sku and qty
      */
-    public function get_dsz_order_items($order) {
-        $dsz_items = [];
+    public function get_dszsync_order_items($order) {
+        $dszsync_items = [];
 
         foreach ($order->get_items() as $item) {
             $product = $item->get_product();
@@ -184,24 +184,24 @@ class Order_Handler {
             $dsz_sku = $this->product_mapper->get_dsz_sku($product_id);
             
             if ($dsz_sku) {
-                $dsz_items[] = [
+                $dszsync_items[] = [
                     'sku' => $dsz_sku,
                     'qty' => $item->get_quantity(),
                 ];
             }
         }
 
-        return $dsz_items;
+        return $dszsync_items;
     }
 
     /**
      * Map WooCommerce order data to Dropshipzone API format
      *
      * @param WC_Order $order     WooCommerce order
-     * @param array    $dsz_items DSZ order items
+     * @param array    $dszsync_items DSZ order items
      * @return array API-formatted order data
      */
-    public function map_order_data($order, $dsz_items) {
+    public function map_order_data($order, $dszsync_items) {
         // Use shipping address if available, otherwise billing
         $use_shipping = $order->has_shipping_address();
 
@@ -216,7 +216,7 @@ class Order_Handler {
             'postcode' => $use_shipping ? $order->get_shipping_postcode() : $order->get_billing_postcode(),
             'telephone' => $order->get_billing_phone(),
             'comment' => $order->get_customer_note(),
-            'order_items' => $dsz_items,
+            'order_items' => $dszsync_items,
         ];
     }
 
@@ -250,10 +250,10 @@ class Order_Handler {
      * @param string $error_message Error message if any
      * @return bool Success
      */
-    public function save_dsz_order($wc_order_id, $serial_number, $status = 'not_submitted', $error_message = '') {
+    public function save_dszsync_order($wc_order_id, $serial_number, $status = 'not_submitted', $error_message = '') {
         global $wpdb;
 
-        $existing = $this->get_dsz_order($wc_order_id);
+        $existing = $this->get_dszsync_order($wc_order_id);
 
         if ($existing) {
             return $wpdb->update(
@@ -289,7 +289,7 @@ class Order_Handler {
      * @param int $wc_order_id WooCommerce order ID
      * @return array|null Order data or null
      */
-    public function get_dsz_order($wc_order_id) {
+    public function get_dszsync_order($wc_order_id) {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM " . $this->table_name . " WHERE wc_order_id = %d",
@@ -303,14 +303,14 @@ class Order_Handler {
      * @param int $wc_order_id WooCommerce order ID
      * @return bool True if order has DSZ-mapped products
      */
-    public function order_has_dsz_products($wc_order_id) {
+    public function order_has_dszsync_products($wc_order_id) {
         $order = wc_get_order($wc_order_id);
         if (!$order) {
             return false;
         }
         
-        $dsz_items = $this->get_dsz_order_items($order);
-        return !empty($dsz_items);
+        $dszsync_items = $this->get_dszsync_order_items($order);
+        return !empty($dszsync_items);
     }
 
     /**
@@ -319,7 +319,7 @@ class Order_Handler {
      * @param array $args Query args (limit, offset, status)
      * @return array Orders
      */
-    public function get_all_dsz_orders($args = []) {
+    public function get_all_dszsync_orders($args = []) {
         global $wpdb;
 
         $defaults = [
@@ -380,7 +380,7 @@ class Order_Handler {
             if (in_array(intval($order_id), $submitted, true)) {
                 continue;
             }
-            if ($this->order_has_dsz_products($order_id)) {
+            if ($this->order_has_dszsync_products($order_id)) {
                 $pending[] = intval($order_id);
             }
             if (count($pending) >= $limit) {
@@ -448,7 +448,7 @@ class Order_Handler {
             $this->logger->debug('Tracking sync: raw order entry', ['entry' => $entries[0]]);
         }
 
-        $settings = get_option('dsz_order_settings', []);
+        $settings = get_option('dszsync_order_settings', []);
         $auto_complete = !empty($settings['tracking_autocomplete']);
 
         foreach ($entries as $entry) {
@@ -491,14 +491,14 @@ class Order_Handler {
 
             $changed = false;
 
-            if ($tracking !== '' && $order->get_meta('_dsz_tracking_number') !== $tracking) {
-                $order->update_meta_data('_dsz_tracking_number', $tracking);
+            if ($tracking !== '' && $order->get_meta('_dszsync_tracking_number') !== $tracking) {
+                $order->update_meta_data('_dszsync_tracking_number', $tracking);
                 if ($courier !== '') {
-                    $order->update_meta_data('_dsz_courier', $courier);
+                    $order->update_meta_data('_dszsync_courier', $courier);
                 }
                 $order->add_order_note(sprintf(
                     /* translators: %1$s: tracking number, %2$s: courier */
-                    __('Dropshipzone tracking: %1$s %2$s', '3s-product-sync-for-dropshipzone'),
+                    __('Dropshipzone tracking: %1$s %2$s', '3s-soft-price-stock-sync-for-dropshipzone'),
                     $tracking,
                     $courier !== '' ? '(' . $courier . ')' : ''
                 ));
@@ -506,10 +506,10 @@ class Order_Handler {
             }
 
             if ($dsz_status !== '' && in_array($dsz_status, ['processing', 'complete', 'cancelled'], true)) {
-                $this->save_dsz_order($wc_order_id, $serial, $dsz_status);
+                $this->save_dszsync_order($wc_order_id, $serial, $dsz_status);
 
                 if ($dsz_status === 'complete' && $auto_complete && $order->get_status() === 'processing') {
-                    $order->update_status('completed', __('Dropshipzone order complete.', '3s-product-sync-for-dropshipzone'));
+                    $order->update_status('completed', __('Dropshipzone order complete.', '3s-soft-price-stock-sync-for-dropshipzone'));
                     $changed = true;
                 }
             }

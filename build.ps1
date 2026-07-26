@@ -11,7 +11,7 @@ Set-Location $ScriptDir
 
 # If no version provided, extract from main plugin file
 if ([string]::IsNullOrEmpty($Version)) {
-    $PluginContent = Get-Content "3s-product-sync-for-dropshipzone.php" -Raw
+    $PluginContent = Get-Content "3s-soft-price-stock-sync-for-dropshipzone.php" -Raw
     if ($PluginContent -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
         $Version = $Matches[1]
     } else {
@@ -21,7 +21,7 @@ if ([string]::IsNullOrEmpty($Version)) {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  3S Product Sync for Dropshipzone - Build" -ForegroundColor Cyan
+Write-Host "  3S Soft Price & Stock Sync for Dropshipzone - Build" -ForegroundColor Cyan
 Write-Host "  Version: $Version" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
@@ -29,8 +29,8 @@ Write-Host ""
 # Define paths
 # Folder name MUST match the WordPress.org slug — WordPress uses it as the
 # plugin directory on install and update.
-$PluginFolder = "3s-product-sync-for-dropshipzone"
-$ZipName = "3s-product-sync-for-dropshipzone"
+$PluginFolder = "3s-soft-price-stock-sync-for-dropshipzone"
+$ZipName = "3s-soft-price-stock-sync-for-dropshipzone"
 $BuildDir = Join-Path $ScriptDir "build"
 $DistDir = Join-Path $BuildDir $PluginFolder
 $ZipFile = Join-Path $BuildDir "$ZipName-v$Version.zip"
