@@ -1,82 +1,78 @@
-# WordPress.org submission — slug reservation reply
+# WordPress.org review — reply
 
-The plugins team's follow-up gave four steps. Status:
+Their four steps, and where each stands:
 
 | # | Step | Status |
 |---|---|---|
-| 1 | Update display name in readme and plugin headers | Done — `3S Product Sync for Dropshipzone` |
-| 2 | Update the slug in plugin files (i18n functions) | Done — text domain `3s-product-sync-for-dropshipzone`, 508 strings |
-| 3 | Reply requesting a new slug reservation | **Send the email below** |
-| 4 | Upload a new version via "Add your plugin" | After sending (no need to wait for confirmation) |
+| 1 | Update display name in readme and plugin headers | Done — `3S Soft Price & Stock Sync for Dropshipzone` |
+| 2 | Update the slug in plugin files (i18n functions) | Done — text domain `3s-soft-price-stock-sync-for-dropshipzone` |
+| 3 | Reply requesting a new slug reservation | **Send the message below** |
+| 4 | Upload a new version via "Add your plugin" | After sending; they said not to wait for confirmation |
+
+They asked for brevity — "be brief and direct in your reply, please avoid copy-pasting bloated AI responses" and "do not list the changes done, we will review the entire plugin again". The message below is deliberately short.
 
 ---
 
-## Reply to send
-
-**To:** the plugins team, on the existing review thread (reply to their follow-up email — do not start a new thread)
-**Subject:** keep their subject line intact so it threads
-
----
+## Reply (send on the existing review thread, keep the subject line)
 
 Hello,
 
-Thank you for the guidance. I have made the changes and would like to request a new slug reservation.
+Requesting a new slug reservation:
 
-**Requested slug:** `3s-product-sync-for-dropshipzone`
-**Display name:** 3S Product Sync for Dropshipzone
+**Slug:** `3s-soft-price-stock-sync-for-dropshipzone`
+**Display name:** 3S Soft Price & Stock Sync for Dropshipzone
 
-The original name began with a trademark I do not own. Dropshipzone Pty Ltd is a supplier my plugin integrates with; I am not affiliated with them. The new name puts my own vendor prefix first and keeps the trademark only in the trailing "for Dropshipzone" position, following the example in the submission form. The readme states plainly that the plugin is not affiliated with, endorsed by, or sponsored by Dropshipzone Pty Ltd.
+I am not affiliated with Dropshipzone Pty Ltd — they are a supplier my plugin integrates with. The new name uses my own vendor prefix with the trademark only in the trailing "for Dropshipzone" position, and the readme states the lack of affiliation explicitly. Display name and text domain both match the requested slug.
 
-Both the display name and the text domain have been updated to match the requested slug throughout the plugin.
+I have worked through the naming, ownership, sanitization, escaping, prefixing, external services and directory-assets points from your email. A new version is uploaded.
 
-I have also addressed the other guideline issues I found while reviewing:
+One note on the prefix: I widened `dsz_` to `dszsync_` across functions, options, post meta, hooks, AJAX actions and the shipping method id, with a migration for existing installs. I left the custom database table and column names on the old form, as they are scoped inside tables the plugin owns and renaming them would mean an ALTER TABLE on live data for no collision benefit. Happy to change that if you would prefer consistency.
 
-- Added a full **External Services** disclosure to readme.txt covering every request the plugin makes to the Dropshipzone API, the data each one sends (including customer name, address and phone number when an order is submitted for fulfilment), and links to the provider's terms and privacy policy.
-- Fixed a **sanitization** problem: product data cached in the browser during a catalogue search was posted back and decoded straight into product creation. It is now recursively sanitized before use.
-- Fixed two **output escaping** issues flagged by Plugin Check.
-- Removed debug `error_log()` calls, corrected the Plugin URI to a page I control, and removed an inaccurate claim of official affiliation.
-
-I will upload the new version via the "Add your plugin" page now, as you suggested, without waiting for the slug reservation to be confirmed.
-
-My WordPress.org account is 3ssoft.bd@gmail.com, which is the account that will own the listing.
-
-Thank you,
-3s-Soft
+Thanks,
+Jashe (shauncuier)
 
 ---
 
 ## Then upload
 
-| Form item | Answer |
+`build/3s-soft-price-stock-sync-for-dropshipzone-v3.3.0.zip` — 125 KB, 19 entries, root folder matches the slug, no dev files.
+
+Form answers:
+
+| Item | Answer |
 |---|---|
-| Zip | `build/3s-product-sync-for-dropshipzone-v3.2.0.zip` (123 KB, well under the 10 MB cap) |
-| Plugin name in file | `3S Product Sync for Dropshipzone` → slug `3s-product-sync-for-dropshipzone` |
 | Read FAQ / guidelines | Yes |
 | Plugin Check run, issues resolved | **Run it first — see below** |
 | Distinctive name, searched for similar | Yes — vendor prefix, trademark trailing |
-| Permission to upload, account represents owner | Yes — 3ssoft.bd@gmail.com is the 3s-Soft account |
-| No artificial feature limitations | Yes — no paywall, licence gate, trial or usage cap anywhere in the code |
+| Permission to upload; account represents owner | Yes — account `shauncuier` |
+| No artificial feature limitations | Yes — no paywall, licence gate, trial or usage cap |
 
 ## Run Plugin Check before ticking that box
 
-The form requires confirming the plugin was tested with **Plugin Check**. That has not been done — a static audit is not the same thing, and ticking the box without running it would be a false declaration.
+The form makes you confirm the plugin was tested with **Plugin Check**. It has not been — a static audit is not the same thing, and ticking it would be a false declaration.
 
-On dropshipzone.local:
-
-1. Install the **Plugin Check** plugin from the directory.
-2. Install this plugin from `build/3s-product-sync-for-dropshipzone-v3.2.0.zip`.
+1. Install **Plugin Check** from the directory on dropshipzone.local.
+2. Install this plugin from the 3.3.0 zip.
 3. Tools → Plugin Check → select the plugin → run all checks.
 4. Fix what it reports, or note anything you judge a false positive.
 
-Three findings to expect, all already understood:
+Expect three findings, all understood:
 
-- **Text Domain mismatch** — expected and explicitly excused in their email: *"You may see a warning regarding the 'Text Domain', as we haven't changed the slug on our side yet. That's fine."*
-- **`Tested up to: 6.7.1`** in readme.txt is stale and will be flagged. Set it to the current WordPress version before submitting. This one is worth fixing.
-- **Direct database queries** in the logger, mapper and order handler. Legitimate — the plugin owns three custom tables — each marked with a `phpcs:ignore` and using `$wpdb->prepare()`. Reasonable to declare as a false positive.
+- **Text Domain mismatch** — pre-excused in their email: *"You may see a warning regarding the 'Text Domain', as we haven't changed the slug on our side yet. That's fine."*
+- **`Tested up to: 6.7.1`** — genuinely stale. Set it to the current WordPress version before uploading. Worth fixing.
+- **Direct database queries** — legitimate; the plugin owns three custom tables, every query uses `$wpdb->prepare()` and carries a `phpcs:ignore`. Defensible as a false positive.
 
-## Other pre-submission items
+## Already handled from their email
 
-- **Screenshots**: readme.txt lists 10, none exist. They go in the SVN `/assets` directory as `screenshot-1.png` etc. after approval, not in the zip. Either produce them or trim the list.
-- **`.pot` regeneration**: the translation template is stale (dated 2024, string references predate two renames). Regenerate with
-  `wp i18n make-pot . languages/3s-product-sync-for-dropshipzone.pot`
-  Not a blocker for review.
+- Sanitization: both `product_data` paths, plus the settings/password path.
+- Escaping: no bare `_e()` / unescaped `__()` left; the two `printf` issues fixed.
+- `load_plugin_textdomain()`: already removed (commented out).
+- External services: full disclosure section in readme.txt.
+- `register_setting()`: all six calls have a `sanitize_callback`.
+- Directory assets: `icon-256x256.png` and `banner-1544x500.png` are out of the zip. They belong in SVN `/assets` after approval.
+
+## Still open
+
+- **Screenshots**: readme.txt lists 10 that do not exist. They go in SVN `/assets` as `screenshot-1.png` etc. after approval — either produce them or trim the list.
+- **`.pot` regeneration**: stale (dated 2024, string references predate three renames). Regenerate with
+  `wp i18n make-pot . languages/3s-soft-price-stock-sync-for-dropshipzone.pot`
