@@ -672,7 +672,7 @@ class Cron {
          *
          * @param array $stats { updated: int, skipped: int, errors: int }
          */
-        do_action('dszsync_completed', [
+        do_action('dszsync_sync_completed', [
             'updated' => isset($final_results['products_updated']) ? intval($final_results['products_updated']) : 0,
             'skipped' => isset($final_results['skipped']) ? intval($final_results['skipped']) : 0,
             'errors' => isset($final_results['errors_count']) ? intval($final_results['errors_count']) : 0,

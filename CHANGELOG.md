@@ -5,6 +5,16 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.4] - 2026-07-27
+
+### Fixed
+- **`dszsync_sync_completed` action name.** The prefix rename in 3.3.0 rewrote `dsz_sync_` → `dszsync_`, which turned `dsz_sync_completed` into `dszsync_completed` — ambiguous, and not the name the documentation used. Renamed to `dszsync_sync_completed`. Anything hooked to the interim name must be updated; the plugin has not been publicly released with it.
+
+### Changed
+- **README rewritten.** It still documented the hooks under their pre-3.3.0 `dsz_` names, which no longer fire, and linked to `API-DOCUMENTATION.md`, deleted in 3.1.0. Requirements corrected to WordPress 6.2, the upgrade migration is now documented, and the support section no longer points at a Dropshipzone address the maintainers do not control.
+
+---
+
 ## [3.3.3] - 2026-07-27
 
 ### Changed

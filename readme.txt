@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.3
+Stable tag: 3.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -142,6 +142,10 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.3.4 =
+* FIXED: The sync-completed action was left as dszsync_completed by the prefix rename. It is now dszsync_sync_completed, matching the documented name.
+* CHANGED: README rewritten - corrected hook names, removed a link to a deleted file, updated requirements to WordPress 6.2, and documented the upgrade migration.
 
 = 3.3.3 =
 * CHANGED: Converted the last two product-search queries to the %i identifier placeholder, clearing the final Plugin Check errors.
