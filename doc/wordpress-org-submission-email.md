@@ -1,39 +1,64 @@
 # WordPress.org review — reply
 
-Their four steps, and where each stands:
+## Do not use the upload form
+
+The January pre-review email said to upload via "Add your plugin". The
+**2 May rejection supersedes that**:
+
+> All we ask is you do not resubmit your plugin until asked to do so.
+> ...
+> You can reply to the original review (or even this email) with your
+> updated code for as long as needed. Even years.
+> ...
+> please email us with your plugin attached as a zip
+
+So the plugin goes back **as an email attachment**, not through the form.
+Uploading now would be resubmitting against an explicit instruction.
 
 | # | Step | Status |
 |---|---|---|
 | 1 | Update display name in readme and plugin headers | Done — `3S Soft Price & Stock Sync for Dropshipzone` |
 | 2 | Update the slug in plugin files (i18n functions) | Done — text domain `3s-soft-price-stock-sync-for-dropshipzone` |
-| 3 | Reply requesting a new slug reservation | **Send the message below** |
-| 4 | Upload a new version via "Add your plugin" | After sending; they said not to wait for confirmation |
+| 3 | Reply requesting a new slug reservation | **Send the message below, zip attached** |
+| 4 | Upload via "Add your plugin" | **Only when they ask** — do not do this yet |
+
+Send from `3ssoft.bd@gmail.com` (where the thread lives), subject line
+unchanged so it threads to the same ticket, with
+`build/3s-soft-price-stock-sync-for-dropshipzone-v3.3.3.zip` attached.
 
 They asked for brevity — "be brief and direct in your reply, please avoid copy-pasting bloated AI responses" and "do not list the changes done, we will review the entire plugin again". The message below is deliberately short.
 
 ---
 
-## Reply (send on the existing review thread, keep the subject line)
+## Reply (zip attached, subject line unchanged)
 
 Hello,
+
+Still working on this — attaching the updated plugin.
+
+The core problem was the name: "DropshipZone Sync" led with a trademark I do not own. I am not affiliated with Dropshipzone Pty Ltd; they are a supplier this plugin integrates with.
 
 Requesting a new slug reservation:
 
 **Slug:** `3s-soft-price-stock-sync-for-dropshipzone`
 **Display name:** 3S Soft Price & Stock Sync for Dropshipzone
 
-I am not affiliated with Dropshipzone Pty Ltd — they are a supplier my plugin integrates with. The new name uses my own vendor prefix with the trademark only in the trailing "for Dropshipzone" position, and the readme states the lack of affiliation explicitly. Display name and text domain both match the requested slug.
+The trademark now appears only in the trailing "for Dropshipzone" position, with my own vendor prefix in front. Display name and text domain both match the requested slug, and the readme states the lack of affiliation explicitly.
 
-I have worked through the naming, ownership, sanitization, escaping, prefixing, external services and directory-assets points from your email. A new version is uploaded.
+I have also updated my WordPress.org account email to plugins@3s-soft.com, on the domain of the entity behind the plugin.
+
+The naming, ownership, sanitization, escaping, prefixing, external services and directory-assets points from the review have been addressed. Plugin Check runs clean.
 
 One note on the prefix: I widened `dsz_` to `dszsync_` across functions, options, post meta, hooks, AJAX actions and the shipping method id, with a migration for existing installs. I left the custom database table and column names on the old form, as they are scoped inside tables the plugin owns and renaming them would mean an ALTER TABLE on live data for no collision benefit. Happy to change that if you would prefer consistency.
 
+Please let me know if you would like me to upload via the Add your plugin page instead — I have not done so, per the instruction not to resubmit until asked.
+
 Thanks,
-Jashe (shauncuier)
+Shaun (shauncuier)
 
 ---
 
-## Then upload
+## Only if they ask you to upload
 
 `build/3s-soft-price-stock-sync-for-dropshipzone-v3.3.3.zip` — 128 KB, 19 entries, root folder matches the slug, no dev files.
 
