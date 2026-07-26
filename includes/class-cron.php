@@ -71,7 +71,7 @@ class Cron {
     public function add_cron_schedules($schedules) {
         $schedules['every_six_hours'] = [
             'interval' => 6 * HOUR_IN_SECONDS,
-            'display' => __('Every 6 Hours', 'product-sync-for-dropshipzone'),
+            'display' => __('Every 6 Hours', '3s-product-sync-for-dropshipzone'),
         ];
         return $schedules;
     }
@@ -143,7 +143,7 @@ class Cron {
                 $this->logger->warning('Sync already in progress, skipping');
                 return [
                     'status' => 'skipped',
-                    'message' => __('Sync already in progress', 'product-sync-for-dropshipzone'),
+                    'message' => __('Sync already in progress', '3s-product-sync-for-dropshipzone'),
                 ];
             }
             // Reset stuck sync
@@ -176,7 +176,7 @@ class Cron {
         if (get_transient('dsz_sync_batch_lock')) {
             return [
                 'status' => 'processing',
-                'message' => __('Another sync batch is already running', 'product-sync-for-dropshipzone'),
+                'message' => __('Another sync batch is already running', '3s-product-sync-for-dropshipzone'),
             ];
         }
         set_transient('dsz_sync_batch_lock', 1, 120);
@@ -219,7 +219,7 @@ class Cron {
             $this->complete_sync(['message' => 'No mapped products to sync']);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', 'product-sync-for-dropshipzone'),
+                'message' => __('Sync completed - No mapped products. Use Product Mapping page to map products first.', '3s-product-sync-for-dropshipzone'),
                 'products_updated' => 0,
                 'errors_count' => 0,
             ];
@@ -236,7 +236,7 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', 'product-sync-for-dropshipzone'),
+                'message' => __('Sync completed', '3s-product-sync-for-dropshipzone'),
                 'products_updated' => isset($settings['products_updated']) ? $settings['products_updated'] : 0,
                 'errors_count' => isset($settings['errors_count']) ? $settings['errors_count'] : 0,
             ];
@@ -436,7 +436,7 @@ class Cron {
             ]);
             return [
                 'status' => 'complete',
-                'message' => __('Sync completed', 'product-sync-for-dropshipzone'),
+                'message' => __('Sync completed', '3s-product-sync-for-dropshipzone'),
                 'products_updated' => $settings['products_updated'],
                 'errors_count' => $settings['errors_count'],
             ];
@@ -464,7 +464,7 @@ class Cron {
         return [
             'status' => 'processing',
             /* translators: %1$d: current batch number, %2$d: total batches */
-            'message' => sprintf(__('Processing batch %1$d of %2$d', 'product-sync-for-dropshipzone'), $current_batch, $total_batches),
+            'message' => sprintf(__('Processing batch %1$d of %2$d', '3s-product-sync-for-dropshipzone'), $current_batch, $total_batches),
             'progress' => $progress,
             'products_updated' => $settings['products_updated'],
             'errors_count' => $settings['errors_count'],
@@ -763,7 +763,7 @@ class Cron {
         if (empty($settings['sync_in_progress'])) {
             return [
                 'status' => 'complete',
-                'message' => __('Sync not in progress', 'product-sync-for-dropshipzone'),
+                'message' => __('Sync not in progress', '3s-product-sync-for-dropshipzone'),
             ];
         }
 

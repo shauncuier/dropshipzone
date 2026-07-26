@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: Product Sync for Dropshipzone
- * Plugin URI: https://3s-soft.com/plugins/product-sync-for-dropshipzone
+ * Plugin Name: 3S Product Sync for Dropshipzone
+ * Plugin URI: https://3s-soft.com/plugins/3s-product-sync-for-dropshipzone
  * Description: Sync product prices, stock levels and shipping rates from the Dropshipzone supplier API into WooCommerce, import catalogue products, and submit orders for fulfilment.
- * Version: 3.1.0
+ * Version: 3.2.0
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: product-sync-for-dropshipzone
+ * Text Domain: 3s-product-sync-for-dropshipzone
  * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 7.4
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZ_SYNC_VERSION', '3.1.0');
+define('DSZ_SYNC_VERSION', '3.2.0');
 define('DSZ_SYNC_PLUGIN_FILE', __FILE__);
 define('DSZ_SYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZ_SYNC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -90,7 +90,7 @@ final class Dropshipzone_Sync {
     public function woocommerce_missing_notice() {
         ?>
         <div class="notice notice-error">
-            <p><?php esc_html_e('Product Sync for Dropshipzone requires WooCommerce to be installed and active.', 'product-sync-for-dropshipzone'); ?></p>
+            <p><?php esc_html_e('3S Product Sync for Dropshipzone requires WooCommerce to be installed and active.', '3s-product-sync-for-dropshipzone'); ?></p>
         </div>
         <?php
     }
@@ -322,8 +322,8 @@ final class Dropshipzone_Sync {
         }
 
         $targets = [
-            'AU' => __('Australia', 'product-sync-for-dropshipzone'),
-            'NZ' => __('New Zealand', 'product-sync-for-dropshipzone'),
+            'AU' => __('Australia', '3s-product-sync-for-dropshipzone'),
+            'NZ' => __('New Zealand', '3s-product-sync-for-dropshipzone'),
         ];
 
         foreach ($targets as $country => $label) {
@@ -535,7 +535,7 @@ final class Dropshipzone_Sync {
      * Load plugin text domain
      */
     public function load_textdomain() {
-        // load_plugin_textdomain('product-sync-for-dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
+        // load_plugin_textdomain('3s-product-sync-for-dropshipzone', false, dirname(DSZ_SYNC_PLUGIN_BASENAME) . '/languages');
     }
 
     /**

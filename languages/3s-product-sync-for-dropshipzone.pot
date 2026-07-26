@@ -2,7 +2,7 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Product Sync for Dropshipzone 3.0.0\n"
+"Project-Id-Version: 3S Product Sync for Dropshipzone 3.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/shauncuier/dropshipzone/issues\n"
 "POT-Creation-Date: 2024-12-24 20:50+0600\n"
 "MIME-Version: 1.0\n"

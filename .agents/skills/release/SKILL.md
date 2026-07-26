@@ -19,8 +19,8 @@ Trigger this skill when the user requests any of:
 
 | Item | Value |
 |------|-------|
-| Plugin slug | `product-sync-for-dropshipzone` |
-| Main file | `product-sync-for-dropshipzone.php` |
+| Plugin slug | `3s-product-sync-for-dropshipzone` |
+| Main file | `3s-product-sync-for-dropshipzone.php` |
 | Namespace | `Dropshipzone` |
 | GitHub repo | `shauncuier/dropshipzone` |
 | Build script | `build.ps1` |
@@ -33,8 +33,8 @@ All of these **must** be updated in lockstep during a release:
 
 | File | Pattern | Example |
 |------|---------|---------|
-| `product-sync-for-dropshipzone.php` | `Version: X.Y.Z` (plugin header) | `Version: 2.5.0` |
-| `product-sync-for-dropshipzone.php` | `define('DSZ_SYNC_VERSION', 'X.Y.Z')` | `define('DSZ_SYNC_VERSION', '2.5.0')` |
+| `3s-product-sync-for-dropshipzone.php` | `Version: X.Y.Z` (plugin header) | `Version: 2.5.0` |
+| `3s-product-sync-for-dropshipzone.php` | `define('DSZ_SYNC_VERSION', 'X.Y.Z')` | `define('DSZ_SYNC_VERSION', '2.5.0')` |
 | `readme.txt` | `Stable tag: X.Y.Z` | `Stable tag: 2.5.0` |
 | `README.md` | Version badge URL (if present) | `version-2.5.0-blue` |
 | `CHANGELOG.md` | Release heading & links | `## [2.5.0] - 2025-12-30` |
@@ -53,7 +53,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 1. **Determine the bump type** (or explicit version):
    - Ask the user if not specified: `patch`, `minor`, `major`, or an exact `X.Y.Z`.
-2. **Read the current version** from `product-sync-for-dropshipzone.php`:
+2. **Read the current version** from `3s-product-sync-for-dropshipzone.php`:
    - Parse `Version: X.Y.Z` from the plugin header.
    - Parse `define('DSZ_SYNC_VERSION', 'X.Y.Z')`.
 3. **Calculate the new version** by applying the bump.
@@ -62,7 +62,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 Update every file listed in the "Files That Contain the Version" table above. Use exact string replacements — never regex-replace blindly.
 
-**product-sync-for-dropshipzone.php:**
+**3s-product-sync-for-dropshipzone.php:**
 ```
 Version: <old> → Version: <new>
 define('DSZ_SYNC_VERSION', '<old>') → define('DSZ_SYNC_VERSION', '<new>')
@@ -236,4 +236,4 @@ Then delete the GitHub Release manually at:
 | "release 3.0.0" | Run with `-Version "3.0.0"` |
 | "dry run release" | Run with `-DryRun` flag |
 | "build only" | Run `build.ps1` only, skip release |
-| "what version are we on?" | Read and report from `product-sync-for-dropshipzone.php` |
+| "what version are we on?" | Read and report from `3s-product-sync-for-dropshipzone.php` |

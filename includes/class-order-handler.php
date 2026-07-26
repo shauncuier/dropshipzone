@@ -89,7 +89,7 @@ class Order_Handler {
         $order = wc_get_order($wc_order_id);
         
         if (!$order) {
-            return new \WP_Error('order_not_found', __('WooCommerce order not found.', 'product-sync-for-dropshipzone'));
+            return new \WP_Error('order_not_found', __('WooCommerce order not found.', '3s-product-sync-for-dropshipzone'));
         }
 
         // Check if already submitted
@@ -98,7 +98,7 @@ class Order_Handler {
             return new \WP_Error(
                 'already_submitted',
                 /* translators: %s: DSZ serial number */
-                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', 'product-sync-for-dropshipzone'), $existing['dsz_serial_number'])
+                sprintf(__('Order already submitted to Dropshipzone (Serial: %s)', '3s-product-sync-for-dropshipzone'), $existing['dsz_serial_number'])
             );
         }
 
@@ -106,7 +106,7 @@ class Order_Handler {
         $dsz_items = $this->get_dsz_order_items($order);
         
         if (empty($dsz_items)) {
-            return new \WP_Error('no_dsz_items', __('No Dropshipzone-mapped products in this order.', 'product-sync-for-dropshipzone'));
+            return new \WP_Error('no_dsz_items', __('No Dropshipzone-mapped products in this order.', '3s-product-sync-for-dropshipzone'));
         }
 
         // Map order data for API
@@ -127,7 +127,7 @@ class Order_Handler {
             // Add order note
             $order->add_order_note(
                 /* translators: %s: error message */
-                sprintf(__('Dropshipzone submission failed: %s', 'product-sync-for-dropshipzone'), $result->get_error_message()),
+                sprintf(__('Dropshipzone submission failed: %s', '3s-product-sync-for-dropshipzone'), $result->get_error_message()),
                 false
             );
             
@@ -142,7 +142,7 @@ class Order_Handler {
         // Add order note
         $order->add_order_note(
             /* translators: %s: DSZ serial number */
-            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', 'product-sync-for-dropshipzone'), $serial_number),
+            sprintf(__('Order submitted to Dropshipzone. Serial: %s (Status: Not Submitted - awaiting payment in DSZ)', '3s-product-sync-for-dropshipzone'), $serial_number),
             false
         );
 
@@ -159,7 +159,7 @@ class Order_Handler {
         return [
             'success' => true,
             'serial_number' => $serial_number,
-            'message' => __('Order submitted successfully', 'product-sync-for-dropshipzone'),
+            'message' => __('Order submitted successfully', '3s-product-sync-for-dropshipzone'),
         ];
     }
 
@@ -498,7 +498,7 @@ class Order_Handler {
                 }
                 $order->add_order_note(sprintf(
                     /* translators: %1$s: tracking number, %2$s: courier */
-                    __('Dropshipzone tracking: %1$s %2$s', 'product-sync-for-dropshipzone'),
+                    __('Dropshipzone tracking: %1$s %2$s', '3s-product-sync-for-dropshipzone'),
                     $tracking,
                     $courier !== '' ? '(' . $courier . ')' : ''
                 ));
@@ -509,7 +509,7 @@ class Order_Handler {
                 $this->save_dsz_order($wc_order_id, $serial, $dsz_status);
 
                 if ($dsz_status === 'complete' && $auto_complete && $order->get_status() === 'processing') {
-                    $order->update_status('completed', __('Dropshipzone order complete.', 'product-sync-for-dropshipzone'));
+                    $order->update_status('completed', __('Dropshipzone order complete.', '3s-product-sync-for-dropshipzone'));
                     $changed = true;
                 }
             }

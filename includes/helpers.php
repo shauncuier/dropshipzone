@@ -125,11 +125,11 @@ function dsz_validate_credentials($email, $password) {
     $password = sanitize_text_field($password);
     
     if (empty($email) || !is_email($email)) {
-        return new \WP_Error('invalid_email', __('Please enter a valid email address.', 'product-sync-for-dropshipzone'));
+        return new \WP_Error('invalid_email', __('Please enter a valid email address.', '3s-product-sync-for-dropshipzone'));
     }
     
     if (empty($password)) {
-        return new \WP_Error('empty_password', __('Password cannot be empty.', 'product-sync-for-dropshipzone'));
+        return new \WP_Error('empty_password', __('Password cannot be empty.', '3s-product-sync-for-dropshipzone'));
     }
     
     return [
@@ -146,7 +146,7 @@ function dsz_validate_credentials($email, $password) {
  */
 function dsz_format_datetime($timestamp) {
     if (empty($timestamp)) {
-        return __('Never', 'product-sync-for-dropshipzone');
+        return __('Never', '3s-product-sync-for-dropshipzone');
     }
     
     if (is_string($timestamp)) {
@@ -164,7 +164,7 @@ function dsz_format_datetime($timestamp) {
  */
 function dsz_time_ago($datetime) {
     if (empty($datetime)) {
-        return __('Never', 'product-sync-for-dropshipzone');
+        return __('Never', '3s-product-sync-for-dropshipzone');
     }
     
     // Convert datetime string to Unix timestamp if needed
@@ -176,10 +176,10 @@ function dsz_time_ago($datetime) {
     
     // Check for invalid timestamp
     if (!$timestamp || $timestamp <= 0) {
-        return __('Never', 'product-sync-for-dropshipzone');
+        return __('Never', '3s-product-sync-for-dropshipzone');
     }
     
-    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', 'product-sync-for-dropshipzone');
+    return human_time_diff($timestamp, current_time('timestamp')) . ' ' . __('ago', '3s-product-sync-for-dropshipzone');
 }
 
 /**

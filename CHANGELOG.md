@@ -5,6 +5,16 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-07-27
+
+### Changed
+- **Renamed to `3S Product Sync for Dropshipzone`** (slug and text domain `3s-product-sync-for-dropshipzone`). The WordPress.org submission form warns that generic names are unlikely to be accepted and gives `WriteralAI – AI Writer for Acme` as the model for non-owners: a vendor prefix plus the trademark trailing. `Product Sync` alone was generic enough to risk rejection under that rule, and an approved plugin can never be renamed.
+
+### Fixed
+- Escaped two output paths that Plugin Check flags: the class attribute in the bulk-action admin notice, and a translated string with an embedded link (now `wp_kses_post( sprintf( ... ) )` rather than an `esc_html__()` format string with raw HTML injected as an argument).
+
+---
+
 ## [3.1.0] - 2026-07-27
 
 WordPress.org plugin directory compliance release.

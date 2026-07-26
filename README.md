@@ -1,4 +1,4 @@
-# 🇦🇺 Product Sync for Dropshipzone
+# 🇦🇺 3S Product Sync for Dropshipzone
 
 <div align="center">
 

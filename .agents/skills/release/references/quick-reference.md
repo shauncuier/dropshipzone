@@ -23,8 +23,8 @@
 
 | File | Search for |
 |------|-----------|
-| `product-sync-for-dropshipzone.php` L6 | `Version: X.Y.Z` |
-| `product-sync-for-dropshipzone.php` L27 | `define('DSZ_SYNC_VERSION', 'X.Y.Z')` |
+| `3s-product-sync-for-dropshipzone.php` L6 | `Version: X.Y.Z` |
+| `3s-product-sync-for-dropshipzone.php` L27 | `define('DSZ_SYNC_VERSION', 'X.Y.Z')` |
 | `readme.txt` L9 | `Stable tag: X.Y.Z` |
 | `README.md` badge | `version-X.Y.Z-blue` |
 | `CHANGELOG.md` | `## [X.Y.Z] - YYYY-MM-DD` |
@@ -39,7 +39,7 @@ build, build.ps1, release.ps1, build.sh
 node_modules, .DS_Store, Thumbs.db, *.log, *.md
 ```
 
-**Included:** `readme.txt`, `LICENSE`, `product-sync-for-dropshipzone.php`, `includes/`, `assets/`, `languages/`
+**Included:** `readme.txt`, `LICENSE`, `3s-product-sync-for-dropshipzone.php`, `includes/`, `assets/`, `languages/`
 
 ## GitHub Actions Flow
 

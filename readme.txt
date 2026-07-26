@@ -1,4 +1,4 @@
-=== Product Sync for Dropshipzone ===
+=== 3S Product Sync for Dropshipzone ===
 Contributors: 3s-Soft
 Tags: woocommerce, dropshipping, price sync, stock sync, inventory
 Requires at least: 6.0
@@ -6,7 +6,7 @@ Tested up to: 6.7.1
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.4
-Stable tag: 3.1.0
+Stable tag: 3.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Automatically sync product prices and stock levels from Dropshipzone API to your
 
 == Description ==
 
-**Product Sync for Dropshipzone** is a WooCommerce plugin that synchronizes product prices, stock levels and shipping rates from the Dropshipzone supplier API, imports catalogue products, and submits orders for fulfilment.
+**3S Product Sync for Dropshipzone** is a WooCommerce plugin that synchronizes product prices, stock levels and shipping rates from the Dropshipzone supplier API, imports catalogue products, and submits orders for fulfilment.
 
 This plugin is an independent integration and is not affiliated with, endorsed by, or sponsored by Dropshipzone Pty Ltd.
 
@@ -76,7 +76,7 @@ This plugin is not affiliated with, endorsed by, or sponsored by Dropshipzone Pt
 
 == Installation ==
 
-1. Upload the `product-sync-for-dropshipzone` folder to `/wp-content/plugins/`
+1. Upload the `3s-product-sync-for-dropshipzone` folder to `/wp-content/plugins/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Go to **DSZ Sync > API Settings** and enter your Dropshipzone credentials
 4. Configure your price and stock rules
@@ -142,6 +142,10 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.2.0 =
+* CHANGED: Plugin renamed to "3S Product Sync for Dropshipzone" (slug: 3s-product-sync-for-dropshipzone). The vendor prefix distinguishes the plugin from generically named alternatives while keeping the trademark in the trailing "for Dropshipzone" position.
+* FIXED: Escaped two remaining output paths flagged by Plugin Check (an admin notice class attribute and a translated string containing a link).
 
 = 3.1.0 =
 * CHANGED: Plugin renamed to "Product Sync for Dropshipzone" (slug: product-sync-for-dropshipzone) so the trademark appears only in the trailing "for Dropshipzone" position, per WordPress.org plugin directory guidelines. The text domain changed to match.

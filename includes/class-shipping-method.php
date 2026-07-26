@@ -56,8 +56,8 @@ class Shipping_Method extends \WC_Shipping_Method {
     public function __construct($instance_id = 0) {
         $this->id = 'dsz_shipping';
         $this->instance_id = absint($instance_id);
-        $this->method_title = __('Dropshipzone Shipping', 'product-sync-for-dropshipzone');
-        $this->method_description = __('Calculate shipping rates based on Dropshipzone zone mapping and per-product rates.', 'product-sync-for-dropshipzone');
+        $this->method_title = __('Dropshipzone Shipping', '3s-product-sync-for-dropshipzone');
+        $this->method_description = __('Calculate shipping rates based on Dropshipzone zone mapping and per-product rates.', '3s-product-sync-for-dropshipzone');
         $this->supports = [
             'shipping-zones',
             'instance-settings',
@@ -95,48 +95,48 @@ class Shipping_Method extends \WC_Shipping_Method {
     public function init_form_fields() {
         $this->instance_form_fields = [
             'title' => [
-                'title' => __('Method Title', 'product-sync-for-dropshipzone'),
+                'title' => __('Method Title', '3s-product-sync-for-dropshipzone'),
                 'type' => 'text',
-                'description' => __('This controls the title which the user sees during checkout.', 'product-sync-for-dropshipzone'),
-                'default' => __('Dropshipzone Shipping', 'product-sync-for-dropshipzone'),
+                'description' => __('This controls the title which the user sees during checkout.', '3s-product-sync-for-dropshipzone'),
+                'default' => __('Dropshipzone Shipping', '3s-product-sync-for-dropshipzone'),
                 'desc_tip' => true,
             ],
             'fallback_cost' => [
-                'title' => __('Fallback Cost', 'product-sync-for-dropshipzone'),
+                'title' => __('Fallback Cost', '3s-product-sync-for-dropshipzone'),
                 'type' => 'price',
-                'description' => __('Cost to use when zone rates are unavailable. Leave empty to hide shipping if rates cannot be calculated.', 'product-sync-for-dropshipzone'),
+                'description' => __('Cost to use when zone rates are unavailable. Leave empty to hide shipping if rates cannot be calculated.', '3s-product-sync-for-dropshipzone'),
                 'default' => '',
                 'desc_tip' => true,
-                'placeholder' => __('N/A', 'product-sync-for-dropshipzone'),
+                'placeholder' => __('N/A', '3s-product-sync-for-dropshipzone'),
             ],
             'markup_percent' => [
-                'title' => __('Shipping Markup (%)', 'product-sync-for-dropshipzone'),
+                'title' => __('Shipping Markup (%)', '3s-product-sync-for-dropshipzone'),
                 'type' => 'number',
-                'description' => __('Percentage added on top of the Dropshipzone shipping cost. Dropshipzone bills you their rate when the order is placed — markup is your margin. 0 passes their cost straight through.', 'product-sync-for-dropshipzone'),
+                'description' => __('Percentage added on top of the Dropshipzone shipping cost. Dropshipzone bills you their rate when the order is placed — markup is your margin. 0 passes their cost straight through.', '3s-product-sync-for-dropshipzone'),
                 'default' => '0',
                 'desc_tip' => true,
                 'custom_attributes' => ['min' => '0', 'step' => '0.1'],
             ],
             'free_shipping_threshold' => [
-                'title' => __('Free Shipping Threshold', 'product-sync-for-dropshipzone'),
+                'title' => __('Free Shipping Threshold', '3s-product-sync-for-dropshipzone'),
                 'type' => 'price',
-                'description' => __('Offer free shipping when cart total exceeds this amount. Warning: Dropshipzone still charges you their shipping rate on the order — this comes out of your margin. Leave empty to disable.', 'product-sync-for-dropshipzone'),
+                'description' => __('Offer free shipping when cart total exceeds this amount. Warning: Dropshipzone still charges you their shipping rate on the order — this comes out of your margin. Leave empty to disable.', '3s-product-sync-for-dropshipzone'),
                 'default' => '',
                 'desc_tip' => true,
-                'placeholder' => __('No threshold', 'product-sync-for-dropshipzone'),
+                'placeholder' => __('No threshold', '3s-product-sync-for-dropshipzone'),
             ],
             'handling_fee' => [
-                'title' => __('Handling Fee', 'product-sync-for-dropshipzone'),
+                'title' => __('Handling Fee', '3s-product-sync-for-dropshipzone'),
                 'type' => 'price',
-                'description' => __('Additional handling fee to add to the shipping cost.', 'product-sync-for-dropshipzone'),
+                'description' => __('Additional handling fee to add to the shipping cost.', '3s-product-sync-for-dropshipzone'),
                 'default' => '0',
                 'desc_tip' => true,
             ],
             'zero_rate_unavailable' => [
-                'title' => __('Treat $0 rates as unavailable', 'product-sync-for-dropshipzone'),
+                'title' => __('Treat $0 rates as unavailable', '3s-product-sync-for-dropshipzone'),
                 'type' => 'checkbox',
-                'label' => __('Use the fallback cost when the API returns a $0 rate for a zone', 'product-sync-for-dropshipzone'),
-                'description' => __('Dropshipzone rate data often shows $0 for zones a supplier has not priced. Enable this if $0 rates are producing unwanted free shipping.', 'product-sync-for-dropshipzone'),
+                'label' => __('Use the fallback cost when the API returns a $0 rate for a zone', '3s-product-sync-for-dropshipzone'),
+                'description' => __('Dropshipzone rate data often shows $0 for zones a supplier has not priced. Enable this if $0 rates are producing unwanted free shipping.', '3s-product-sync-for-dropshipzone'),
                 'default' => 'no',
                 'desc_tip' => true,
             ],
@@ -415,7 +415,7 @@ class Shipping_Method extends \WC_Shipping_Method {
         // Negative cache: while the API is failing, don't re-hit it on every
         // shipping recalculation (rate limiter waits would slow checkout)
         if (get_transient('dsz_zone_err_' . $postcode)) {
-            return new \WP_Error('dsz_zone_unavailable', __('Zone lookup temporarily unavailable.', 'product-sync-for-dropshipzone'));
+            return new \WP_Error('dsz_zone_unavailable', __('Zone lookup temporarily unavailable.', '3s-product-sync-for-dropshipzone'));
         }
 
         // Fetch from API
@@ -480,7 +480,7 @@ class Shipping_Method extends \WC_Shipping_Method {
             // 5 minutes after a failure instead of hammering the API
             $err_key = 'dsz_rates_err_' . md5(implode(',', $uncached_skus));
             if (get_transient($err_key)) {
-                return new \WP_Error('dsz_rates_unavailable', __('Rate lookup temporarily unavailable.', 'product-sync-for-dropshipzone'));
+                return new \WP_Error('dsz_rates_unavailable', __('Rate lookup temporarily unavailable.', '3s-product-sync-for-dropshipzone'));
             }
 
             $response = $this->api_client->get_zone_rates($uncached_skus);
