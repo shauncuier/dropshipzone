@@ -628,19 +628,26 @@ class Product_Mapper {
         $like = '%' . $wpdb->esc_like($search) . '%';
 
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        return $wpdb->get_results($wpdb->prepare("
-            SELECT p.ID, p.post_title, pm.meta_value as sku,
-                   CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END as is_mapped,
-                   m.dsz_sku as mapped_to
-            FROM " . $wpdb->posts . " p
-            LEFT JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-            LEFT JOIN " . $this->table_name . " m ON p.ID = m.wc_product_id
-            WHERE p.post_type IN ('product', 'product_variation')
-            AND p.post_status = 'publish'
-            AND (p.post_title LIKE %s OR pm.meta_value LIKE %s OR p.ID = %d)
-            ORDER BY p.post_title ASC
-            LIMIT %d
-        ", $like, $like, intval($search), $limit), ARRAY_A);
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT p.ID, p.post_title, pm.meta_value as sku,
+                    CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END as is_mapped,
+                    m.dsz_sku as mapped_to
+             FROM %i p
+             LEFT JOIN %i pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+             LEFT JOIN %i m ON p.ID = m.wc_product_id
+             WHERE p.post_type IN ('product', 'product_variation')
+             AND p.post_status = 'publish'
+             AND (p.post_title LIKE %s OR pm.meta_value LIKE %s OR p.ID = %d)
+             ORDER BY p.post_title ASC
+             LIMIT %d",
+            $wpdb->posts,
+            $wpdb->postmeta,
+            $this->table_name,
+            $like,
+            $like,
+            intval($search),
+            $limit
+        ), ARRAY_A);
     }
 
     /**
@@ -651,17 +658,20 @@ class Product_Mapper {
     public function get_unmapped_count() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        return (int) $wpdb->get_var("
-            SELECT COUNT(DISTINCT p.ID)
-            FROM " . $wpdb->posts . " p
-            INNER JOIN " . $wpdb->postmeta . " pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-            LEFT JOIN " . $this->table_name . " m ON p.ID = m.wc_product_id
-            WHERE p.post_type IN ('product', 'product_variation')
-            AND p.post_status = 'publish'
-            AND pm.meta_value != ''
-            AND pm.meta_value IS NOT NULL
-            AND m.id IS NULL
-        ");
+        return (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT p.ID)
+             FROM %i p
+             INNER JOIN %i pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
+             LEFT JOIN %i m ON p.ID = m.wc_product_id
+             WHERE p.post_type IN ('product', 'product_variation')
+             AND p.post_status = 'publish'
+             AND pm.meta_value != ''
+             AND pm.meta_value IS NOT NULL
+             AND m.id IS NULL",
+            $wpdb->posts,
+            $wpdb->postmeta,
+            $this->table_name
+        ));
     }
 
     /**

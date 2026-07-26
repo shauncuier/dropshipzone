@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.2
+Stable tag: 3.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -142,6 +142,9 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.3.3 =
+* CHANGED: Converted the last two product-search queries to the %i identifier placeholder, clearing the final Plugin Check errors.
 
 = 3.3.2 =
 * CHANGED: Table names in SQL now use the %i identifier placeholder instead of string concatenation, so queries are genuinely prepared rather than annotated as exceptions. Minimum WordPress raised to 6.2, which introduced %i.
