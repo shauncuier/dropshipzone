@@ -1,6 +1,32 @@
-# WordPress.org review — reply
+# WordPress.org review — status
 
-## Do not use the upload form
+## SUBMITTED — awaiting review (26 July 2026)
+
+Nothing further to send. The submission went through the upload form and
+was accepted.
+
+| | |
+|---|---|
+| Permalink | https://wordpress.org/plugins/3s-soft-price-stock-sync-for-dropshipzone/ |
+| Slug | `3s-soft-price-stock-sync-for-dropshipzone` — confirmed correct |
+| Version | 3.3.3 |
+| Automated scan | Pass |
+| Review email goes to | `plugins@3s-soft.com` |
+
+**Do not reply to the confirmation email** — it says so explicitly, and the
+slug is correct so there is nothing to raise. **Do not submit another
+plugin** while this one is queued. Each extra message can re-queue the
+submission.
+
+The one remaining window: new versions can be uploaded on the submission
+page **until a reviewer starts**. After that it closes. So if the
+`dszsync_` prefix migration fails on a real install, fix and re-upload
+now rather than later.
+
+Everything below is historical — kept for the reasoning, not as
+instructions.
+
+## (historical) Do not use the upload form
 
 The January pre-review email said to upload via "Add your plugin". The
 **2 May rejection supersedes that**:
