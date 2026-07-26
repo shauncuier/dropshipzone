@@ -13,7 +13,7 @@
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * WC requires at least: 8.0
- * WC tested up to: 10.4
+ * WC tested up to: 10.9
  */
 
 namespace Dropshipzone;

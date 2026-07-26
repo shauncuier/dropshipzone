@@ -73,7 +73,7 @@ class Admin_UI {
     /**
      * Constructor
      */
-    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, Product_Mapper $product_mapper = null, Product_Importer $product_importer = null, Order_Handler $order_handler = null, Auto_Importer $auto_importer = null) {
+    public function __construct(API_Client $api_client, Price_Sync $price_sync, Stock_Sync $stock_sync, Cron $cron, Logger $logger, ?Product_Mapper $product_mapper = null, ?Product_Importer $product_importer = null, ?Order_Handler $order_handler = null, ?Auto_Importer $auto_importer = null) {
         $this->api_client = $api_client;
         $this->price_sync = $price_sync;
         $this->stock_sync = $stock_sync;

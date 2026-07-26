@@ -17,6 +17,10 @@ Addresses the plugin review team's January feedback.
 ### Added
 - **One-time prefix migration** on load: copies every renamed option and post meta key (including HPOS order meta), re-points configured WooCommerce shipping zone instances and their per-instance settings at the new method id, and clears the old cron hooks. Existing installs keep their credentials, rules, mappings and schedules.
 
+### Compatibility
+- Declared support for WordPress 7.0 and WooCommerce 10.9 (was 6.7.1 / 10.4).
+- Made the optional `Admin_UI` constructor parameters explicitly nullable. PHP 8.4+ deprecates the implicit form, which was emitting four deprecation notices per admin request.
+
 ### Security
 - The resync handler decoded `product_data` from `$_POST` and passed it into product updates unsanitized — the same flaw already fixed on the import path. It now goes through `dszsync_sanitize_api_product()`.
 - API password input is explicitly constrained to a scalar string. It is deliberately not run through `sanitize_text_field()`, which would corrupt valid passwords; it is never output and is encrypted at rest.

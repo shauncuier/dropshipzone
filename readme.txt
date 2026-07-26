@@ -2,10 +2,10 @@
 Contributors: shauncuier
 Tags: woocommerce, dropshipping, price sync, stock sync, inventory
 Requires at least: 6.0
-Tested up to: 6.7.1
+Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
-WC tested up to: 10.4
+WC tested up to: 10.9
 Stable tag: 3.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -144,6 +144,7 @@ Webhook support is dependent on Dropshipzone offering a webhook API; none exists
 == Changelog ==
 
 = 3.3.0 =
+* COMPAT: Declared support for WordPress 7.0 and WooCommerce 10.9; cleared PHP 8.4+ nullable-parameter deprecation notices.
 * CHANGED: Renamed to "3S Soft Price & Stock Sync for Dropshipzone" (slug: 3s-soft-price-stock-sync-for-dropshipzone), matching the name suggested by the review team.
 * CHANGED: Widened the code prefix from dsz_ to dszsync_ to meet the four-character minimum, with a one-time migration so existing settings, mappings and schedules carry over.
 * CHANGED: Contributors now lists the WordPress.org account that owns the submission.
