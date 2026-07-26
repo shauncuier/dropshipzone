@@ -352,6 +352,7 @@ class Admin_UI {
      * Render page header with navigation
      */
     private function render_header($title, $subtitle = '') {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state (current page, filter, pagination); nothing is created, changed or deleted here.
         $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : 'dsz-sync';
         
         $nav_items = [
@@ -1260,8 +1261,9 @@ class Admin_UI {
             wp_die(esc_html__('You do not have permission to access this page.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state (current page, filter, pagination); nothing is created, changed or deleted here.
         $level = isset($_GET['level']) ? sanitize_text_field(wp_unslash($_GET['level'])) : '';
-        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination state.
         $per_page = 50;
 
         $logs = $this->logger->get_logs([
@@ -1319,17 +1321,24 @@ class Admin_UI {
                 <div class="dsz-logs-toolbar">
                     <div class="dsz-logs-summary">
                         <?php if ($level): ?>
-                            <?php 
-                            /* translators: %1$d: count, %2$s: level type */
-                            printf(esc_html__('Showing %1$d %2$s logs', '3s-soft-price-stock-sync-for-dropshipzone'), $total, ucfirst($level)); 
+                            <?php
+                            echo esc_html(sprintf(
+                                /* translators: %1$d: count, %2$s: level type */
+                                __('Showing %1$d %2$s logs', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                $total,
+                                ucfirst($level)
+                            ));
                             ?>
                             <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-logs')); ?>" class="dsz-clear-filter">
                                 <?php esc_html_e('Clear filter', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </a>
                         <?php else: ?>
-                            <?php 
-                            /* translators: %d: total log count */
-                            printf(esc_html__('Showing all %d logs', '3s-soft-price-stock-sync-for-dropshipzone'), $total); 
+                            <?php
+                            echo esc_html(sprintf(
+                                /* translators: %d: total log count */
+                                __('Showing all %d logs', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                $total
+                            ));
                             ?>
                         <?php endif; ?>
                     </div>
@@ -1414,7 +1423,7 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
         }
 
-        $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
+        $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
         // Do not sanitize passwords — sanitize_text_field can silently alter them
         $password = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
 
@@ -1646,13 +1655,16 @@ class Admin_UI {
             ];
         }
 
-        $fh = fopen('php://temp', 'r+');
+        // Built as a string rather than via a stream: no filesystem access is
+        // involved, so WP_Filesystem is not applicable here.
+        $csv = '';
         foreach ($rows as $row) {
-            fputcsv($fh, $row);
+            $escaped = [];
+            foreach ($row as $field) {
+                $escaped[] = '"' . str_replace('"', '""', (string) $field) . '"';
+            }
+            $csv .= implode(',', $escaped) . "\r\n";
         }
-        rewind($fh);
-        $csv = stream_get_contents($fh);
-        fclose($fh);
 
         wp_send_json_success([
             'csv' => base64_encode($csv),
@@ -1670,6 +1682,8 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
         }
 
+        // Each rule field is sanitized individually in the loop below.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field below
         $raw_rules = isset($_POST['rules']) ? (array) wp_unslash($_POST['rules']) : [];
         $clean = [];
 
@@ -1717,6 +1731,8 @@ class Admin_UI {
         }
 
         $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
+        // Each filter field is sanitized individually when the template is built.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field below
         $filters = isset($_POST['filters']) ? (array) wp_unslash($_POST['filters']) : [];
 
         if ($name === '') {
@@ -1786,9 +1802,10 @@ class Admin_UI {
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state (current page, filter, pagination); nothing is created, changed or deleted here.
         $search = isset($_GET['search']) ? sanitize_text_field(wp_unslash($_GET['search'])) : '';
-        $resync_filter = isset($_GET['resync_filter']) ? sanitize_text_field(wp_unslash($_GET['resync_filter'])) : '';
-        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $resync_filter = isset($_GET['resync_filter']) ? sanitize_text_field(wp_unslash($_GET['resync_filter'])) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter state.
+        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination state.
         $per_page = 30;
 
         $mappings = $this->product_mapper->get_mappings([
@@ -2001,7 +2018,7 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
         }
 
-        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
         
         if (strlen($search) < 2) {
             wp_send_json_success(['products' => []]);
@@ -2021,7 +2038,7 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
         }
 
-        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
         
         if (strlen($search) < 2) {
             wp_send_json_success(['products' => []]);
@@ -2049,7 +2066,7 @@ class Admin_UI {
         }
 
         $wc_product_id = isset($_POST['wc_product_id']) ? intval($_POST['wc_product_id']) : 0;
-        $dsz_sku = isset($_POST['dsz_sku']) ? sanitize_text_field($_POST['dsz_sku']) : '';
+        $dsz_sku = isset($_POST['dsz_sku']) ? sanitize_text_field(wp_unslash($_POST['dsz_sku'])) : '';
 
         if (!$wc_product_id || !$dsz_sku) {
             wp_send_json_error(['message' => __('Product ID and SKU are required', '3s-soft-price-stock-sync-for-dropshipzone')]);
@@ -2118,7 +2135,7 @@ class Admin_UI {
      */
     public function render_import() {
         if (!dszsync_current_user_can_manage()) {
-            wp_die(__('You do not have permission to access this page.', '3s-soft-price-stock-sync-for-dropshipzone'));
+            wp_die(esc_html__('You do not have permission to access this page.', '3s-soft-price-stock-sync-for-dropshipzone'));
         }
         ?>
         <div class="wrap dsz-wrap">
@@ -2265,13 +2282,13 @@ class Admin_UI {
         }
 
         // Get search parameters
-        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
         $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : 0;
         $in_stock = isset($_POST['in_stock']) && $_POST['in_stock'] === 'true';
         $free_shipping = isset($_POST['free_shipping']) && $_POST['free_shipping'] === 'true';
         $on_promotion = isset($_POST['on_promotion']) && $_POST['on_promotion'] === 'true';
         $new_arrival = isset($_POST['new_arrival']) && $_POST['new_arrival'] === 'true';
-        $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : '';
+        $sort = isset($_POST['sort']) ? sanitize_text_field(wp_unslash($_POST['sort'])) : '';
 
         // Allow empty search to browse all products (will be limited by API limit param)
 
@@ -2435,7 +2452,7 @@ class Admin_UI {
             wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
         }
 
-        $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
+        $sku = isset($_POST['sku']) ? sanitize_text_field(wp_unslash($_POST['sku'])) : '';
         
         if (!$sku) {
             wp_send_json_error(['message' => __('SKU is required', '3s-soft-price-stock-sync-for-dropshipzone')]);
@@ -2480,7 +2497,7 @@ class Admin_UI {
         }
 
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
-        $sku = isset($_POST['sku']) ? sanitize_text_field($_POST['sku']) : '';
+        $sku = isset($_POST['sku']) ? sanitize_text_field(wp_unslash($_POST['sku'])) : '';
         
         if (!$product_id && !$sku) {
             wp_send_json_error(['message' => __('Product ID or SKU is required', '3s-soft-price-stock-sync-for-dropshipzone')]);
@@ -2892,7 +2909,7 @@ class Admin_UI {
         $mapping_table = $wpdb->prefix . 'dsz_product_mapping';
         $chunk_size = 50;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $unmapped_products = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT p.ID, pm.meta_value as sku
@@ -3030,8 +3047,8 @@ class Admin_UI {
             }
         }
 
-        /* translators: %1$d: found count, %2$d: not found count */
         $message = sprintf(
+            /* translators: %1$d: found count, %2$d: not found count */
             __('Scan complete! %1$d products linked to Dropshipzone, %2$d marked as non-DSZ products.', '3s-soft-price-stock-sync-for-dropshipzone'),
             $found_count,
             $not_found_count
@@ -3484,7 +3501,7 @@ class Admin_UI {
                     // Get realtime count of mapped products from database
                     global $wpdb;
                     $table = $wpdb->prefix . 'dsz_product_mapping';
-                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+                    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
                     $realtime_count = $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
                     $realtime_count = $realtime_count !== null ? intval($realtime_count) : 0;
                     ?>

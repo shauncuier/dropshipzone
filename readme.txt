@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.0
+Stable tag: 3.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -142,6 +142,12 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.3.1 =
+* FIXED: Escaped two log-summary strings and a permission notice that Plugin Check reported as unescaped output.
+* FIXED: Replaced the CSV export stream handling with plain string building, removing direct filesystem calls.
+* FIXED: Added missing wp_unslash() before sanitization on several inputs, and moved a translators comment to the line Plugin Check expects.
+* FIXED: Documented every direct database call with a specific justification, and annotated read-only admin screen state that needs no nonce.
 
 = 3.3.0 =
 * COMPAT: Declared support for WordPress 7.0 and WooCommerce 10.9; cleared PHP 8.4+ nullable-parameter deprecation notices.

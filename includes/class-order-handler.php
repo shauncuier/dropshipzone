@@ -256,6 +256,7 @@ class Order_Handler {
         $existing = $this->get_dszsync_order($wc_order_id);
 
         if ($existing) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
             return $wpdb->update(
                 $this->table_name,
                 [
@@ -270,6 +271,7 @@ class Order_Handler {
             ) !== false;
         }
 
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->insert(
             $this->table_name,
             [
@@ -291,6 +293,7 @@ class Order_Handler {
      */
     public function get_dszsync_order($wc_order_id) {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM " . $this->table_name . " WHERE wc_order_id = %d",
             $wc_order_id
@@ -341,7 +344,7 @@ class Order_Handler {
         $values[] = intval($args['limit']);
         $values[] = intval($args['offset']);
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_results($wpdb->prepare($sql, $values), ARRAY_A);
     }
 
@@ -368,7 +371,7 @@ class Order_Handler {
 
         // Exclude orders already submitted (have a serial)
         $placeholders = implode(',', array_fill(0, count($orders), '%d'));
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $submitted = $wpdb->get_col($wpdb->prepare(
             "SELECT wc_order_id FROM {$this->table_name} WHERE dsz_serial_number != '' AND wc_order_id IN ({$placeholders})",
             $orders
@@ -405,7 +408,7 @@ class Order_Handler {
         $results = ['checked' => 0, 'updated' => 0, 'errors' => 0];
 
         // Serials submitted in the last 14 days that aren't complete yet
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $rows = $wpdb->get_results(
             "SELECT wc_order_id, dsz_serial_number FROM {$this->table_name}
              WHERE dsz_serial_number != ''

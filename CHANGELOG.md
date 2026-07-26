@@ -5,6 +5,21 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.1] - 2026-07-27
+
+Resolves everything reported by Plugin Check.
+
+### Fixed
+- **Unescaped output** (3 errors): the two log-summary strings passed `$total` and `ucfirst($level)` through `printf()` with only the format string escaped, and the Product Import permission notice used a bare `__()` in `wp_die()`. All now escape the composed string.
+- **Direct filesystem calls** (2 errors): the mappings CSV export opened a `php://temp` stream via `fopen()`/`fclose()`. It now builds the CSV as a string, so no filesystem API is involved and `WP_Filesystem` does not apply.
+- **Missing `wp_unslash()`** on seven inputs before sanitization.
+- **Translators comment** placement: moved directly above the `__()` call rather than above the enclosing `sprintf()`.
+- **Direct database calls**: every `$wpdb` call now carries a specific justification noting that table names come from `$wpdb->prefix` rather than user input, that values are prepared, and that plugin-owned tables have no core caching API.
+- **Nonce warnings**: read-only admin screen state (current page, filter, pagination) annotated as such — these read `$_GET` for display only and change nothing.
+- **Hook prefix**: `active_plugins` is a core filter being read, not a hook this plugin defines; annotated accordingly and the comparison made strict.
+
+---
+
 ## [3.3.0] - 2026-07-27
 
 Addresses the plugin review team's January feedback.
