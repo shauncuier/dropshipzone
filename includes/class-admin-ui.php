@@ -1424,7 +1424,10 @@ class Admin_UI {
         }
 
         $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
-        // Do not sanitize passwords — sanitize_text_field can silently alter them
+        // A password is opaque credential data, not display text. Sanitizing
+        // would corrupt valid passwords; it is never output and is only sent
+        // to the API over HTTPS or stored encrypted.
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- see comment above
         $password = isset($_POST['password']) ? (string) wp_unslash($_POST['password']) : '';
 
         // If password is empty, try to use stored password
@@ -1469,7 +1472,7 @@ class Admin_UI {
         // Each branch below sanitizes the individual fields it consumes with
         // the function appropriate to that field's type.
         $settings = isset($_POST['settings']) && is_array($_POST['settings'])
-            ? wp_unslash($_POST['settings']) // phpcs:ignore WordPress.Security.ValidationSanitization.InputNotSanitized -- sanitized per field below
+            ? wp_unslash($_POST['settings']) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field below
             : [];
 
         switch ($type) {
@@ -2462,7 +2465,7 @@ class Admin_UI {
         // a second API call. It is client-supplied, so sanitize it fully.
         $product_data = null;
         if (!empty($_POST['product_data'])) {
-            $decoded = json_decode(wp_unslash($_POST['product_data']), true); // phpcs:ignore WordPress.Security.ValidationSanitization.InputNotSanitized -- sanitized below
+            $decoded = json_decode(wp_unslash($_POST['product_data']), true); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below
             if (is_array($decoded)) {
                 $product_data = dszsync_sanitize_api_product($decoded);
             }
@@ -2533,7 +2536,7 @@ class Admin_UI {
         // a second API call. It is client-supplied, so sanitize it fully.
         $product_data = null;
         if (!empty($_POST['product_data'])) {
-            $decoded = json_decode(wp_unslash($_POST['product_data']), true); // phpcs:ignore WordPress.Security.ValidationSanitization.InputNotSanitized -- sanitized on the next line
+            $decoded = json_decode(wp_unslash($_POST['product_data']), true); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized on the next line
             if (is_array($decoded)) {
                 $product_data = dszsync_sanitize_api_product($decoded);
             }
@@ -2915,7 +2918,7 @@ class Admin_UI {
                 "SELECT p.ID, pm.meta_value as sku
                 FROM {$wpdb->posts} p
                 INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_sku'
-                LEFT JOIN {$mapping_table} m ON p.ID = m.wc_product_id
+                LEFT JOIN %i m ON p.ID = m.wc_product_id
                 LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_dszsync_not_available'
                 WHERE p.post_type IN ('product', 'product_variation')
                 AND p.post_status != 'trash'
@@ -2924,6 +2927,7 @@ class Admin_UI {
                 AND pm2.post_id IS NULL
                 ORDER BY p.ID DESC
                 LIMIT %d",
+                $mapping_table,
                 $chunk_size
             ),
             ARRAY_A

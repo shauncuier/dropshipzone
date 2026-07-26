@@ -295,7 +295,8 @@ class Order_Handler {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM " . $this->table_name . " WHERE wc_order_id = %d",
+            "SELECT * FROM %i WHERE wc_order_id = %d",
+            $this->table_name,
             $wc_order_id
         ), ARRAY_A);
     }
@@ -373,8 +374,9 @@ class Order_Handler {
         $placeholders = implode(',', array_fill(0, count($orders), '%d'));
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $submitted = $wpdb->get_col($wpdb->prepare(
-            "SELECT wc_order_id FROM {$this->table_name} WHERE dsz_serial_number != '' AND wc_order_id IN ({$placeholders})",
-            $orders
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a generated list of %d placeholders, one per order id; the ids themselves are passed as prepare() arguments.
+            "SELECT wc_order_id FROM %i WHERE dsz_serial_number != '' AND wc_order_id IN ({$placeholders})",
+            array_merge([$this->table_name], $orders)
         ));
         $submitted = array_map('intval', (array) $submitted);
 
@@ -410,12 +412,15 @@ class Order_Handler {
         // Serials submitted in the last 14 days that aren't complete yet
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $rows = $wpdb->get_results(
-            "SELECT wc_order_id, dsz_serial_number FROM {$this->table_name}
-             WHERE dsz_serial_number != ''
-             AND dsz_status NOT IN ('complete', 'cancelled')
-             AND submitted_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-             ORDER BY submitted_at ASC
-             LIMIT 100",
+            $wpdb->prepare(
+                "SELECT wc_order_id, dsz_serial_number FROM %i
+                 WHERE dsz_serial_number != ''
+                 AND dsz_status NOT IN ('complete', 'cancelled')
+                 AND submitted_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+                 ORDER BY submitted_at ASC
+                 LIMIT 100",
+                $this->table_name
+            ),
             ARRAY_A
         );
 

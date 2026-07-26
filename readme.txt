@@ -1,12 +1,12 @@
 === 3S Soft Price & Stock Sync for Dropshipzone ===
 Contributors: shauncuier
 Tags: woocommerce, dropshipping, price sync, stock sync, inventory
-Requires at least: 6.0
+Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.1
+Stable tag: 3.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -50,7 +50,7 @@ This plugin is an independent integration and is not affiliated with, endorsed b
 
 = Requirements =
 
-* WordPress 6.0 or higher
+* WordPress 6.2 or higher
 * WooCommerce 8.0 or higher
 * PHP 7.4 or higher
 * Dropshipzone API account
@@ -142,6 +142,10 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.3.2 =
+* CHANGED: Table names in SQL now use the %i identifier placeholder instead of string concatenation, so queries are genuinely prepared rather than annotated as exceptions. Minimum WordPress raised to 6.2, which introduced %i.
+* FIXED: Corrected the sniff name in several phpcs annotations, which meant the intended suppressions were never applied.
 
 = 3.3.1 =
 * FIXED: Escaped two log-summary strings and a permission notice that Plugin Check reported as unescaped output.

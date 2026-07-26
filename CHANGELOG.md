@@ -5,6 +5,16 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.2] - 2026-07-27
+
+### Changed
+- **Table names now use the `%i` identifier placeholder** rather than being concatenated into the SQL string. Plugin Check reported these as `PreparedSQL.NotPrepared` errors, and the annotations added in 3.3.1 did not silence them because `phpcs:ignore` only applies to the following line — the error was raised on the SQL line inside a multi-line `prepare()` call. Using `%i` removes the finding properly instead of suppressing it. **Minimum WordPress raised to 6.2**, the release that introduced `%i`.
+
+### Fixed
+- Several `phpcs:ignore` annotations named `WordPress.Security.ValidationSanitization.InputNotSanitized`, which does not exist. The real sniff is `WordPress.Security.ValidatedSanitizedInput.InputNotSanitized`, so those suppressions had no effect. Corrected, and the API password read now carries its own justification.
+
+---
+
 ## [3.3.1] - 2026-07-27
 
 Resolves everything reported by Plugin Check.

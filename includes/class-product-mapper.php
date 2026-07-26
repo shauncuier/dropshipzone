@@ -136,7 +136,8 @@ class Product_Mapper {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM " . $this->table_name . " WHERE wc_product_id = %d",
+            "SELECT * FROM %i WHERE wc_product_id = %d",
+            $this->table_name,
             $wc_product_id
         ), ARRAY_A);
     }
@@ -162,7 +163,8 @@ class Product_Mapper {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM " . $this->table_name . " WHERE dsz_sku = %s",
+            "SELECT * FROM %i WHERE dsz_sku = %s",
+            $this->table_name,
             $dsz_sku
         ), ARRAY_A);
     }
@@ -450,10 +452,11 @@ class Product_Mapper {
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         return $wpdb->get_results($wpdb->prepare(
             "SELECT wc_product_id, dsz_sku 
-             FROM " . $this->table_name . " 
+             FROM %i 
              WHERE sync_enabled = 1 
              ORDER BY id ASC 
              LIMIT %d OFFSET %d",
+            $this->table_name,
             $limit, $offset
         ), ARRAY_A);
     }
@@ -466,9 +469,7 @@ class Product_Mapper {
     public function get_syncable_count() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        return (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM " . $this->table_name . " WHERE sync_enabled = 1"
-        );
+        return (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE sync_enabled = 1", $this->table_name));
     }
 
     /**
@@ -556,11 +557,11 @@ class Product_Mapper {
         global $wpdb;
 
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        $deleted = $wpdb->query("
-            DELETE m FROM " . $this->table_name . " m
-            LEFT JOIN " . $wpdb->posts . " p ON m.wc_product_id = p.ID
-            WHERE p.ID IS NULL
-        ");
+        $deleted = $wpdb->query($wpdb->prepare(
+            'DELETE m FROM %i m LEFT JOIN %i p ON m.wc_product_id = p.ID WHERE p.ID IS NULL',
+            $this->table_name,
+            $wpdb->posts
+        ));
 
         if ($deleted) {
             $this->logger->info('Maintenance: removed orphaned mappings', ['deleted' => intval($deleted)]);
@@ -671,7 +672,7 @@ class Product_Mapper {
     public function clear_all() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        $result = $wpdb->query("TRUNCATE TABLE " . $this->table_name);
+        $result = $wpdb->query($wpdb->prepare("TRUNCATE TABLE %i", $this->table_name));
         if ($result !== false) {
             $this->logger->info('All mappings cleared');
         }
