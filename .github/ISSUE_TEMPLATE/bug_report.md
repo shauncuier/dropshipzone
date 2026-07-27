@@ -24,10 +24,10 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Environment (please complete the following information):**
- - WordPress Version: [e.g. 6.4]
- - WooCommerce Version: [e.g. 8.5]
- - Plugin Version: [e.g. 1.0.0]
- - PHP Version: [e.g. 7.4]
+ - WordPress Version: [e.g. 7.0]
+ - WooCommerce Version: [e.g. 10.9]
+ - Plugin Version: [e.g. 3.3.4]
+ - PHP Version: [e.g. 8.2]
  - Browser: [e.g. chrome, safari]
 
 **Additional context**

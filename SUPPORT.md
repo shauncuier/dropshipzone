@@ -1,27 +1,61 @@
 # Support
 
-First of all, thank you for using DropshipZone Sync!
+Thank you for using **3S Soft Price & Stock Sync for Dropshipzone**.
 
 ## 💬 Community Support
 
-For general questions, troubleshooting, and ideas, please use our **[GitHub Discussions](https://github.com/shauncuier/dropshipzone/discussions)**. This is the best place to:
-- Ask "How do I...?"
-- Share ideas for new features.
-- Connect with other users.
+For general questions, troubleshooting and ideas, use
+**[GitHub Discussions](https://github.com/shauncuier/dropshipzone/discussions)**:
+
+- "How do I...?" questions
+- Ideas for new features
+- Connecting with other users
 
 ## 🐛 Bug Reports
 
-If you've found a technical issue or bug, please search our **[Issue Tracker](https://github.com/shauncuier/dropshipzone/issues)** to see if it's already been reported. If not, please open a new issue using the provided template.
+Search the **[Issue Tracker](https://github.com/shauncuier/dropshipzone/issues)**
+first in case it is already known. If not, open a new issue using the
+template and include:
+
+- Steps to reproduce
+- Plugin, WordPress, WooCommerce and PHP versions
+- Relevant entries from **DSZ Sync → Logs**
 
 ## 🛡️ Security
 
-For reporting security vulnerabilities, please refer to our **[Security Policy](SECURITY.md)**. Do not open public issues for security concerns.
+Do **not** open a public issue for a security problem. Follow the
+**[Security Policy](SECURITY.md)** — GitHub private vulnerability
+reporting, or `plugins@3s-soft.com`.
+
+## 🏢 Dropshipzone Account Questions
+
+This plugin is an independent integration and is **not affiliated with
+Dropshipzone Pty Ltd**. For anything about the service itself — account
+access, product pricing, stock accuracy, shipping rates, order fulfilment
+or payment — contact **[Dropshipzone](https://www.dropshipzone.com.au)**
+directly. The maintainers here cannot help with supplier account matters.
+
+## 🔧 Before Asking
+
+A few things resolve most reports:
+
+- **Check the logs.** **DSZ Sync → Logs** records API failures, sync
+  results and errors, and can be filtered by level.
+- **Confirm the API connection.** **DSZ Sync → API Settings → Test
+  Connection**.
+- **Check your mappings.** Products sync only when linked to a Dropshipzone
+  SKU. **DSZ Sync → Product Mapping** shows what is linked.
+- **Read [API-NOTES.md](API-NOTES.md)** if the behaviour involves rate
+  limits, shipping rates or stock values — several API quirks are
+  documented there.
 
 ## 💖 Support the Project
 
-If you find this plugin useful, please consider supporting its development:
-- **Buy Me a Coffee**: [buymeacoffee.com/shauncuier](https://buymeacoffee.com/shauncuier)
+- ⭐ Star the repository
+- 🐛 Report bugs so they can be fixed
+- ☕ [Buy us a coffee](https://buymeacoffee.com/shauncuier)
 
 ## 🏢 Professional Support
 
-If you need professional integration services or custom development, please visit **[3s-Soft](https://3s-soft.com)**.
+For custom development or integration work, see
+**[3s-Soft](https://3s-soft.com)**.

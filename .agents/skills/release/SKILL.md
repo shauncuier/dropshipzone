@@ -3,9 +3,9 @@ name: release
 description: Handles the full release lifecycle for the Dropshipzone WordPress plugin — version bumping, changelog management, file updates, build creation, git tagging, and pushing. Use when the user asks to release, publish, version bump, tag, ship, or cut a new version.
 ---
 
-# Release Skill — Dropshipzone Plugin
+# Release Skill — 3S Soft Price & Stock Sync for Dropshipzone
 
-This skill automates the complete release workflow for the **DropshipZone Sync** WordPress/WooCommerce plugin. It covers version bumping, multi-file version updates, changelog formatting, zip build creation, git commit/tag, and push to remote.
+This skill automates the complete release workflow for the **3S Soft Price & Stock Sync for Dropshipzone** WordPress/WooCommerce plugin. It covers version bumping, multi-file version updates, changelog formatting, zip build creation, git commit/tag, and push to remote.
 
 ## When to Use
 

@@ -1,63 +1,150 @@
-# Contributing to DropshipZone Sync
+# Contributing
 
-First off, thank you for considering contributing to DropshipZone Sync! It's people like you that make this plugin better for everyone.
+Thank you for considering a contribution to **3S Soft Price & Stock Sync
+for Dropshipzone**.
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating you are expected to uphold our
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-## How Can I Contribute?
+## Security Issues
 
-### Reporting Bugs
+**Do not open a public issue for a security problem.** Follow the
+[Security Policy](SECURITY.md) instead.
 
-This section guides you through submitting a bug report. Following these guidelines helps maintainers and the community understand the report, reproduce the behavior, and find related reports.
+---
 
-- **Check if the bug has already been reported.** Search the [issue tracker](https://github.com/shauncuier/dropshipzone/issues).
-- **Use a clear and descriptive title** for the issue to identify the problem.
-- **Describe the exact steps to reproduce the problem** in as many details as possible.
-- **Provide specific examples to demonstrate the steps.** Include links to files or copy-pasteable snippets, which you use in those steps.
-- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior.
-- **Explain which behavior you expected to see instead and why.**
-- **Include screenshots and animated GIFs** which help you demonstrate the steps or the unexpected behavior.
+## Getting Set Up
 
-### Suggesting Enhancements
+You need a WordPress site with WooCommerce active and a Dropshipzone API
+account. A local environment (Local, Herd, wp-env, Docker) is fine.
 
-This section guides you through submitting an enhancement suggestion, including completely new features and minor improvements to existing functionality.
+```bash
+git clone https://github.com/shauncuier/dropshipzone.git
+```
 
-- **Check if there's already a similar suggestion.**
-- **Use a clear and descriptive title.**
-- **Provide a step-by-step description of the suggested enhancement** in as many details as possible.
-- **Describe the current behavior and explain which behavior you expected to see instead** and why.
-- **Explain why this enhancement would be useful** to most users.
+Symlink or copy the repository into `wp-content/plugins/` as
+`3s-soft-price-stock-sync-for-dropshipzone`. **The folder name matters** —
+it must match the plugin slug or WordPress will treat updates as a
+different plugin.
 
-### Pull Requests
+Build a distributable zip with:
 
-The process which describes how to submit a pull request:
+```powershell
+.\build.ps1
+```
 
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
-4. Ensure the test suite passes.
-5. Make sure your code lints.
-6. Issue that pull request!
+The zip lands in `build/` with the correct root folder and excludes
+development files. `doc/`, `*.md`, and the build scripts never ship.
 
-## Styleguides
+---
 
-### Git Commit Messages
+## Before You Open a Pull Request
 
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests liberally after the first line
+Run these. A PR that fails any of them will be sent back.
 
-### PHP Styleguide
+**1. Lint everything**
 
-All PHP code should follow the [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/).
+```bash
+php -l <each changed .php file>
+node --check assets/admin.js
+```
 
-### JavaScript Styleguide
+**2. Run Plugin Check**
 
-All JavaScript code should follow the [WordPress JavaScript Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/).
+Install [Plugin Check](https://wordpress.org/plugins/plugin-check/) and run
+it against your build. The plugin currently passes with **no errors and no
+warnings** — keep it that way. If you must suppress a sniff, use a
+`phpcs:ignore` with a specific justification, and name the sniff exactly.
+A misspelled sniff name silently does nothing.
 
-## Questions?
+**3. Exercise what you changed**
 
-If you have any questions, please feel free to open an issue or contact the maintainers.
+There is no automated test suite yet. Drive the actual flow in the admin:
+run a sync, import a product, place a test order, load the checkout with a
+mapped product in the cart. Static checks do not catch a broken query.
+
+---
+
+## Conventions
+
+### Prefixes
+
+Everything global uses the `dszsync_` prefix — functions, options, post
+meta, cron hooks, filters, actions, AJAX actions, nonces, transients.
+Constants use `DSZSYNC_`. Classes live under the `Dropshipzone` namespace.
+
+Database table and column names keep the older `dsz_` form deliberately.
+They are scoped inside plugin-owned tables and renaming them would mean an
+`ALTER TABLE` on live data for no benefit.
+
+**If you rename anything stored in the database, add a migration.** See
+`maybe_migrate_prefix()` in the main plugin file for the pattern.
+
+### SQL
+
+Table identifiers use the `%i` placeholder, not string concatenation:
+
+```php
+$wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE level = %s', $table, $level ) );
+```
+
+This is why the plugin requires WordPress 6.2 or newer.
+
+### Escaping and Sanitization
+
+Escape at the point of output, using the function that fits the context —
+`esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`. Escape the
+*composed* string, not the format string:
+
+```php
+// wrong — escapes the format, not the values
+printf( esc_html__( 'Showing %d logs', 'domain' ), $total );
+
+// right
+echo esc_html( sprintf( __( 'Showing %d logs', 'domain' ), $total ) );
+```
+
+Sanitize input as early as possible, and `wp_unslash()` before sanitizing.
+
+### The Dropshipzone API
+
+Read [API-NOTES.md](API-NOTES.md) before touching anything that talks to
+the API. It documents rate limits, pagination bounds, date-range caps, and
+several fields whose behaviour is not what the official docs imply.
+
+All requests go through `API_Client`. Do not add raw HTTP calls — the rate
+limiter and retry handling live there.
+
+### Commits
+
+- Present tense, imperative mood: "Add feature", not "Added feature"
+- Explain **why** in the body, not just what — the diff already shows what
+- Reference issues after the first line
+
+---
+
+## Reporting Bugs
+
+Search the [issue tracker](https://github.com/shauncuier/dropshipzone/issues)
+first, then open a new issue with:
+
+- Steps to reproduce, as specifically as you can manage
+- What you expected versus what happened
+- Plugin, WordPress, WooCommerce and PHP versions
+- Relevant entries from **DSZ Sync → Logs**
+
+## Suggesting Features
+
+Open a [discussion](https://github.com/shauncuier/dropshipzone/discussions)
+describing the problem you are trying to solve, not just the solution you
+have in mind. The [README roadmap](README.md#-features) shows what is
+already planned.
+
+## Questions
+
+Open a [discussion](https://github.com/shauncuier/dropshipzone/discussions).
+For questions about the Dropshipzone service itself — accounts, pricing,
+stock accuracy, fulfilment — contact Dropshipzone Pty Ltd directly. This
+plugin is an independent integration.
