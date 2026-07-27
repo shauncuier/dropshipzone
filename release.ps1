@@ -40,7 +40,7 @@ Write-Host "============================================" -ForegroundColor Cyan
 # ============================================
 Write-Step "Reading current version..."
 
-$PluginFile = "dropshipzone-price-stock-sync.php"
+$PluginFile = "3s-soft-price-stock-sync-for-dropshipzone.php"
 $PluginContent = Get-Content $PluginFile -Raw
 
 if ($PluginContent -match "Version:\s*([0-9]+)\.([0-9]+)\.([0-9]+)") {
@@ -120,10 +120,10 @@ $Today = Get-Date -Format "yyyy-MM-dd"
 # Files to update
 $FilesToUpdate = @(
     @{
-        Path = "dropshipzone-price-stock-sync.php"
+        Path = "3s-soft-price-stock-sync-for-dropshipzone.php"
         Patterns = @(
             @{ Find = "Version:\s*$CurrentVersion"; Replace = "Version: $NewVersion" },
-            @{ Find = "define\('DSZ_SYNC_VERSION',\s*'$CurrentVersion'\)"; Replace = "define('DSZ_SYNC_VERSION', '$NewVersion')" }
+            @{ Find = "define\('DSZSYNC_VERSION',\s*'$CurrentVersion'\)"; Replace = "define('DSZSYNC_VERSION', '$NewVersion')" }
         )
     },
     @{
@@ -131,13 +131,9 @@ $FilesToUpdate = @(
         Patterns = @(
             @{ Find = "Stable tag:\s*$CurrentVersion"; Replace = "Stable tag: $NewVersion" }
         )
-    },
-    @{
-        Path = "README.md"
-        Patterns = @(
-            @{ Find = "version-$CurrentVersion-blue"; Replace = "version-$NewVersion-blue" }
-        )
     }
+    # README.md intentionally omitted: its version badge is generated from
+    # the latest GitHub release via shields.io, so there is nothing to bump.
 )
 
 foreach ($file in $FilesToUpdate) {
@@ -172,9 +168,13 @@ if (Test-Path $ChangelogPath) {
     $linkPattern = "\[$NewVersion\]: https://github.com"
     if ($changelog -notmatch [regex]::Escape("[$NewVersion]:")) {
         $newLink = "[$NewVersion]: https://github.com/shauncuier/dropshipzone/releases/tag/v$NewVersion"
-        # Insert before [1.0.0] link or at end
+        # Insert above the newest existing link.
+        # NOTE: -replace substitutes EVERY match, which previously inserted
+        # one copy of the link before each existing link line. Use the regex
+        # object's count overload so only the first occurrence is replaced.
         if ($changelog -match "\[[\d]+\.[\d]+\.[\d]+\]: https://github.com") {
-            $changelog = $changelog -replace "(\[[\d]+\.[\d]+\.[\d]+\]: https://github.com)", "$newLink`n`$1"
+            $linkRegex = [regex]"(\[[\d]+\.[\d]+\.[\d]+\]: https://github\.com)"
+            $changelog = $linkRegex.Replace($changelog, "$newLink`n`$1", 1)
         }
     }
     
@@ -253,7 +253,7 @@ Write-Host "  Date:     $Today" -ForegroundColor White
 Write-Host ""
 
 if (-not $NoBuild -and -not $DryRun) {
-    $zipPath = Join-Path $ScriptDir "build\dropshipzone-price-stock-sync-v$NewVersion.zip"
+    $zipPath = Join-Path $ScriptDir "build\3s-soft-price-stock-sync-for-dropshipzone-v$NewVersion.zip"
     if (Test-Path $zipPath) {
         Write-Host "  Zip:      $zipPath" -ForegroundColor White
     }

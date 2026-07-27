@@ -1,19 +1,18 @@
 ---
 name: release
-description: Handles the full release lifecycle for the Dropshipzone WordPress plugin — version bumping, changelog management, file updates, build creation, git tagging, and pushing. Use when the user asks to release, publish, version bump, tag, ship, or cut a new version.
+description: Handles the full release lifecycle for the 3S Soft Price & Stock Sync for Dropshipzone WordPress plugin — version bumping, changelog management, file updates, build creation, git tagging, and pushing. Use when the user asks to release, publish, version bump, tag, ship, or cut a new version.
 ---
 
 # Release Skill — 3S Soft Price & Stock Sync for Dropshipzone
 
-This skill automates the complete release workflow for the **3S Soft Price & Stock Sync for Dropshipzone** WordPress/WooCommerce plugin. It covers version bumping, multi-file version updates, changelog formatting, zip build creation, git commit/tag, and push to remote.
+Covers version bumping, multi-file version updates, changelog formatting,
+zip build creation, git commit/tag, and push to remote.
 
 ## When to Use
 
-Trigger this skill when the user requests any of:
 - "release", "cut a release", "ship it", "publish a new version"
 - "bump version", "version bump", "patch/minor/major"
-- "tag a release", "create a release"
-- "prepare a release"
+- "tag a release", "create a release", "prepare a release"
 
 ## Project Context
 
@@ -21,219 +20,200 @@ Trigger this skill when the user requests any of:
 |------|-------|
 | Plugin slug | `3s-soft-price-stock-sync-for-dropshipzone` |
 | Main file | `3s-soft-price-stock-sync-for-dropshipzone.php` |
+| Version constant | `DSZSYNC_VERSION` |
+| Code prefix | `dszsync_` / `DSZSYNC_` |
 | Namespace | `Dropshipzone` |
 | GitHub repo | `shauncuier/dropshipzone` |
 | Build script | `build.ps1` |
-| Release script | `release.ps1` |
+| Release script | `release.ps1` (interactive — see warning below) |
 | GitHub Actions | `.github/workflows/release.yml` (triggers on `v*` tags) |
+| Zip output | `build/3s-soft-price-stock-sync-for-dropshipzone-vX.Y.Z.zip` |
+
+> The repository is still named `dropshipzone` on GitHub. That is fine —
+> the repo name does not need to match the plugin slug.
 
 ## Files That Contain the Version
 
-All of these **must** be updated in lockstep during a release:
+These **must** move in lockstep:
 
-| File | Pattern | Example |
-|------|---------|---------|
-| `3s-soft-price-stock-sync-for-dropshipzone.php` | `Version: X.Y.Z` (plugin header) | `Version: 2.5.0` |
-| `3s-soft-price-stock-sync-for-dropshipzone.php` | `define('DSZ_SYNC_VERSION', 'X.Y.Z')` | `define('DSZ_SYNC_VERSION', '2.5.0')` |
-| `readme.txt` | `Stable tag: X.Y.Z` | `Stable tag: 2.5.0` |
-| `README.md` | Version badge URL (if present) | `version-2.5.0-blue` |
-| `CHANGELOG.md` | Release heading & links | `## [2.5.0] - 2025-12-30` |
+| File | Pattern |
+|------|---------|
+| `3s-soft-price-stock-sync-for-dropshipzone.php` | `Version: X.Y.Z` (plugin header) |
+| `3s-soft-price-stock-sync-for-dropshipzone.php` | `define('DSZSYNC_VERSION', 'X.Y.Z')` |
+| `readme.txt` | `Stable tag: X.Y.Z` |
+| `CHANGELOG.md` | `## [X.Y.Z] - YYYY-MM-DD` heading, plus one link at the bottom |
+
+**`README.md` has no version to bump.** Its badge is generated from the
+latest GitHub release by shields.io.
+
+Verify consistency before tagging:
+
+```bash
+grep -m1 "Version:" 3s-soft-price-stock-sync-for-dropshipzone.php
+grep -m1 "DSZSYNC_VERSION" 3s-soft-price-stock-sync-for-dropshipzone.php
+grep -m1 "Stable tag" readme.txt
+```
+
+All three must show the same number. A mismatch between the plugin header
+and `readme.txt` breaks WordPress.org updates.
 
 ## Versioning Scheme
 
-This project follows [Semantic Versioning](https://semver.org/):
+[Semantic Versioning](https://semver.org/):
 
-- **MAJOR** (`X.0.0`): Breaking/incompatible API changes
-- **MINOR** (`0.X.0`): New backwards-compatible features
-- **PATCH** (`0.0.X`): Backwards-compatible bug fixes
+- **MAJOR** — breaking changes. Renaming a public hook counts.
+- **MINOR** — new backwards-compatible features.
+- **PATCH** — backwards-compatible fixes.
+
+Renaming or removing anything stored in the database needs a migration,
+not just a version bump. See `maybe_migrate_prefix()` in the main file.
 
 ## Release Workflow
 
-### Step 0 — Gather Inputs
+### Step 0 — Preconditions
 
-1. **Determine the bump type** (or explicit version):
-   - Ask the user if not specified: `patch`, `minor`, `major`, or an exact `X.Y.Z`.
-2. **Read the current version** from `3s-soft-price-stock-sync-for-dropshipzone.php`:
-   - Parse `Version: X.Y.Z` from the plugin header.
-   - Parse `define('DSZ_SYNC_VERSION', 'X.Y.Z')`.
-3. **Calculate the new version** by applying the bump.
-
-### Step 1 — Update Version in All Files
-
-Update every file listed in the "Files That Contain the Version" table above. Use exact string replacements — never regex-replace blindly.
-
-**3s-soft-price-stock-sync-for-dropshipzone.php:**
-```
-Version: <old> → Version: <new>
-define('DSZ_SYNC_VERSION', '<old>') → define('DSZ_SYNC_VERSION', '<new>')
+```bash
+git status --short          # must be empty
+git fetch origin
+git rev-list --left-right --count origin/main...main   # must not be behind
+git tag -l "vX.Y.Z"         # must not already exist
 ```
 
-**readme.txt:**
-```
-Stable tag: <old> → Stable tag: <new>
-```
+### Step 1 — Verify Before Bumping
 
-**README.md:**
-```
-version-<old>-blue → version-<new>-blue
-```
-
-### Step 2 — Update CHANGELOG.md
-
-1. If an `[Unreleased]` section exists, rename it to `[<new version>]`.
-2. Add today's date in ISO format: `## [X.Y.Z] - YYYY-MM-DD`.
-3. If there is no existing entry for the new version, **ask the user for changelog entries** or generate them from recent git commits.
-4. Ensure a comparison link exists at the bottom of the file:
-   ```
-   [X.Y.Z]: https://github.com/shauncuier/dropshipzone/releases/tag/vX.Y.Z
-   ```
-5. Preserve the existing changelog structure exactly — do not reformat other sections.
-
-### Step 3 — Build the Distribution Zip
-
-Run the build script to create the clean distribution zip:
+Never tag something unverified.
 
 ```powershell
-& ".\build.ps1"
+# Lint every PHP file and the admin JS
+Get-ChildItem includes\*.php | ForEach-Object { php -l $_.FullName }
+php -l 3s-soft-price-stock-sync-for-dropshipzone.php
+node --check assets\admin.js
 ```
 
-This will:
-- Clean the `build/` directory
-- Copy plugin files (excluding dev files, `.git`, `*.md`, etc.)
-- Create `build/dropshipzone-vX.Y.Z.zip`
+Run [Plugin Check](https://wordpress.org/plugins/plugin-check/) against a
+build if the release touches plugin code. It currently passes with zero
+errors and zero warnings — keep it there.
 
-Verify the zip was created and report its size.
+### Step 2 — Update Version in All Files
 
-### Step 4 — Git Commit & Tag
+Use exact string replacements, never blind regex. Update every file in the
+table above.
+
+### Step 3 — Update CHANGELOG.md
+
+1. Add `## [X.Y.Z] - YYYY-MM-DD` at the top of the entries.
+2. Describe **why**, not just what — the diff already shows what changed.
+3. Add exactly **one** link line at the bottom:
+   `[X.Y.Z]: https://github.com/shauncuier/dropshipzone/releases/tag/vX.Y.Z`
+4. Preserve existing structure; do not reformat other sections.
+
+> **Watch for duplicate links.** An older `release.ps1` used PowerShell's
+> `-replace`, which substitutes *every* match — it inserted one copy of the
+> new link before each existing link line, and the section grew to 768
+> lines before being rebuilt. Fixed in the script, but check the tail of
+> `CHANGELOG.md` after any scripted run.
+
+### Step 4 — Build
 
 ```powershell
+.\build.ps1
+```
+
+Then verify the archive:
+
+- Root folder is `3s-soft-price-stock-sync-for-dropshipzone/` — WordPress
+  uses it as the install directory, and a mismatch breaks updates
+- No `.md`, `.ps1`, `.yml`, or dotfiles
+- Header version matches what you set
+
+### Step 5 — Commit & Tag
+
+```bash
 git add -A
-git commit -m "Release vX.Y.Z"
-git tag -a "vX.Y.Z" -m "Version X.Y.Z"
+git commit -m "<subject>"
+git tag -a "vX.Y.Z" -m "Version X.Y.Z - <summary>"
 ```
 
-### Step 5 — Push to Remote
+Do **not** add `Co-Authored-By` or AI attribution trailers.
 
-```powershell
-$branch = git rev-parse --abbrev-ref HEAD
-git push origin $branch
+### Step 6 — Push
+
+```bash
+git push origin main
 git push origin "vX.Y.Z"
 ```
 
-> **Note:** Pushing the tag will trigger the GitHub Actions workflow at `.github/workflows/release.yml`, which automatically creates a GitHub Release with the zip attached.
+Pushing the tag triggers `.github/workflows/release.yml`, which builds a
+zip and creates the GitHub Release automatically.
 
-### Step 6 — Post-Release Summary
+### Step 7 — Verify the Published Release
 
-Present a summary to the user:
+Do not assume the workflow succeeded.
 
-| Field | Value |
-|-------|-------|
-| Previous version | `<old>` |
-| New version | `<new>` |
-| Tag | `v<new>` |
-| Zip location | `build/dropshipzone-v<new>.zip` |
-| GitHub Release URL | `https://github.com/shauncuier/dropshipzone/releases/tag/v<new>` |
+```bash
+gh run list --limit 1
+gh release view vX.Y.Z --json name,tagName,url,assets
+```
 
-## Existing Scripts Reference
+Download the published asset and confirm the root folder and header
+version. The CI zip copies whole directories rather than applying
+`build.ps1` exclusions, so it carries a few more files — both are valid.
+
+## Scripts
 
 ### `release.ps1`
 
-The project includes a PowerShell release script at the repo root. It can be run directly:
+⚠️ **Calls `Read-Host` for confirmation, which fails under a
+non-interactive agent shell.** Either run it yourself in a terminal, or
+follow the manual steps above — which is the reliable path for automation.
 
 ```powershell
-# Bump patch: 2.5.0 → 2.5.1
-.\release.ps1 -BumpType patch
-
-# Bump minor: 2.5.0 → 2.6.0
-.\release.ps1 -BumpType minor
-
-# Bump major: 2.5.0 → 3.0.0
-.\release.ps1 -BumpType major
-
-# Set explicit version
-.\release.ps1 -Version "3.0.0"
-
-# Dry run (no changes)
-.\release.ps1 -BumpType patch -DryRun
-
-# Skip pushing to remote
-.\release.ps1 -BumpType patch -NoPush
-
-# Skip building zip
-.\release.ps1 -BumpType patch -NoBuild
+.\release.ps1 -BumpType patch      # or minor / major
+.\release.ps1 -Version "3.4.0"
+.\release.ps1 -BumpType patch -DryRun    # safe to run non-interactively
 ```
 
-**Parameters:**
-- `-BumpType` (`major` | `minor` | `patch`): Automatic semver bump
-- `-Version` (`"X.Y.Z"`): Set an explicit version
-- `-NoPush`: Skip `git push` (commit & tag locally only)
-- `-NoBuild`: Skip running `build.ps1` after tagging
-- `-DryRun`: Preview all changes without modifying any files
-
-> **Important:** The script prompts for confirmation (`y/n`) before proceeding. When running via the agent, either use `-DryRun` first to preview, or be prepared to send `y` as input.
+Flags: `-NoPush`, `-NoBuild`, `-DryRun`.
 
 ### `build.ps1`
 
-Creates a clean distribution zip:
-
 ```powershell
-# Auto-detect version from plugin header
-.\build.ps1
-
-# Specify version explicitly
-.\build.ps1 -Version "2.5.1"
+.\build.ps1                  # version auto-detected from the plugin header
+.\build.ps1 -Version "3.4.0"
 ```
 
-**Output:** `build/dropshipzone-v<version>.zip`
+Output: `build/3s-soft-price-stock-sync-for-dropshipzone-v<version>.zip`
 
-### GitHub Actions (`release.yml`)
+## WordPress.org
 
-Triggered automatically when a `v*` tag is pushed. It:
-1. Checks out the code
-2. Validates the plugin file
-3. Creates a clean zip (same exclusions as `build.ps1`)
-4. Extracts changelog from `CHANGELOG.md`
-5. Creates/updates a GitHub Release with the zip attached
-6. Uploads the zip as a build artifact (30-day retention)
+The plugin is submitted to the WordPress.org directory
+(`3s-soft-price-stock-sync-for-dropshipzone`) and **awaiting first
+review**. A GitHub release does **not** publish there.
 
-Can also be triggered manually via `workflow_dispatch` with a version input.
+While awaiting review, new versions can be uploaded on the submission page
+until a reviewer starts. After approval, releases go out through SVN
+instead. Do not submit a second plugin while one is queued.
 
-## Pre-Release Checklist
-
-Before starting a release, verify:
-
-- [ ] All code changes are committed and pushed
-- [ ] Tests pass (if applicable)
-- [ ] `CHANGELOG.md` has entries for the new version
-- [ ] No uncommitted changes in the working tree (`git status` is clean)
-- [ ] The branch is up-to-date with remote (`git pull`)
+See `doc/wordpress-org-submission-email.md` for current status.
 
 ## Rollback
 
-If a release needs to be reverted:
-
-```powershell
-# Delete the local tag
+```bash
 git tag -d "vX.Y.Z"
-
-# Delete the remote tag
 git push origin --delete "vX.Y.Z"
-
-# Revert the release commit
-git revert HEAD
+git revert <commit>
 git push
 ```
 
-Then delete the GitHub Release manually at:
-`https://github.com/shauncuier/dropshipzone/releases`
+Then delete the GitHub Release at
+`https://github.com/shauncuier/dropshipzone/releases`.
 
 ## Decision Guide
 
-| User says... | Action |
-|-------------|--------|
-| "release" (no version info) | Ask for bump type (patch/minor/major) |
-| "patch release" | Run with `-BumpType patch` |
-| "release 3.0.0" | Run with `-Version "3.0.0"` |
-| "dry run release" | Run with `-DryRun` flag |
-| "build only" | Run `build.ps1` only, skip release |
-| "what version are we on?" | Read and report from `3s-soft-price-stock-sync-for-dropshipzone.php` |
+| User says | Action |
+|-----------|--------|
+| "release" with no version | Bump patch unless the changes warrant more; state which you chose |
+| "patch/minor/major release" | Bump accordingly |
+| "release X.Y.Z" | Use that exact version |
+| "build only" | Run `build.ps1`, skip tag and push |
+| "what version are we on?" | Read from the plugin header |
