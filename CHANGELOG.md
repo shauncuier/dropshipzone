@@ -5,6 +5,50 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-07-28
+
+Admin UI redesign. The token-based visual language introduced earlier is
+kept — the problems it did not solve were structural.
+
+### Added
+- **Setup checklist on the dashboard.** Five steps — connect the account,
+  set pricing, set stock rules, link products, run a first sync — each
+  reading state the plugin already tracks, each linking to the screen that
+  completes it, with the next action highlighted. It hides itself once
+  every step is done and can be dismissed per user. Previously a fresh
+  install showed a dashboard of zeros with no indication of what to do.
+- **Empty states** on Product Mapping and Logs, distinguishing "nothing
+  here yet" from "nothing matches your filter" — two situations that need
+  different next steps and previously shared one blank table cell.
+- **Fast Stock Updates dashboard card**, showing whether it is on, when it
+  last checked and how many products it refreshed. The 3.4.0 feature had
+  no presence in the UI at all.
+
+### Changed
+- **Navigation is grouped by stage of work** — Overview, Setup, Products,
+  Rules, Operations. The grouping existed only as source comments; the
+  rendered bar was a flat list of nine items. Labels now match the
+  WordPress submenu exactly, which they previously contradicted
+  ("Import Products" vs "Product Import", "Sync Center" vs "Sync Control").
+- **Dark theme removed.** The plugin renders inside the WordPress admin
+  content area, which stays light whatever the OS preference, so a
+  separate dark palette read as dark cards floating on white chrome. The
+  per-page toggle is gone and the stored preference is cleared on upgrade.
+
+### Fixed
+- **Accessibility.** The rendered markup previously contained no ARIA at
+  all. Added: `aria-current` on the active nav item, `aria-live` on the
+  toast and on every sync progress region so runs are announced,
+  `aria-expanded`/`aria-controls` on the collapsible filter panel,
+  `role="progressbar"` with value attributes, `aria-label` on icon-only
+  buttons, `scope` on all table headers, and `aria-hidden` on 60
+  decorative icons. The confirm dialog now traps Tab and restores focus to
+  whatever triggered it.
+- The Advanced Filters button had two separate click handlers bound from
+  two different init functions. Merged into one.
+
+---
+
 ## [3.4.1] - 2026-07-28
 
 Everything here was found by running 3.4.0 against a live store and the real
@@ -712,6 +756,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[3.5.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.5.0
 [3.4.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.1
 [3.4.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.0
 [3.3.5]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.5

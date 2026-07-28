@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.4.1
+Stable tag: 3.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -143,6 +143,14 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.5.0 =
+* ADDED: A setup checklist on the dashboard that walks you through connecting your account, setting rules, linking products and running a first sync. It disappears once you are done.
+* ADDED: Helpful empty states on Product Mapping and Logs, telling you what to do next instead of showing a blank table.
+* ADDED: A dashboard card for Fast Stock Updates showing whether it is on and what it last did.
+* CHANGED: The section navigation is now grouped by what you are doing - Setup, Products, Rules, Operations - and its labels match the WordPress menu.
+* CHANGED: Removed the dark theme toggle. The plugin now always matches the WordPress admin, which is what the mismatched look came from.
+* FIXED: Accessibility throughout - screen readers now announce sync progress and notifications, the active section is identified, and dialogs keep keyboard focus.
 
 = 3.4.1 =
 * FIXED: On hosts where PHP memory is unlimited (the common case), the sync advanced only one product per run and could never finish a large catalogue. The memory check misread an unlimited limit as "almost full".

@@ -50,26 +50,16 @@
         initRippleEffect: function () {},
 
         /**
-         * Opt-in dark theme. Applied via body.dsz-dark and persisted in
-         * localStorage — never tied to the OS preference, because the WP
-         * admin content area stays light and auto-darkening clashes.
+         * Dark theme retired: the plugin renders inside the WP admin content
+         * area, which stays light whatever the OS preference, so a separate
+         * dark palette read as dark cards floating on white chrome. Kept as a
+         * no-op so existing init calls stay valid, and clears the stored
+         * preference so an upgrade does not leave a stale key behind.
          */
         initThemeToggle: function () {
-            var saved = null;
             try {
-                saved = window.localStorage.getItem('dszAdminTheme');
+                window.localStorage.removeItem('dszAdminTheme');
             } catch (err) {}
-
-            if (saved === 'dark') {
-                $('body').addClass('dsz-dark');
-            }
-
-            $(document).on('click', '#dsz-theme-toggle', function () {
-                var dark = $('body').toggleClass('dsz-dark').hasClass('dsz-dark');
-                try {
-                    window.localStorage.setItem('dszAdminTheme', dark ? 'dark' : 'light');
-                } catch (err) {}
-            });
         },
 
         /**
@@ -130,6 +120,9 @@
 
             // Sync control
             $('#dsz-run-sync').on('click', this.runSync.bind(this));
+
+            // Setup checklist
+            $(document).on('click', '.dsz-checklist-dismiss', this.dismissSetup.bind(this));
 
             // Logs
             $('#dsz-clear-logs').on('click', this.clearLogs.bind(this));
@@ -326,9 +319,17 @@
                 $dialog.append($('<div class="dsz-confirm-actions"></div>').append($cancel).append($ok));
                 $overlay.append($dialog);
 
+                // Return focus where the user left it, not to the top of the
+                // document — otherwise keyboard users restart the page after
+                // every confirmation.
+                var previouslyFocused = document.activeElement;
+
                 var close = function (result) {
                     $(document).off('keydown.dszConfirm');
                     $overlay.remove();
+                    if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+                        previouslyFocused.focus();
+                    }
                     resolve(result);
                 };
 
@@ -339,9 +340,32 @@
                         close(false);
                     }
                 });
+
                 $(document).on('keydown.dszConfirm', function (e) {
                     if (e.key === 'Escape') {
                         close(false);
+                        return;
+                    }
+
+                    // Trap Tab inside the dialog. aria-modal alone does not
+                    // stop the browser tabbing into the page behind it.
+                    if (e.key === 'Tab') {
+                        var $focusable = $dialog.find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+                            .filter(':visible');
+                        if (!$focusable.length) {
+                            return;
+                        }
+
+                        var first = $focusable[0];
+                        var last = $focusable[$focusable.length - 1];
+
+                        if (e.shiftKey && document.activeElement === first) {
+                            e.preventDefault();
+                            last.focus();
+                        } else if (!e.shiftKey && document.activeElement === last) {
+                            e.preventDefault();
+                            first.focus();
+                        }
                     }
                 });
 
@@ -832,6 +856,26 @@
         },
 
         /**
+         * Dismiss the setup checklist for the current user.
+         *
+         * Hidden immediately rather than on the response: the request only
+         * records a preference, so making the user wait for a round trip to
+         * see a panel disappear would be needless latency.
+         */
+        dismissSetup: function (e) {
+            e.preventDefault();
+
+            $(e.currentTarget).closest('.dsz-checklist').slideUp(150, function () {
+                $(this).remove();
+            });
+
+            $.post(dszsync_admin.ajax_url, {
+                action: 'dszsync_hide_setup',
+                nonce: dszsync_admin.nonce
+            });
+        },
+
+        /**
          * Show notification toast
          */
         showNotification: function (type, message) {
@@ -846,9 +890,15 @@
             };
             var safeType = icons[type] ? type : 'info';
 
+            // role=alert for errors so assistive tech interrupts; status for
+            // the rest so a routine "saved" does not talk over the user.
+            var isUrgent = (safeType === 'error' || safeType === 'warning');
+
             var toast = $('<div class="dsz-toast"></div>')
                 .addClass('dsz-toast-' + safeType)
-                .append($('<span></span>').addClass('dashicons ' + icons[safeType]))
+                .attr('role', isUrgent ? 'alert' : 'status')
+                .attr('aria-live', isUrgent ? 'assertive' : 'polite')
+                .append($('<span></span>').addClass('dashicons ' + icons[safeType]).attr('aria-hidden', 'true'))
                 .append($('<span></span>').text(message));
 
             $('body').append(toast);
@@ -1150,13 +1200,17 @@
          * Initialize Product Import (Advanced)
          */
         initProductImport: function () {
-            // Bind filter toggle
+            // Bind filter toggle. This was previously two separate handlers on
+            // the same button, bound from two different init functions.
             $('#dsz-toggle-filters').on('click', function () {
+                var $btn = $(this);
                 var $panel = $('#dsz-filters-panel');
-                var $arrow = $(this).find('.dashicons-arrow-down-alt2, .dashicons-arrow-up-alt2');
+                var $arrow = $btn.find('.dashicons-arrow-down-alt2, .dashicons-arrow-up-alt2');
 
-                $panel.toggleClass('hidden');
+                var isOpen = $panel.toggleClass('hidden').hasClass('hidden') === false;
+
                 $arrow.toggleClass('dashicons-arrow-down-alt2 dashicons-arrow-up-alt2');
+                $btn.toggleClass('open', isOpen).attr('aria-expanded', isOpen ? 'true' : 'false');
             });
 
             // Bind apply filters button
@@ -1211,10 +1265,6 @@
                 DSZAdmin.searchApiProducts();
             });
 
-            // Toggle arrow on advanced filters
-            $('#dsz-toggle-filters').on('click', function () {
-                $(this).toggleClass('open');
-            });
         },
 
         /**

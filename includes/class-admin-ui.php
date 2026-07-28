@@ -95,6 +95,7 @@ class Admin_UI {
         add_action('wp_ajax_dszsync_run_sync', [$this, 'ajax_run_sync']);
         add_action('wp_ajax_dszsync_get_sync_status', [$this, 'ajax_get_sync_status']);
         add_action('wp_ajax_dszsync_continue_sync', [$this, 'ajax_continue_sync']);
+        add_action('wp_ajax_dszsync_hide_setup', [$this, 'ajax_hide_setup']);
         add_action('wp_ajax_dszsync_clear_logs', [$this, 'ajax_clear_logs']);
         add_action('wp_ajax_dszsync_export_logs', [$this, 'ajax_export_logs']);
         
@@ -351,53 +352,14 @@ class Admin_UI {
     /**
      * Render page header with navigation
      */
-    private function render_header($title, $subtitle = '') {
+    private function render_header($title, $subtitle = '', $actions = '') {
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen state (current page, filter, pagination); nothing is created, changed or deleted here.
         $current_page = isset($_GET['page']) ? sanitize_text_field(wp_unslash($_GET['page'])) : 'dsz-sync';
         
-        $nav_items = [
-            // Overview
-            'dsz-sync' => [
-                'label' => __('Dashboard', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-dashboard'
-            ],
-            // 1. First: Configure API
-            'dsz-sync-api' => [
-                'label' => __('API Settings', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-admin-network'
-            ],
-            // 2. Products: Import first, then map
-            'dsz-sync-import' => [
-                'label' => __('Import Products', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-download'
-            ],
-            'dsz-sync-auto-import' => [
-                'label' => __('Auto Import', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-controls-repeat'
-            ],
-            'dsz-sync-mapping' => [
-                'label' => __('Product Mapping', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-admin-links'
-            ],
-            // 3. Rules: Configure pricing and stock
-            'dsz-sync-price' => [
-                'label' => __('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-money-alt'
-            ],
-            'dsz-sync-stock' => [
-                'label' => __('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-archive'
-            ],
-            // 4. Operations: Run sync and view logs
-            'dsz-sync-control' => [
-                'label' => __('Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-update'
-            ],
-            'dsz-sync-logs' => [
-                'label' => __('Logs', '3s-soft-price-stock-sync-for-dropshipzone'),
-                'icon' => 'dashicons-list-view'
-            ],
-        ];
+        // Grouped in the order the plugin is actually set up and used. Labels
+        // match the WordPress submenu entries exactly so the two menus never
+        // disagree about what a screen is called.
+        $nav_groups = $this->get_nav_groups();
         ?>
         <div class="dsz-header">
             <div class="dsz-header-content">
@@ -407,25 +369,271 @@ class Admin_UI {
                         <p class="dsz-subtitle"><?php echo esc_html($subtitle); ?></p>
                     <?php endif; ?>
                 </div>
-                <button type="button" id="dsz-theme-toggle" class="button dsz-theme-toggle" title="<?php esc_attr_e('Toggle light/dark theme', '3s-soft-price-stock-sync-for-dropshipzone'); ?>">
-                    <span class="dashicons dashicons-lightbulb"></span>
-                </button>
+                <?php if ($actions !== ''): ?>
+                    <div class="dsz-header-actions"><?php echo wp_kses_post($actions); ?></div>
+                <?php endif; ?>
             </div>
         </div>
-        
-        <nav class="dsz-nav">
-            <?php foreach ($nav_items as $page_slug => $item): 
-                $is_active = ($current_page === $page_slug);
-                $url = admin_url('admin.php?page=' . $page_slug);
-            ?>
-                <a href="<?php echo esc_url($url); ?>" 
-                   class="dsz-nav-item <?php echo esc_attr($is_active ? 'dsz-nav-active' : ''); ?>"
-                   title="<?php echo esc_attr($item['label']); ?>">
-                    <span class="dashicons <?php echo esc_attr($item['icon']); ?>"></span>
-                    <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
-                </a>
+
+        <nav class="dsz-nav" aria-label="<?php esc_attr_e('Dropshipzone Sync sections', '3s-soft-price-stock-sync-for-dropshipzone'); ?>">
+            <?php foreach ($nav_groups as $group): ?>
+                <div class="dsz-nav-group">
+                    <span class="dsz-nav-group-label"><?php echo esc_html($group['label']); ?></span>
+                    <div class="dsz-nav-group-items">
+                        <?php foreach ($group['items'] as $page_slug => $item):
+                            $is_active = ($current_page === $page_slug);
+                        ?>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $page_slug)); ?>"
+                               class="dsz-nav-item <?php echo esc_attr($is_active ? 'dsz-nav-active' : ''); ?>"
+                               <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
+                                <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
             <?php endforeach; ?>
         </nav>
+        <?php
+    }
+
+    /**
+     * Navigation grouped by the stage of work each screen belongs to.
+     *
+     * @return array Groups of ['label' => string, 'items' => [slug => [label, icon]]]
+     */
+    private function get_nav_groups() {
+        return [
+            [
+                'label' => __('Overview', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'items' => [
+                    'dsz-sync' => [
+                        'label' => __('Dashboard', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-dashboard',
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Setup', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'items' => [
+                    'dsz-sync-api' => [
+                        'label' => __('API Settings', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-admin-network',
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Products', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'items' => [
+                    'dsz-sync-import' => [
+                        'label' => __('Product Import', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-download',
+                    ],
+                    'dsz-sync-auto-import' => [
+                        'label' => __('Auto Import', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-controls-repeat',
+                    ],
+                    'dsz-sync-mapping' => [
+                        'label' => __('Product Mapping', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-admin-links',
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'items' => [
+                    'dsz-sync-price' => [
+                        'label' => __('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-money-alt',
+                    ],
+                    'dsz-sync-stock' => [
+                        'label' => __('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-archive',
+                    ],
+                ],
+            ],
+            [
+                'label' => __('Operations', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'items' => [
+                    'dsz-sync-control' => [
+                        'label' => __('Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-update',
+                    ],
+                    'dsz-sync-logs' => [
+                        'label' => __('Logs', '3s-soft-price-stock-sync-for-dropshipzone'),
+                        'icon'  => 'dashicons-list-view',
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Resolve the setup steps and whether each is done.
+     *
+     * Reads only state the plugin already tracks — no new queries, and no
+     * new options. A step is "done" when the thing it configures exists,
+     * not when the user has visited the page.
+     *
+     * @return array Steps of ['label', 'done', 'url', 'cta', 'help']
+     */
+    private function get_setup_steps() {
+        $token_status = $this->api_client->get_token_status();
+        $price_rules  = get_option('dszsync_price_rules', []);
+        $stock_rules  = get_option('dszsync_stock_rules', []);
+        $sync_status  = $this->cron->get_sync_status();
+
+        $mapped = $this->product_mapper ? $this->product_mapper->get_syncable_count() : 0;
+
+        return [
+            [
+                'label' => __('Connect your Dropshipzone account', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'help'  => __('Nothing syncs until the plugin can authenticate.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'done'  => !empty($token_status['is_valid']),
+                'url'   => admin_url('admin.php?page=dsz-sync-api'),
+                'cta'   => __('Add credentials', '3s-soft-price-stock-sync-for-dropshipzone'),
+            ],
+            [
+                'label' => __('Set your pricing rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'help'  => __('Markup, GST and rounding decide your shelf price.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'done'  => !empty($price_rules),
+                'url'   => admin_url('admin.php?page=dsz-sync-price'),
+                'cta'   => __('Set pricing', '3s-soft-price-stock-sync-for-dropshipzone'),
+            ],
+            [
+                'label' => __('Set your stock rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'help'  => __('A stock buffer is what stops you overselling.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'done'  => !empty($stock_rules),
+                'url'   => admin_url('admin.php?page=dsz-sync-stock'),
+                'cta'   => __('Set stock rules', '3s-soft-price-stock-sync-for-dropshipzone'),
+            ],
+            [
+                'label' => __('Link products to Dropshipzone SKUs', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'help'  => $mapped > 0
+                    ? sprintf(
+                        /* translators: %d: number of linked products */
+                        _n('%d product linked.', '%d products linked.', $mapped, '3s-soft-price-stock-sync-for-dropshipzone'),
+                        $mapped
+                    )
+                    : __('Only linked products are kept up to date.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'done'  => $mapped > 0,
+                'url'   => admin_url('admin.php?page=dsz-sync-mapping'),
+                'cta'   => __('Link products', '3s-soft-price-stock-sync-for-dropshipzone'),
+            ],
+            [
+                'label' => __('Run your first sync', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'help'  => __('Confirms everything above is wired up correctly.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                'done'  => !empty($sync_status['last_sync']),
+                'url'   => admin_url('admin.php?page=dsz-sync-control'),
+                'cta'   => __('Run sync', '3s-soft-price-stock-sync-for-dropshipzone'),
+            ],
+        ];
+    }
+
+    /**
+     * Render the setup checklist, unless every step is done or the user
+     * has dismissed it.
+     *
+     * @return void
+     */
+    private function render_setup_checklist() {
+        if (get_user_meta(get_current_user_id(), 'dszsync_hide_setup', true)) {
+            return;
+        }
+
+        $steps = $this->get_setup_steps();
+        $done  = count(array_filter(wp_list_pluck($steps, 'done')));
+        $total = count($steps);
+
+        if ($done === $total) {
+            return;
+        }
+
+        // The first unfinished step is the one to act on next
+        $next = null;
+        foreach ($steps as $i => $step) {
+            if (!$step['done']) {
+                $next = $i;
+                break;
+            }
+        }
+        ?>
+        <section class="dsz-checklist" aria-labelledby="dsz-checklist-title">
+            <div class="dsz-checklist-head">
+                <div>
+                    <h2 id="dsz-checklist-title"><?php esc_html_e('Finish setting up', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
+                    <p class="dsz-checklist-sub">
+                        <?php
+                        printf(
+                            /* translators: 1: completed step count, 2: total step count */
+                            esc_html__('%1$d of %2$d done', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            intval($done),
+                            intval($total)
+                        );
+                        ?>
+                    </p>
+                </div>
+                <button type="button" class="button-link dsz-checklist-dismiss">
+                    <?php esc_html_e('Dismiss', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                </button>
+            </div>
+
+            <div class="dsz-checklist-progress" role="progressbar"
+                 aria-valuenow="<?php echo esc_attr($done); ?>"
+                 aria-valuemin="0"
+                 aria-valuemax="<?php echo esc_attr($total); ?>">
+                <div class="dsz-checklist-progress-fill" style="width: <?php echo esc_attr(round(($done / $total) * 100)); ?>%"></div>
+            </div>
+
+            <ol class="dsz-checklist-steps">
+                <?php foreach ($steps as $i => $step): ?>
+                    <li class="dsz-checklist-step<?php echo esc_attr($step['done'] ? ' is-done' : ''); ?><?php echo esc_attr($i === $next ? ' is-next' : ''); ?>">
+                        <span class="dsz-checklist-mark" aria-hidden="true">
+                            <span class="dashicons <?php echo esc_attr($step['done'] ? 'dashicons-yes' : 'dashicons-marker'); ?>"></span>
+                        </span>
+                        <span class="dsz-checklist-body">
+                            <span class="dsz-checklist-label"><?php echo esc_html($step['label']); ?></span>
+                            <span class="dsz-checklist-help"><?php echo esc_html($step['help']); ?></span>
+                        </span>
+                        <?php if (!$step['done']): ?>
+                            <a href="<?php echo esc_url($step['url']); ?>" class="button <?php echo esc_attr($i === $next ? 'button-primary' : ''); ?>">
+                                <?php echo esc_html($step['cta']); ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="dsz-checklist-done-label"><?php esc_html_e('Done', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        </section>
+        <?php
+    }
+
+    /**
+     * Render a consistent empty state.
+     *
+     * Every list screen previously rendered its own ad-hoc "nothing here"
+     * markup, or nothing at all, which left new installs looking broken
+     * rather than merely unconfigured.
+     *
+     * @param string $icon   Dashicon name, without the `dashicons-` prefix
+     * @param string $title  Short heading
+     * @param string $body   One or two sentences explaining what to do
+     * @param array  $action Optional ['url' => string, 'label' => string]
+     * @return void
+     */
+    private function render_empty_state($icon, $title, $body, $action = []) {
+        ?>
+        <div class="dsz-empty-state">
+            <span class="dashicons dashicons-<?php echo esc_attr($icon); ?>" aria-hidden="true"></span>
+            <h3><?php echo esc_html($title); ?></h3>
+            <p><?php echo esc_html($body); ?></p>
+            <?php if (!empty($action['url']) && !empty($action['label'])): ?>
+                <a href="<?php echo esc_url($action['url']); ?>" class="button button-primary">
+                    <?php echo esc_html($action['label']); ?>
+                </a>
+            <?php endif; ?>
+        </div>
         <?php
     }
 
@@ -445,6 +653,8 @@ class Admin_UI {
             <?php $this->render_header(__('Dropshipzone Sync Dashboard', '3s-soft-price-stock-sync-for-dropshipzone')); ?>
 
             <div class="dsz-dashboard">
+                <?php $this->render_setup_checklist(); ?>
+
                 <!-- Status Cards -->
                 <div class="dsz-cards">
                     <div class="dsz-card dsz-card-status <?php echo esc_attr($token_status['is_valid'] ? 'dsz-card-success' : 'dsz-card-error'); ?>">
@@ -465,7 +675,7 @@ class Admin_UI {
 
                     <div class="dsz-card">
                         <div class="dsz-card-icon">
-                            <span class="dashicons dashicons-clock"></span>
+                            <span class="dashicons dashicons-clock" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-card-content">
                             <h3><?php esc_html_e('Last Sync', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -481,7 +691,7 @@ class Admin_UI {
 
                     <div class="dsz-card">
                         <div class="dsz-card-icon">
-                            <span class="dashicons dashicons-chart-bar"></span>
+                            <span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-card-content">
                             <h3><?php esc_html_e('Products Updated', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -490,9 +700,37 @@ class Admin_UI {
                         </div>
                     </div>
 
+                    <div class="dsz-card">
+                        <div class="dsz-card-icon">
+                            <span class="dashicons dashicons-performance" aria-hidden="true"></span>
+                        </div>
+                        <div class="dsz-card-content">
+                            <h3><?php esc_html_e('Fast Stock Updates', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
+                            <p class="dsz-card-value">
+                                <?php echo esc_html($sync_status['incremental_enabled'] ? __('On', '3s-soft-price-stock-sync-for-dropshipzone') : __('Off', '3s-soft-price-stock-sync-for-dropshipzone')); ?>
+                            </p>
+                            <p class="dsz-card-meta">
+                                <?php if ($sync_status['incremental_enabled'] && !empty($sync_status['incremental_last_run'])): ?>
+                                    <?php
+                                    printf(
+                                        /* translators: 1: time since the last check, 2: number of products refreshed */
+                                        esc_html__('Checked %1$s ago, %2$d refreshed', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                        esc_html(human_time_diff($sync_status['incremental_last_run'], time())),
+                                        intval($sync_status['incremental_refreshed'])
+                                    );
+                                    ?>
+                                <?php else: ?>
+                                    <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-control')); ?>">
+                                        <?php esc_html_e('Refresh only what changed', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                                    </a>
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    </div>
+
                     <div class="dsz-card <?php echo esc_attr($error_count > 0 ? 'dsz-card-warning' : ''); ?>">
                         <div class="dsz-card-icon">
-                            <span class="dashicons dashicons-flag"></span>
+                            <span class="dashicons dashicons-flag" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-card-content">
                             <h3><?php esc_html_e('Errors', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -509,19 +747,19 @@ class Admin_UI {
                     <h2><?php esc_html_e('Quick Actions', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
                     <div class="dsz-quick-actions">
                         <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-api')); ?>" class="button button-secondary">
-                            <span class="dashicons dashicons-admin-network"></span>
+                            <span class="dashicons dashicons-admin-network" aria-hidden="true"></span>
                             <?php esc_html_e('Configure API', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </a>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-control')); ?>" class="button button-primary">
-                            <span class="dashicons dashicons-update"></span>
+                            <span class="dashicons dashicons-update" aria-hidden="true"></span>
                             <?php esc_html_e('Run Sync Now', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </a>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-price')); ?>" class="button button-secondary">
-                            <span class="dashicons dashicons-money-alt"></span>
+                            <span class="dashicons dashicons-money-alt" aria-hidden="true"></span>
                             <?php esc_html_e('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </a>
                         <a href="<?php echo esc_url(admin_url('admin.php?page=dsz-sync-stock')); ?>" class="button button-secondary">
-                            <span class="dashicons dashicons-archive"></span>
+                            <span class="dashicons dashicons-archive" aria-hidden="true"></span>
                             <?php esc_html_e('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </a>
                     </div>
@@ -532,10 +770,12 @@ class Admin_UI {
                 <div class="dsz-section dsz-sync-progress-section">
                     <h2><?php esc_html_e('Sync in Progress', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
                     <div class="dsz-progress-wrapper">
-                        <div class="dsz-progress-bar">
+                        <div class="dsz-progress-bar" role="progressbar"
+                             aria-valuenow="<?php echo esc_attr($this->cron->get_progress()); ?>"
+                             aria-valuemin="0" aria-valuemax="100">
                             <div class="dsz-progress-fill" style="width: <?php echo esc_attr($this->cron->get_progress()); ?>%"></div>
                         </div>
-                        <p class="dsz-progress-text">
+                        <p class="dsz-progress-text" role="status" aria-live="polite">
                             <?php /* translators: %s: progress percentage */ ?>
                             <?php printf(esc_html__('Processing... %s%%', '3s-soft-price-stock-sync-for-dropshipzone'), esc_html($this->cron->get_progress())); ?>
                         </p>
@@ -591,11 +831,11 @@ class Admin_UI {
 
                         <div class="dsz-form-actions">
                             <button type="button" id="dsz-test-connection" class="button button-secondary">
-                                <span class="dashicons dashicons-admin-network"></span>
+                                <span class="dashicons dashicons-admin-network" aria-hidden="true"></span>
                                 <?php esc_html_e('Test Connection', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                             <button type="submit" class="button button-primary">
-                                <span class="dashicons dashicons-saved"></span>
+                                <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                                 <?php esc_html_e('Save Settings', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -770,7 +1010,7 @@ class Admin_UI {
 
                     <div class="dsz-form-actions">
                         <button type="submit" class="button button-primary">
-                            <span class="dashicons dashicons-saved"></span>
+                            <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                             <?php esc_html_e('Save Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -787,7 +1027,7 @@ class Admin_UI {
                     <div class="dsz-section-header">
                         <h2><?php esc_html_e('Advanced Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
                         <button type="button" id="dsz-add-adv-rule" class="button">
-                            <span class="dashicons dashicons-plus-alt2"></span>
+                            <span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
                             <?php esc_html_e('Add Rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -796,12 +1036,12 @@ class Admin_UI {
                     <table class="dsz-table" id="dsz-adv-rules-table">
                         <thead>
                             <tr>
-                                <th><?php esc_html_e('Name', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Match', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Value', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Markup', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Amount', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th></th>
+                                <th scope="col"><?php esc_html_e('Name', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Match', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Value', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Markup', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Amount', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -823,7 +1063,7 @@ class Admin_UI {
                                     </select>
                                 </td>
                                 <td><input type="number" step="0.01" min="0" class="dsz-rule-markup-value small-text" value="<?php echo esc_attr(isset($adv_rule['markup_value']) ? $adv_rule['markup_value'] : ''); ?>" /></td>
-                                <td><button type="button" class="button dsz-btn-danger dsz-rule-remove" title="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>"><span class="dashicons dashicons-no-alt"></span></button></td>
+                                <td><button type="button" class="button dsz-btn-danger dsz-rule-remove" aria-label="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>" title="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></td>
                             </tr>
                             <?php endforeach; ?>
                             <tr class="dsz-adv-rule dsz-adv-rule-proto hidden">
@@ -843,14 +1083,14 @@ class Admin_UI {
                                     </select>
                                 </td>
                                 <td><input type="number" step="0.01" min="0" class="dsz-rule-markup-value small-text" /></td>
-                                <td><button type="button" class="button dsz-btn-danger dsz-rule-remove" title="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>"><span class="dashicons dashicons-no-alt"></span></button></td>
+                                <td><button type="button" class="button dsz-btn-danger dsz-rule-remove" aria-label="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>" title="<?php esc_attr_e('Remove rule', '3s-soft-price-stock-sync-for-dropshipzone'); ?>"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></td>
                             </tr>
                         </tbody>
                     </table>
 
                     <div class="dsz-form-actions">
                         <button type="button" id="dsz-save-adv-rules" class="button button-primary">
-                            <span class="dashicons dashicons-saved"></span>
+                            <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                             <?php esc_html_e('Save Advanced Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -951,7 +1191,7 @@ class Admin_UI {
 
                     <div class="dsz-form-actions">
                         <button type="submit" class="button button-primary">
-                            <span class="dashicons dashicons-saved"></span>
+                            <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                             <?php esc_html_e('Save Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -1006,7 +1246,7 @@ class Admin_UI {
                     <!-- Card: Last Sync Results -->
                     <div class="dsz-sync-card">
                         <div class="dsz-sync-card-icon">
-                            <span class="dashicons dashicons-calendar-alt"></span>
+                            <span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-sync-card-content">
                             <h3><?php esc_html_e('Last Sync', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -1022,7 +1262,7 @@ class Admin_UI {
                     <!-- Card: Linked Products -->
                     <div class="dsz-sync-card">
                         <div class="dsz-sync-card-icon">
-                            <span class="dashicons dashicons-admin-links"></span>
+                            <span class="dashicons dashicons-admin-links" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-sync-card-content">
                             <h3><?php esc_html_e('Linked Products', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -1042,7 +1282,7 @@ class Admin_UI {
                     <!-- Card: Next Schedule -->
                     <div class="dsz-sync-card">
                         <div class="dsz-sync-card-icon">
-                            <span class="dashicons dashicons-clock"></span>
+                            <span class="dashicons dashicons-clock" aria-hidden="true"></span>
                         </div>
                         <div class="dsz-sync-card-content">
                             <h3><?php esc_html_e('Next Auto-Sync', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -1068,7 +1308,7 @@ class Admin_UI {
                     <!-- Action Card 1: Link Products -->
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-admin-links"></span>
+                            <span class="dashicons dashicons-admin-links" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Link Products', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1076,7 +1316,7 @@ class Admin_UI {
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-auto-map" class="button button-secondary">
-                                <span class="dashicons dashicons-admin-links"></span>
+                                <span class="dashicons dashicons-admin-links" aria-hidden="true"></span>
                                 <?php esc_html_e('Link Products by SKU', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1086,7 +1326,7 @@ class Admin_UI {
                     <!-- Action Card 2: Update Prices & Stock -->
                     <div class="dsz-action-card dsz-action-card-primary">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-money-alt"></span>
+                            <span class="dashicons dashicons-money-alt" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Update Prices & Stock', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1094,7 +1334,7 @@ class Admin_UI {
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-run-sync" class="button button-primary" <?php echo esc_attr($in_progress ? 'disabled' : ''); ?>>
-                                <span class="dashicons dashicons-update-alt"></span>
+                                <span class="dashicons dashicons-update-alt" aria-hidden="true"></span>
                                 <?php esc_html_e('Update Now', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1109,7 +1349,7 @@ class Admin_UI {
                                     <div class="dsz-progress-glow"></div>
                                 </div>
                             </div>
-                            <div id="dsz-progress-text" class="dsz-progress-status-text"></div>
+                            <div id="dsz-progress-text" class="dsz-progress-status-text" role="status" aria-live="polite"></div>
                         </div>
                         <div id="dsz-sync-message" class="dsz-message hidden"></div>
                     </div>
@@ -1117,7 +1357,7 @@ class Admin_UI {
                     <!-- Action Card 3: Refresh Images -->
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-format-image"></span>
+                            <span class="dashicons dashicons-format-image" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Refresh Images', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1125,7 +1365,7 @@ class Admin_UI {
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-resync-images" class="button button-secondary">
-                                <span class="dashicons dashicons-format-image"></span>
+                                <span class="dashicons dashicons-format-image" aria-hidden="true"></span>
                                 <?php esc_html_e('Refresh Images', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1135,7 +1375,7 @@ class Admin_UI {
                     <!-- Action Card 4: Refresh Categories -->
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-category"></span>
+                            <span class="dashicons dashicons-category" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Refresh Categories', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1143,7 +1383,7 @@ class Admin_UI {
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-resync-categories" class="button button-secondary">
-                                <span class="dashicons dashicons-category"></span>
+                                <span class="dashicons dashicons-category" aria-hidden="true"></span>
                                 <?php esc_html_e('Refresh Categories', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1153,7 +1393,7 @@ class Admin_UI {
                     <!-- Action Card 5: Refresh All Product Data -->
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-download"></span>
+                            <span class="dashicons dashicons-download" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Refresh All Data', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1161,7 +1401,7 @@ class Admin_UI {
                         </p>
                         <div class="dsz-action-card-footer">
                             <button type="button" id="dsz-resync-all" class="button button-secondary">
-                                <span class="dashicons dashicons-download"></span>
+                                <span class="dashicons dashicons-download" aria-hidden="true"></span>
                                 <?php esc_html_e('Refresh All Data', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1169,7 +1409,7 @@ class Admin_UI {
                             <div class="dsz-progress-bar">
                                 <div id="dsz-resync-all-progress-fill" class="dsz-progress-fill" style="width: 0%"></div>
                             </div>
-                            <p id="dsz-resync-all-progress-text" class="dsz-progress-text"></p>
+                            <p id="dsz-resync-all-progress-text" class="dsz-progress-text" role="status" aria-live="polite"></p>
                         </div>
                         <div id="dsz-resync-all-message" class="dsz-message hidden"></div>
                     </div>
@@ -1178,7 +1418,7 @@ class Admin_UI {
                     <?php $order_settings = get_option('dszsync_order_settings', []); ?>
                     <div class="dsz-action-card">
                         <div class="dsz-action-card-header">
-                            <span class="dashicons dashicons-cart"></span>
+                            <span class="dashicons dashicons-cart" aria-hidden="true"></span>
                             <h3><?php esc_html_e('Order Automation', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         </div>
                         <p class="dsz-action-card-desc">
@@ -1199,11 +1439,11 @@ class Admin_UI {
                                 <?php esc_html_e('Save', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                             <button type="button" id="dsz-submit-pending-orders" class="button button-secondary">
-                                <span class="dashicons dashicons-upload"></span>
+                                <span class="dashicons dashicons-upload" aria-hidden="true"></span>
                                 <?php esc_html_e('Submit Pending Orders', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                             <button type="button" id="dsz-run-tracking-sync" class="button button-secondary">
-                                <span class="dashicons dashicons-location"></span>
+                                <span class="dashicons dashicons-location" aria-hidden="true"></span>
                                 <?php esc_html_e('Check Tracking Now', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -1240,7 +1480,7 @@ class Admin_UI {
                                 </div>
 
                                 <button type="submit" class="button button-primary">
-                                    <span class="dashicons dashicons-saved"></span>
+                                    <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                                     <?php esc_html_e('Save', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                                 </button>
                                 <div id="dsz-schedule-message" class="dsz-message hidden"></div>
@@ -1388,11 +1628,11 @@ class Admin_UI {
                     </div>
                     <div class="dsz-logs-actions">
                         <button type="button" id="dsz-export-logs" class="button">
-                            <span class="dashicons dashicons-download"></span>
+                            <span class="dashicons dashicons-download" aria-hidden="true"></span>
                             <?php esc_html_e('Export CSV', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                         <button type="button" id="dsz-clear-logs" class="button button-link-delete">
-                            <span class="dashicons dashicons-trash"></span>
+                            <span class="dashicons dashicons-trash" aria-hidden="true"></span>
                             <?php esc_html_e('Clear All', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -1400,11 +1640,31 @@ class Admin_UI {
 
                 <!-- Logs List -->
                 <?php if (empty($logs)): ?>
-                    <div class="dsz-logs-empty">
-                        <span class="dashicons dashicons-yes-alt"></span>
-                        <h3><?php esc_html_e('No logs found', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
-                        <p><?php esc_html_e('Activity logs will appear here as sync operations run.', '3s-soft-price-stock-sync-for-dropshipzone'); ?></p>
-                    </div>
+                    <?php
+                    // Filtered to nothing reads as "broken" unless it says so;
+                    // an unfiltered empty log is genuinely good news.
+                    if ($level) {
+                        $this->render_empty_state(
+                            'search',
+                            __('No logs at this level', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            __('Nothing was recorded at this level. Clear the filter to see all activity.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            [
+                                'url'   => admin_url('admin.php?page=dsz-sync-logs'),
+                                'label' => __('Clear filter', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            ]
+                        );
+                    } else {
+                        $this->render_empty_state(
+                            'yes-alt',
+                            __('Nothing to report', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            __('Sync activity and any errors will appear here once a sync has run.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            [
+                                'url'   => admin_url('admin.php?page=dsz-sync-control'),
+                                'label' => __('Go to Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
+                            ]
+                        );
+                    }
+                    ?>
                 <?php else: ?>
                     <div class="dsz-logs-list">
                         <?php foreach ($logs as $log): ?>
@@ -1661,6 +1921,24 @@ class Admin_UI {
     }
 
     /**
+     * AJAX: Dismiss the setup checklist for the current user.
+     *
+     * Stored per user rather than per site: on a multi-author store one
+     * person dismissing it should not hide it from everyone else.
+     */
+    public function ajax_hide_setup() {
+        check_ajax_referer('dszsync_admin_nonce', 'nonce');
+
+        if (!dszsync_current_user_can_manage()) {
+            wp_send_json_error(['message' => __('Permission denied', '3s-soft-price-stock-sync-for-dropshipzone')]);
+        }
+
+        update_user_meta(get_current_user_id(), 'dszsync_hide_setup', 1);
+
+        wp_send_json_success();
+    }
+
+    /**
      * AJAX: Clear logs
      */
     public function ajax_clear_logs() {
@@ -1910,7 +2188,7 @@ class Admin_UI {
                     <?php if ($never_synced_count > 0): ?>
                     <div class="dsz-mt-4">
                         <button type="button" id="dsz-resync-never-synced" class="button button-primary">
-                            <span class="dashicons dashicons-update"></span>
+                            <span class="dashicons dashicons-update" aria-hidden="true"></span>
                             <?php 
                             /* translators: %d: number of products */
                             echo esc_html(sprintf(__('Resync %d Never Synced Products', '3s-soft-price-stock-sync-for-dropshipzone'), $never_synced_count)); 
@@ -1923,7 +2201,7 @@ class Admin_UI {
                     <?php if ($unmapped_count > 0): ?>
                     <div class="dsz-mt-4">
                         <button type="button" id="dsz-scan-unmapped" class="button button-secondary">
-                            <span class="dashicons dashicons-search"></span>
+                            <span class="dashicons dashicons-search" aria-hidden="true"></span>
                             <?php 
                             /* translators: %d: number of products */
                             echo esc_html(sprintf(__('Scan %d Unmapped Products', '3s-soft-price-stock-sync-for-dropshipzone'), $unmapped_count)); 
@@ -1940,7 +2218,7 @@ class Admin_UI {
                 <!-- Sync Actions Callout -->
                 <div class="dsz-form-section">
                     <div class="dsz-callout dsz-callout-info">
-                        <span class="dashicons dashicons-info"></span>
+                        <span class="dashicons dashicons-info" aria-hidden="true"></span>
                         <div>
                             <strong><?php esc_html_e('Looking for sync actions?', '3s-soft-price-stock-sync-for-dropshipzone'); ?></strong>
                             <p><?php
@@ -1982,7 +2260,7 @@ class Admin_UI {
                     <div class="dsz-section-header">
                         <h2><?php esc_html_e('Existing Mappings', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
                         <button type="button" id="dsz-export-mappings" class="button">
-                            <span class="dashicons dashicons-download"></span>
+                            <span class="dashicons dashicons-download" aria-hidden="true"></span>
                             <?php esc_html_e('Export CSV', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>
@@ -2009,16 +2287,42 @@ class Admin_UI {
                     <table class="wp-list-table widefat fixed striped">
                         <thead>
                             <tr>
-                                <th><?php esc_html_e('WooCommerce Product', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Dropshipzone SKU', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th><?php esc_html_e('Last Resynced', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                <th class="column-actions"><?php esc_html_e('Actions', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('WooCommerce Product', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Dropshipzone SKU', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col"><?php esc_html_e('Last Resynced', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <th scope="col" class="column-actions"><?php esc_html_e('Actions', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($mappings)): ?>
                                 <tr>
-                                    <td colspan="4" class="dsz-no-logs"><?php esc_html_e('No mappings found.', '3s-soft-price-stock-sync-for-dropshipzone'); ?></td>
+                                    <td colspan="4">
+                                        <?php
+                                        // A filter returning nothing is a different situation from
+                                        // having mapped nothing yet, and needs a different next step.
+                                        if ($search || $resync_filter) {
+                                            $this->render_empty_state(
+                                                'search',
+                                                __('No mappings match your filter', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                __('Try a different search term, or clear the filter to see every linked product.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                [
+                                                    'url'   => admin_url('admin.php?page=dsz-sync-mapping'),
+                                                    'label' => __('Clear filter', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                ]
+                                            );
+                                        } else {
+                                            $this->render_empty_state(
+                                                'admin-links',
+                                                __('No products linked yet', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                __('Linking a WooCommerce product to a Dropshipzone SKU is what lets the plugin keep its price and stock up to date. Import products, or scan your existing catalogue for matching SKUs.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                [
+                                                    'url'   => admin_url('admin.php?page=dsz-sync-import'),
+                                                    'label' => __('Import products', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                                ]
+                                            );
+                                        }
+                                        ?>
+                                    </td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($mappings as $mapping): ?>
@@ -2032,11 +2336,11 @@ class Admin_UI {
                                         <td><?php echo isset($mapping['last_resynced']) && $mapping['last_resynced'] ? esc_html(dszsync_format_datetime($mapping['last_resynced'])) : esc_html__('Never', '3s-soft-price-stock-sync-for-dropshipzone'); ?></td>
                                         <td class="column-actions">
                                             <button type="button" class="button button-small dsz-resync-btn" data-product-id="<?php echo esc_attr($mapping['wc_product_id']); ?>" data-sku="<?php echo esc_attr($mapping['dsz_sku']); ?>">
-                                                <span class="dashicons dashicons-update"></span>
+                                                <span class="dashicons dashicons-update" aria-hidden="true"></span>
                                                 <?php esc_html_e('Resync', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                                             </button>
                                             <button type="button" class="button button-small dsz-unmap-btn" data-wc-id="<?php echo esc_attr($mapping['wc_product_id']); ?>">
-                                                <span class="dashicons dashicons-no-alt"></span>
+                                                <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
                                                 <?php esc_html_e('Unmap', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                                             </button>
                                         </td>
@@ -2215,7 +2519,7 @@ class Admin_UI {
                     
                     <div class="dsz-import-search-wrapper">
                         <div class="dsz-import-search-box">
-                            <span class="dashicons dashicons-search"></span>
+                            <span class="dashicons dashicons-search" aria-hidden="true"></span>
                             <input type="text" id="dsz-import-search" placeholder="<?php esc_attr_e('Enter keywords, SKU, or product name...', '3s-soft-price-stock-sync-for-dropshipzone'); ?>" />
                             <button type="button" id="dsz-import-search-btn" class="button button-primary button-hero">
                                 <?php esc_html_e('Search Products', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
@@ -2228,19 +2532,19 @@ class Admin_UI {
             <!-- Quick Filter Cards -->
             <div class="dsz-import-quick-filters">
                 <div class="dsz-quick-filter-card" data-filter="in_stock">
-                    <span class="dashicons dashicons-yes-alt"></span>
+                    <span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
                     <span class="dsz-quick-filter-label"><?php esc_html_e('In Stock', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                 </div>
                 <div class="dsz-quick-filter-card" data-filter="on_promotion">
-                    <span class="dashicons dashicons-tag"></span>
+                    <span class="dashicons dashicons-tag" aria-hidden="true"></span>
                     <span class="dsz-quick-filter-label"><?php esc_html_e('On Sale', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                 </div>
                 <div class="dsz-quick-filter-card" data-filter="free_shipping">
-                    <span class="dashicons dashicons-car"></span>
+                    <span class="dashicons dashicons-car" aria-hidden="true"></span>
                     <span class="dsz-quick-filter-label"><?php esc_html_e('Free Shipping', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                 </div>
                 <div class="dsz-quick-filter-card" data-filter="new_arrival">
-                    <span class="dashicons dashicons-star-filled"></span>
+                    <span class="dashicons dashicons-star-filled" aria-hidden="true"></span>
                     <span class="dsz-quick-filter-label"><?php esc_html_e('New Arrivals', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                 </div>
             </div>
@@ -2248,10 +2552,11 @@ class Admin_UI {
             <div class="dsz-content">
                 <!-- Advanced Filters (Collapsible) -->
                 <div class="dsz-import-filters-section">
-                    <button type="button" id="dsz-toggle-filters" class="dsz-toggle-filters-btn">
-                        <span class="dashicons dashicons-filter"></span>
+                    <button type="button" id="dsz-toggle-filters" class="dsz-toggle-filters-btn"
+                            aria-expanded="false" aria-controls="dsz-filters-panel">
+                        <span class="dashicons dashicons-filter" aria-hidden="true"></span>
                         <?php esc_html_e('Advanced Filters', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
-                        <span class="dashicons dashicons-arrow-down-alt2 dsz-toggle-arrow"></span>
+                        <span class="dashicons dashicons-arrow-down-alt2 dsz-toggle-arrow" aria-hidden="true"></span>
                     </button>
                     
                     <div id="dsz-filters-panel" class="dsz-filters-panel hidden">
@@ -2264,7 +2569,7 @@ class Admin_UI {
                                         <option value=""><?php esc_html_e('All Categories', '3s-soft-price-stock-sync-for-dropshipzone'); ?></option>
                                     </select>
                                     <button type="button" id="dsz-load-categories" class="button button-small" title="<?php esc_attr_e('Load categories from API', '3s-soft-price-stock-sync-for-dropshipzone'); ?>">
-                                        <span class="dashicons dashicons-update"></span>
+                                        <span class="dashicons dashicons-update" aria-hidden="true"></span>
                                     </button>
                                 </div>
                             </div>
@@ -2299,11 +2604,11 @@ class Admin_UI {
 
                         <div class="dsz-filters-actions">
                             <button type="button" id="dsz-apply-filters" class="button button-primary">
-                                <span class="dashicons dashicons-yes"></span>
+                                <span class="dashicons dashicons-yes" aria-hidden="true"></span>
                                 <?php esc_html_e('Apply Filters', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                             <button type="button" id="dsz-clear-filters" class="button button-secondary">
-                                <span class="dashicons dashicons-no-alt"></span>
+                                <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
                                 <?php esc_html_e('Clear All', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                         </div>
@@ -2326,7 +2631,7 @@ class Admin_UI {
 
                 <div id="dsz-import-results" class="dsz-import-results-container">
                     <div class="dsz-import-empty">
-                        <span class="dashicons dashicons-products"></span>
+                        <span class="dashicons dashicons-products" aria-hidden="true"></span>
                         <h3><?php esc_html_e('Ready to Import', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
                         <p><?php esc_html_e('Search for products or click a quick filter above to browse the Dropshipzone catalog.', '3s-soft-price-stock-sync-for-dropshipzone'); ?></p>
                     </div>
@@ -3455,13 +3760,13 @@ class Admin_UI {
                     <?php echo esc_html($dszsync_order['error_message']); ?>
                 </p>
                 <button type="button" class="button button-primary dsz-submit-order-btn" data-order-id="<?php echo esc_attr($order_id); ?>">
-                    <span class="dashicons dashicons-update"></span>
+                    <span class="dashicons dashicons-update" aria-hidden="true"></span>
                     <?php esc_html_e('Retry Submit', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                 </button>
             <?php else: ?>
                 <p><?php esc_html_e('This order has Dropshipzone products and can be submitted.', '3s-soft-price-stock-sync-for-dropshipzone'); ?></p>
                 <button type="button" class="button button-primary dsz-submit-order-btn" data-order-id="<?php echo esc_attr($order_id); ?>">
-                    <span class="dashicons dashicons-upload"></span>
+                    <span class="dashicons dashicons-upload" aria-hidden="true"></span>
                     <?php esc_html_e('Submit to Dropshipzone', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                 </button>
             <?php endif; ?>
@@ -3532,7 +3837,7 @@ class Admin_UI {
                             </div>
                             <div class="dsz-card">
                                 <div class="dsz-card-icon">
-                                    <span class="dashicons dashicons-clock"></span>
+                                    <span class="dashicons dashicons-clock" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Next Run', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3542,7 +3847,7 @@ class Admin_UI {
                             <?php if (!empty($status['last_results'])): ?>
                             <div class="dsz-card">
                                 <div class="dsz-card-icon">
-                                    <span class="dashicons dashicons-download"></span>
+                                    <span class="dashicons dashicons-download" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Last Run', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3557,7 +3862,7 @@ class Admin_UI {
                         
                         <div class="dsz-form-actions dsz-mb-5">
                             <button type="button" id="dsz-run-auto-import" class="button button-secondary">
-                                <span class="dashicons dashicons-download"></span>
+                                <span class="dashicons dashicons-download" aria-hidden="true"></span>
                                 <?php esc_html_e('Run Import Now', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                             </button>
                             <span id="dsz-auto-import-result" class="dsz-ml-3"></span>
@@ -3581,7 +3886,7 @@ class Admin_UI {
                         <div class="dsz-cards">
                             <div class="dsz-card">
                                 <div class="dsz-card-icon dsz-icon-success">
-                                    <span class="dashicons dashicons-database"></span>
+                                    <span class="dashicons dashicons-database" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Mapped Products', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3591,7 +3896,7 @@ class Admin_UI {
                             </div>
                             <div class="dsz-card">
                                 <div class="dsz-card-icon">
-                                    <span class="dashicons dashicons-chart-bar"></span>
+                                    <span class="dashicons dashicons-chart-bar" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Auto Imported', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3601,7 +3906,7 @@ class Admin_UI {
                             </div>
                             <div class="dsz-card">
                                 <div class="dsz-card-icon">
-                                    <span class="dashicons dashicons-calendar-alt"></span>
+                                    <span class="dashicons dashicons-calendar-alt" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Last 7 Days', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3611,7 +3916,7 @@ class Admin_UI {
                             </div>
                             <div class="dsz-card">
                                 <div class="dsz-card-icon">
-                                    <span class="dashicons dashicons-calendar"></span>
+                                    <span class="dashicons dashicons-calendar" aria-hidden="true"></span>
                                 </div>
                                 <div class="dsz-card-content">
                                     <h3><?php esc_html_e('Last 30 Days', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h3>
@@ -3626,11 +3931,11 @@ class Admin_UI {
                         <table class="widefat striped dsz-mb-5">
                             <thead>
                                 <tr>
-                                    <th><?php esc_html_e('Date', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                    <th><?php esc_html_e('Imported', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                    <th><?php esc_html_e('Skipped', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                    <th><?php esc_html_e('Errors', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
-                                    <th><?php esc_html_e('Status', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Date', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Imported', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Skipped', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Errors', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Status', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3642,9 +3947,9 @@ class Admin_UI {
                                     <td><?php echo intval($entry['errors']); ?></td>
                                     <td>
                                         <?php if ($entry['status'] === 'complete'): ?>
-                                            <span class="dsz-text-success"><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e('Complete', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
+                                            <span class="dsz-text-success"><span class="dashicons dashicons-yes-alt" aria-hidden="true"></span> <?php esc_html_e('Complete', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                                         <?php elseif ($entry['status'] === 'error'): ?>
-                                            <span class="dsz-text-error"><span class="dashicons dashicons-warning"></span> <?php esc_html_e('Error', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
+                                            <span class="dsz-text-error"><span class="dashicons dashicons-warning" aria-hidden="true"></span> <?php esc_html_e('Error', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
                                         <?php else: ?>
                                             <?php echo esc_html($entry['status']); ?>
                                         <?php endif; ?>
@@ -3781,7 +4086,7 @@ class Admin_UI {
 
                     <div class="dsz-form-actions">
                         <button type="submit" class="button button-primary">
-                            <span class="dashicons dashicons-saved"></span>
+                            <span class="dashicons dashicons-saved" aria-hidden="true"></span>
                             <?php esc_html_e('Save Settings', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
                         </button>
                     </div>

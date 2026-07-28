@@ -2,8 +2,10 @@
  * Dropshipzone Sync — Admin UI
  *
  * Clean, flat design system: single indigo accent, token-driven,
- * light by default with opt-in dark theme (body.dsz-dark via the header
- * toggle, persisted in localStorage), reduced-motion aware.
+ * reduced-motion aware. Deliberately light-only: it sits inside the
+ * WordPress admin content area, which is light regardless of the OS
+ * preference, so a separate dark palette read as dark cards floating on
+ * white chrome.
  *
  * Contract: every .dsz-* class referenced by class-admin-ui.php or
  * admin.js keeps working. Legacy duplicate systems (import v1/v2/v3,
@@ -109,64 +111,6 @@
     --dsz-transition-slow: 300ms ease;
 }
 
-/*
- * Dark theme is OPT-IN via the header toggle (body.dsz-dark), never tied to
- * the OS preference — WP admin's content area stays light regardless of OS,
- * and auto-darkening only our panels clashes with the surrounding chrome.
- */
-body.dsz-dark {
-        --dsz-primary: #818cf8;
-        --dsz-primary-hover: #a5b4fc;
-        --dsz-primary-active: #6366f1;
-        --dsz-primary-soft: rgba(99, 102, 241, 0.16);
-        --dsz-primary-soft-border: rgba(129, 140, 248, 0.45);
-
-        --dsz-success: #4ade80;
-        --dsz-success-soft: rgba(34, 197, 94, 0.14);
-        --dsz-success-border: rgba(74, 222, 128, 0.35);
-        --dsz-warning: #fbbf24;
-        --dsz-warning-soft: rgba(245, 158, 11, 0.14);
-        --dsz-warning-border: rgba(251, 191, 36, 0.35);
-        --dsz-error: #f87171;
-        --dsz-error-soft: rgba(239, 68, 68, 0.14);
-        --dsz-error-border: rgba(248, 113, 113, 0.35);
-        --dsz-info: #38bdf8;
-        --dsz-info-soft: rgba(14, 165, 233, 0.14);
-        --dsz-info-border: rgba(56, 189, 248, 0.35);
-
-        --dsz-gray-50: #1e293b;
-        --dsz-gray-100: #283548;
-        --dsz-gray-200: #334155;
-        --dsz-gray-300: #475569;
-        --dsz-gray-400: #64748b;
-        --dsz-gray-500: #94a3b8;
-        --dsz-gray-600: #cbd5e1;
-        --dsz-gray-700: #e2e8f0;
-        --dsz-gray-800: #f1f5f9;
-        --dsz-gray-900: #f8fafc;
-
-        --dsz-surface: #1e293b;
-        --dsz-surface-2: #16202e;
-        --dsz-surface-3: #283548;
-        --dsz-border: #334155;
-        --dsz-border-strong: #475569;
-        --dsz-text: #f1f5f9;
-        --dsz-text-muted: #94a3b8;
-        --dsz-text-faint: #64748b;
-
-        --dsz-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-        --dsz-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-        --dsz-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-        --dsz-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
-}
-
-/* Darken the WP content area behind our panels so dark mode reads as one
-   coherent surface instead of dark cards floating on white */
-body.dsz-dark #wpcontent,
-body.dsz-dark #wpbody-content {
-    background: #0b1220;
-}
-
 /* ==========================================================================
    2. Base
    ========================================================================== */
@@ -233,23 +177,12 @@ body.dsz-dark #wpbody-content {
     gap: var(--dsz-space-4);
 }
 
-.dsz-theme-toggle {
+/* Optional per-page action slot, so pages stop hand-rolling header buttons */
+.dsz-header-actions {
     flex: 0 0 auto;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    padding: 0 !important;
-    color: var(--dsz-text-muted);
-}
-
-.dsz-theme-toggle .dashicons {
-    margin: 0 !important;
-}
-
-body.dsz-dark .dsz-theme-toggle {
-    color: var(--dsz-warning);
+    gap: var(--dsz-space-2);
 }
 
 .dsz-header h1 {
@@ -267,13 +200,45 @@ body.dsz-dark .dsz-theme-toggle {
     font-size: var(--dsz-text-md);
 }
 
+/* Grouped by stage of work — Overview, Setup, Products, Rules, Operations —
+   so the order of operations is visible rather than implied by position in a
+   flat list. */
 .dsz-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--dsz-space-1);
+    align-items: flex-start;
+    gap: var(--dsz-space-2) var(--dsz-space-5);
     margin: var(--dsz-space-5) 0 0;
     border-top: 1px solid var(--dsz-border);
     padding-top: var(--dsz-space-3);
+}
+
+.dsz-nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--dsz-space-1);
+    min-width: 0;
+}
+
+.dsz-nav-group + .dsz-nav-group {
+    border-left: 1px solid var(--dsz-border);
+    padding-left: var(--dsz-space-5);
+    margin-left: calc(var(--dsz-space-5) * -1 + var(--dsz-space-2));
+}
+
+.dsz-nav-group-label {
+    font-size: var(--dsz-text-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--dsz-text-faint);
+    padding: 0 var(--dsz-space-3);
+}
+
+.dsz-nav-group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--dsz-space-1);
 }
 
 .dsz-nav-item {
@@ -1709,6 +1674,182 @@ div.dsz-loading,
 }
 
 /* ==========================================================================
+   20b. Setup checklist
+   ========================================================================== */
+.dsz-checklist {
+    background: var(--dsz-surface);
+    border: 1px solid var(--dsz-border);
+    border-radius: var(--dsz-radius-lg);
+    box-shadow: var(--dsz-shadow-sm);
+    padding: var(--dsz-space-5) var(--dsz-space-6);
+    margin-bottom: var(--dsz-space-5);
+}
+
+.dsz-checklist-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--dsz-space-4);
+}
+
+.dsz-checklist-head h2 {
+    margin: 0;
+    font-size: var(--dsz-text-lg);
+    font-weight: 650;
+    color: var(--dsz-text);
+}
+
+.dsz-checklist-sub {
+    margin: var(--dsz-space-1) 0 0;
+    font-size: var(--dsz-text-sm);
+    color: var(--dsz-text-muted);
+}
+
+.dsz-checklist-dismiss {
+    color: var(--dsz-text-muted);
+    text-decoration: none;
+    font-size: var(--dsz-text-sm);
+    flex: 0 0 auto;
+}
+
+.dsz-checklist-dismiss:hover {
+    color: var(--dsz-text);
+}
+
+.dsz-checklist-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--dsz-surface-3);
+    overflow: hidden;
+    margin: var(--dsz-space-4) 0 var(--dsz-space-2);
+}
+
+.dsz-checklist-progress-fill {
+    height: 100%;
+    background: var(--dsz-primary);
+    border-radius: inherit;
+    transition: width var(--dsz-transition);
+}
+
+.dsz-checklist-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.dsz-checklist-step {
+    display: flex;
+    align-items: center;
+    gap: var(--dsz-space-3);
+    padding: var(--dsz-space-3) 0;
+    border-bottom: 1px solid var(--dsz-border);
+}
+
+.dsz-checklist-step:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.dsz-checklist-mark {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--dsz-surface-3);
+    color: var(--dsz-text-faint);
+}
+
+.dsz-checklist-mark .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 1;
+}
+
+.dsz-checklist-step.is-done .dsz-checklist-mark {
+    background: var(--dsz-success-soft);
+    color: var(--dsz-success);
+}
+
+.dsz-checklist-step.is-next .dsz-checklist-mark {
+    background: var(--dsz-primary-soft);
+    color: var(--dsz-primary);
+}
+
+.dsz-checklist-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.dsz-checklist-label {
+    font-weight: 600;
+    color: var(--dsz-text);
+}
+
+.dsz-checklist-step.is-done .dsz-checklist-label {
+    font-weight: 500;
+    color: var(--dsz-text-muted);
+}
+
+.dsz-checklist-help {
+    font-size: var(--dsz-text-sm);
+    color: var(--dsz-text-muted);
+}
+
+.dsz-checklist-done-label {
+    flex: 0 0 auto;
+    font-size: var(--dsz-text-sm);
+    color: var(--dsz-success);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   20c. Empty states
+   ========================================================================== */
+.dsz-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--dsz-space-2);
+    padding: var(--dsz-space-10) var(--dsz-space-6);
+    color: var(--dsz-text-muted);
+}
+
+.dsz-empty-state .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    line-height: 1;
+    color: var(--dsz-text-faint);
+    margin-bottom: var(--dsz-space-1);
+}
+
+.dsz-empty-state h3 {
+    margin: 0;
+    font-size: var(--dsz-text-lg);
+    font-weight: 650;
+    color: var(--dsz-text);
+}
+
+.dsz-empty-state p {
+    margin: 0;
+    max-width: 46ch;
+    font-size: var(--dsz-text-base);
+    line-height: 1.6;
+}
+
+.dsz-empty-state .button {
+    margin-top: var(--dsz-space-3);
+}
+
+/* ==========================================================================
    21. Responsive
    ========================================================================== */
 @media screen and (max-width: 1100px) {
@@ -1733,9 +1874,40 @@ div.dsz-loading,
     .dsz-mapping-arrow { display: none; }
 
     .dsz-logs-toolbar { flex-direction: column; align-items: stretch; }
+
+    /* Group dividers assume a single row; once the bar wraps they land in
+       arbitrary places, so stack the groups instead. */
+    .dsz-nav { gap: var(--dsz-space-3); }
+
+    .dsz-nav-group { width: 100%; }
+
+    .dsz-nav-group + .dsz-nav-group {
+        border-left: 0;
+        border-top: 1px solid var(--dsz-border);
+        padding-left: 0;
+        padding-top: var(--dsz-space-3);
+        margin-left: 0;
+    }
+
+    .dsz-checklist { padding: var(--dsz-space-4); }
 }
 
 @media screen and (max-width: 600px) {
+    .dsz-checklist-step {
+        flex-wrap: wrap;
+    }
+
+    /* Keep the action under the text rather than squeezing both onto one
+       line; the mark column stays as the visual anchor. */
+    .dsz-checklist-step .button,
+    .dsz-checklist-done-label {
+        margin-left: calc(22px + var(--dsz-space-3));
+    }
+
+    .dsz-checklist-body { flex-basis: calc(100% - 22px - var(--dsz-space-3)); }
+
+    .dsz-empty-state { padding: var(--dsz-space-8) var(--dsz-space-4); }
+
     .dsz-cards,
     .dsz-sync-cards,
     .dsz-log-stats,
