@@ -493,6 +493,18 @@ class Cron {
         // Track supplier cost for profit reporting
         $product->update_meta_data('_dszsync_cost', $cost);
 
+        // Recommended retail price, when the supplier publishes one. Arrives as
+        // RrpPrice and/or RRP.Standard depending on the response schema.
+        $rrp = 0.0;
+        if (isset($api_data['RrpPrice'])) {
+            $rrp = floatval($api_data['RrpPrice']);
+        } elseif (isset($api_data['RRP']['Standard'])) {
+            $rrp = floatval($api_data['RRP']['Standard']);
+        }
+        if ($rrp > 0) {
+            $product->update_meta_data('_dszsync_rrp', $rrp);
+        }
+
         /**
          * Filter the calculated price before it is saved.
          *
@@ -502,33 +514,62 @@ class Cron {
          */
         $new_price = (float) apply_filters('dszsync_calculated_price', $new_price, $product->get_id(), $cost);
 
-        // Check if price changed
+        // Regular price
         $current_price = floatval($product->get_regular_price());
-        if (abs($current_price - $new_price) < 0.01) {
-            return false; // No change
+        $regular_changed = (abs($current_price - $new_price) >= 0.01);
+
+        if ($regular_changed) {
+            $product->set_regular_price($new_price);
+
+            /**
+             * Fires after a product price has been updated by the sync.
+             *
+             * @param int   $product_id    WooCommerce product ID
+             * @param float $current_price Previous regular price
+             * @param float $new_price     New regular price
+             */
+            do_action('dszsync_price_updated', $product->get_id(), $current_price, $new_price);
         }
 
-        // Update price
-        $product->set_regular_price($new_price);
-
-        /**
-         * Fires after a product price has been updated by the sync.
-         *
-         * @param int   $product_id    WooCommerce product ID
-         * @param float $current_price Previous regular price
-         * @param float $new_price     New regular price
-         */
-        do_action('dszsync_price_updated', $product->get_id(), $current_price, $new_price);
-        
-        // Handle special/sale price with the same rule set
+        // Sale price is resolved on every run, not only when the regular
+        // price moved. A special can start, change or end while the supplier
+        // cost stays flat, and an ended special must clear — otherwise the
+        // product keeps selling below the intended price indefinitely.
+        $desired_sale = null;
         if (!empty($api_data['special_price']) && floatval($api_data['special_price']) > 0) {
             $special = $this->price_sync->calculate_price(floatval($api_data['special_price']), $api_data);
             if ($special < $new_price) {
-                $product->set_sale_price($special);
+                $desired_sale = $special;
             }
         }
 
-        return true;
+        $current_sale = $product->get_sale_price();
+        $sale_changed = false;
+
+        if ($desired_sale !== null) {
+            if ($current_sale === '' || abs(floatval($current_sale) - $desired_sale) >= 0.01) {
+                $product->set_sale_price($desired_sale);
+                $sale_changed = true;
+            }
+
+            // Honour the supplier's promotion window when one is supplied
+            $from = !empty($api_data['special_price_from_date'])
+                ? strtotime($api_data['special_price_from_date'])
+                : '';
+            $to = !empty($api_data['special_price_end_date'])
+                ? strtotime($api_data['special_price_end_date'])
+                : '';
+            $product->set_date_on_sale_from($from ?: '');
+            $product->set_date_on_sale_to($to ?: '');
+        } elseif ($current_sale !== '') {
+            // Special ended or was withdrawn — remove it and its dates
+            $product->set_sale_price('');
+            $product->set_date_on_sale_from('');
+            $product->set_date_on_sale_to('');
+            $sale_changed = true;
+        }
+
+        return $regular_changed || $sale_changed;
     }
 
     /**

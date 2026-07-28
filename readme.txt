@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.4
+Stable tag: 3.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,7 @@ This plugin is an independent integration and is not affiliated with, endorsed b
 * **Stock Sync** - Keep stock quantities accurate in real-time
 * **Auto Product Import** - Schedule automatic imports with customizable filters (NEW)
 * **Import Metrics** - Track import runs with 7-day, 30-day stats and history (NEW)
-* **Minimum Stock Filter** - Only import products with 100+ units in stock (NEW)
+* **Minimum Stock Filter** - Only import products above a stock threshold you set (NEW)
 * **Shipping Zones** - Calculate shipping using DSZ zone mapping and per-product rates
 * **Product Import** - Import products directly from Dropshipzone catalog
 * **Order Submission** - Submit orders to Dropshipzone for fulfillment
@@ -142,6 +142,13 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.3.5 =
+* FIXED: Sale prices never started, changed or ended. The scheduled sync returned early when the supplier cost was unchanged, so specials were never applied - and never removed once expired. Sale handling now runs every pass, honours the supplier promotion dates, and clears the sale price when a special ends.
+* FIXED: The minimum stock threshold defaulted to 10 in one place and 100 in three others. Unified to 10.
+* FIXED: Free Ship, Sale and RRP details in catalogue search read field names that only exist as request parameters, so they never displayed.
+* FIXED: Saving new API credentials left the old access token in place until it expired. It is now cleared immediately.
+* ADDED: Supplier RRP is stored as product meta during sync.
 
 = 3.3.4 =
 * FIXED: The sync-completed action was left as dszsync_completed by the prefix rename. It is now dszsync_sync_completed, matching the documented name.

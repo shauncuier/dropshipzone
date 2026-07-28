@@ -84,7 +84,7 @@ class Auto_Importer {
             'enabled'               => !empty($settings['enabled']),
             'frequency'             => in_array($settings['frequency'], ['hourly', 'twicedaily', 'daily']) ? $settings['frequency'] : 'daily',
             'max_products_per_run'  => max(1, min(200, intval($settings['max_products_per_run']))),
-            'min_stock_qty'         => max(0, intval(isset($settings['min_stock_qty']) ? $settings['min_stock_qty'] : 100)),
+            'min_stock_qty'         => max(0, intval(isset($settings['min_stock_qty']) ? $settings['min_stock_qty'] : 10)),
             'filter_new_arrival'    => !empty($settings['filter_new_arrival']),
             'filter_in_stock'       => !empty($settings['filter_in_stock']),
             'filter_free_shipping'  => !empty($settings['filter_free_shipping']),

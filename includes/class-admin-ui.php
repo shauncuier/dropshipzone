@@ -1487,10 +1487,19 @@ class Admin_UI {
                     ? (string) $settings['password']
                     : '';
 
+                $email_changed = ($email !== get_option('dszsync_api_email', ''));
+
                 update_option('dszsync_api_email', $email);
 
                 if (!empty($password)) {
                     update_option('dszsync_api_password', dszsync_encrypt($password));
+                }
+
+                // Credentials changed, so the cached token was issued for the
+                // previous account. Drop it and let the next request re-auth,
+                // rather than leaving a stale token valid until it expires.
+                if ($email_changed || !empty($password)) {
+                    $this->api_client->clear_token();
                 }
                 break;
 
@@ -3631,7 +3640,7 @@ class Admin_UI {
                                     <label for="min_stock_qty"><?php esc_html_e('Minimum Stock Quantity', '3s-soft-price-stock-sync-for-dropshipzone'); ?></label>
                                 </th>
                                 <td>
-                                    <input type="number" id="min_stock_qty" name="min_stock_qty" value="<?php echo esc_attr(isset($settings['min_stock_qty']) ? $settings['min_stock_qty'] : 100); ?>" min="0" max="10000" class="small-text" />
+                                    <input type="number" id="min_stock_qty" name="min_stock_qty" value="<?php echo esc_attr(isset($settings['min_stock_qty']) ? $settings['min_stock_qty'] : 10); ?>" min="0" max="10000" class="small-text" />
                                     <p class="description"><?php esc_html_e('Only import products with at least this many units in stock (default: 100)', '3s-soft-price-stock-sync-for-dropshipzone'); ?></p>
                                 </td>
                             </tr>
@@ -3766,7 +3775,7 @@ class Admin_UI {
             'enabled'               => !empty($_POST['enabled']),
             'frequency'             => isset($_POST['frequency']) ? sanitize_text_field(wp_unslash($_POST['frequency'])) : 'daily',
             'max_products_per_run'  => isset($_POST['max_products_per_run']) ? intval($_POST['max_products_per_run']) : 50,
-            'min_stock_qty'         => isset($_POST['min_stock_qty']) ? intval($_POST['min_stock_qty']) : 100,
+            'min_stock_qty'         => isset($_POST['min_stock_qty']) ? intval($_POST['min_stock_qty']) : 10,
             'default_product_status'=> isset($_POST['default_product_status']) ? sanitize_text_field(wp_unslash($_POST['default_product_status'])) : 'publish',
             'filter_new_arrival'    => !empty($_POST['filter_new_arrival']),
             'filter_in_stock'       => !empty($_POST['filter_in_stock']),

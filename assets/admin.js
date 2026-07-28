@@ -1371,10 +1371,14 @@
 
                 // Build badges HTML
                 var badgesHtml = '<div class="dsz-import-item-badges">';
-                if (product.on_promotion || product.is_on_promotion) {
+                // `on_promotion` is a request-only filter; the response signals
+                // an active special through `special_price`.
+                if (parseFloat(product.special_price || 0) > 0) {
                     badgesHtml += '<span class="dsz-badge dsz-badge-promo"><span class="dashicons dashicons-tag"></span> Sale</span>';
                 }
-                if (product.au_free_shipping || product.free_shipping) {
+                // Response field is `freeshipping` (string "0"/"1"); the other
+                // two spellings only exist as request params.
+                if (product.freeshipping === '1' || product.freeshipping === 1) {
                     badgesHtml += '<span class="dsz-badge dsz-badge-shipping"><span class="dashicons dashicons-car"></span> Free Ship</span>';
                 }
                 if (product.new_arrival || product.is_new_arrival) {
@@ -1434,7 +1438,9 @@
 
                 // Build price display with RRP if available
                 var supplierPrice = parseFloat(product.price || 0).toFixed(2);
-                var rrpPrice = product.rrp ? parseFloat(product.rrp).toFixed(2) : null;
+                // RRP arrives as `RrpPrice` (number) and/or `RRP.Standard`
+                var rrpRaw = product.RrpPrice || (product.RRP && product.RRP.Standard) || 0;
+                var rrpPrice = parseFloat(rrpRaw) > 0 ? parseFloat(rrpRaw).toFixed(2) : null;
                 var priceHtml = `<div class="dsz-import-item-prices">`;
                 priceHtml += `<span class="dsz-price-supplier">$${supplierPrice} <small>Cost</small></span>`;
                 if (rrpPrice && parseFloat(rrpPrice) > parseFloat(supplierPrice)) {

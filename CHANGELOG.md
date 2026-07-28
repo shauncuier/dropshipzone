@@ -5,6 +5,19 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.5] - 2026-07-28
+
+### Fixed
+- **Sale prices never started, changed or ended.** The scheduled sync returned early whenever the supplier cost was unchanged, so it never reached the sale-price block. A special that began, was repriced, or expired on a cost-stable product was never applied — and once applied, never removed. Products could keep selling at an expired special indefinitely. Sale handling now runs on every pass, honours `special_price_from_date` / `special_price_end_date`, and clears the sale price and its dates when the special ends.
+- **Minimum stock threshold behaved differently depending on install age.** The default was 10 in one place and 100 in three others, so the effective value depended on whether the settings row had been written yet. Unified to 10; `readme.txt` no longer advertises a fixed "100+ units".
+- **Catalogue search badges could never render.** Free Ship tested `au_free_shipping` / `free_shipping` and Sale tested `on_promotion` — all request-only parameter names. The response fields are `freeshipping` (string `"0"`/`"1"`) and `special_price`. RRP read `rrp`; the response carries `RrpPrice` and `RRP.Standard`.
+- **The API token survived a credential change.** Saving a new email or password left the token issued for the previous account in place until it expired. Saving API settings now clears it so the next request re-authenticates.
+
+### Added
+- Supplier RRP is stored as `_dszsync_rrp` product meta during sync when the API supplies one.
+
+---
+
 ## [3.3.4] - 2026-07-27
 
 ### Fixed
@@ -661,6 +674,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[3.3.5]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.5
 [3.3.4]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.4
 [3.3.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.3
 [3.3.2]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.2
