@@ -160,95 +160,24 @@ class Admin_UI {
             56
         );
 
-        // Dashboard (same as main)
-        add_submenu_page(
-            'dsz-sync',
-            __('Dashboard', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Dashboard', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync',
-            [$this, 'render_dashboard']
-        );
-
-        // API Settings
-        add_submenu_page(
-            'dsz-sync',
-            __('API Settings', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('API Settings', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-api',
-            [$this, 'render_api_settings']
-        );
-
-        // Price Rules
-        add_submenu_page(
-            'dsz-sync',
-            __('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-price',
-            [$this, 'render_price_rules']
-        );
-
-        // Stock Rules
-        add_submenu_page(
-            'dsz-sync',
-            __('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-stock',
-            [$this, 'render_stock_rules']
-        );
-
-        // Sync Center (unified sync page)
-        add_submenu_page(
-            'dsz-sync',
-            __('Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-control',
-            [$this, 'render_sync_center']
-        );
-
-        // Logs
-        add_submenu_page(
-            'dsz-sync',
-            __('Logs', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Logs', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-logs',
-            [$this, 'render_logs']
-        );
-
-        // Product Mapping
-        add_submenu_page(
-            'dsz-sync',
-            __('Product Mapping', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Product Mapping', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-mapping',
-            [$this, 'render_mapping']
-        );
-
-        // Product Import
-        add_submenu_page(
-            'dsz-sync',
-            __('Product Import', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Product Import', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-import',
-            [$this, 'render_import']
-        );
-
-        // Auto Import Settings
-        add_submenu_page(
-            'dsz-sync',
-            __('Auto Import', '3s-soft-price-stock-sync-for-dropshipzone'),
-            __('Auto Import', '3s-soft-price-stock-sync-for-dropshipzone'),
-            'manage_woocommerce',
-            'dsz-sync-auto-import',
-            [$this, 'render_auto_import']
-        );
+        // Submenu order, labels and callbacks all come from the same
+        // definition as the in-page nav bar. Registering them by hand let the
+        // two drift: the sidebar was in the order the calls happened to be
+        // written (Logs above Product Mapping), while the nav bar was in
+        // workflow order, so the same nine screens appeared in two different
+        // sequences depending on where you looked.
+        foreach ($this->get_nav_groups() as $group) {
+            foreach ($group['items'] as $page_slug => $item) {
+                add_submenu_page(
+                    'dsz-sync',
+                    $item['label'],
+                    $item['label'],
+                    'manage_woocommerce',
+                    $page_slug,
+                    [$this, $item['callback']]
+                );
+            }
+        }
     }
 
     /**
@@ -322,31 +251,159 @@ class Admin_UI {
         register_setting('dszsync_api', 'dszsync_api_password', [
             'sanitize_callback' => 'sanitize_text_field'
         ]);
+        // Each option gets a callback that knows its own shape. A generic
+        // recursive sanitize_text_field() would let "banana" through as a
+        // markup type or a rounding rule, because it only guarantees the value
+        // is a harmless string — not that it is one this plugin can act on.
         register_setting('dszsync_settings', 'dszsync_price_rules', [
-            'sanitize_callback' => [$this, 'sanitize_array']
+            'type'              => 'array',
+            'sanitize_callback' => [$this, 'sanitize_price_rules'],
         ]);
         register_setting('dszsync_settings', 'dszsync_stock_rules', [
-            'sanitize_callback' => [$this, 'sanitize_array']
+            'type'              => 'array',
+            'sanitize_callback' => [$this, 'sanitize_stock_rules'],
         ]);
         register_setting('dszsync_settings', 'dszsync_settings', [
-            'sanitize_callback' => [$this, 'sanitize_array']
+            'type'              => 'array',
+            'sanitize_callback' => [$this, 'sanitize_sync_settings'],
         ]);
         register_setting('dszsync_settings', 'dszsync_import_settings', [
-            'sanitize_callback' => [$this, 'sanitize_array']
+            'type'              => 'array',
+            'sanitize_callback' => [$this, 'sanitize_import_settings'],
         ]);
     }
 
     /**
-     * Sanitize array data
+     * Pick a value from a fixed set, falling back when it is not one of them.
      *
-     * @param array|string $input Input data
-     * @return array|string Sanitized data
+     * @param mixed  $value    Raw input
+     * @param array  $allowed  Permitted values
+     * @param string $fallback Value to use when the input is not permitted
+     * @return string
      */
-    public function sanitize_array($input) {
-        if (is_array($input)) {
-            return array_map([$this, 'sanitize_array'], $input);
-        }
-        return sanitize_text_field($input);
+    private static function pick($value, array $allowed, $fallback) {
+        $value = is_scalar($value) ? (string) $value : '';
+
+        return in_array($value, $allowed, true) ? $value : $fallback;
+    }
+
+    /**
+     * Sanitize price rules.
+     *
+     * @param mixed $input Raw option value
+     * @return array
+     */
+    public function sanitize_price_rules($input) {
+        $input = is_array($input) ? $input : [];
+
+        return [
+            'markup_type'      => self::pick(
+                isset($input['markup_type']) ? $input['markup_type'] : '',
+                ['percentage', 'fixed'],
+                'percentage'
+            ),
+            // Negative markup would sell below cost; the upper bound is only
+            // there to stop a typo turning into an unsellable price.
+            'markup_value'     => max(0, min(100000, (float) (isset($input['markup_value']) ? $input['markup_value'] : 30))),
+            'rounding_enabled' => !empty($input['rounding_enabled']),
+            'rounding_type'    => self::pick(
+                isset($input['rounding_type']) ? $input['rounding_type'] : '',
+                ['99', '95', 'nearest'],
+                '99'
+            ),
+            'gst_enabled'      => !empty($input['gst_enabled']),
+            'gst_type'         => self::pick(
+                isset($input['gst_type']) ? $input['gst_type'] : '',
+                ['include', 'exclude'],
+                'include'
+            ),
+        ];
+    }
+
+    /**
+     * Sanitize stock rules.
+     *
+     * @param mixed $input Raw option value
+     * @return array
+     */
+    public function sanitize_stock_rules($input) {
+        $input = is_array($input) ? $input : [];
+
+        return [
+            'buffer_enabled'          => !empty($input['buffer_enabled']),
+            'buffer_amount'           => max(0, min(100000, (int) (isset($input['buffer_amount']) ? $input['buffer_amount'] : 0))),
+            'zero_on_unavailable'     => !empty($input['zero_on_unavailable']),
+            'auto_out_of_stock'       => !empty($input['auto_out_of_stock']),
+            'deactivate_if_not_found' => !empty($input['deactivate_if_not_found']),
+            'republish_on_restock'    => !empty($input['republish_on_restock']),
+        ];
+    }
+
+    /**
+     * Sanitize sync settings.
+     *
+     * This option holds both user configuration and the sync's own run state
+     * (offset, counters, timestamps). The run state is carried over from what
+     * is already stored rather than read from the input, so saving the form
+     * can never rewind an in-flight sync or fake its results.
+     *
+     * @param mixed $input Raw option value
+     * @return array
+     */
+    public function sanitize_sync_settings($input) {
+        $input   = is_array($input) ? $input : [];
+        $current = get_option('dszsync_settings', []);
+        $current = is_array($current) ? $current : [];
+
+        $frequencies = ['hourly', 'twicedaily', 'daily'];
+
+        $clean = [
+            'frequency'             => self::pick(
+                isset($input['frequency']) ? $input['frequency'] : '',
+                $frequencies,
+                'hourly'
+            ),
+            'batch_size'            => max(10, min(200, (int) (isset($input['batch_size']) ? $input['batch_size'] : 100))),
+            'incremental_enabled'   => !empty($input['incremental_enabled']),
+            'incremental_frequency' => self::pick(
+                isset($input['incremental_frequency']) ? $input['incremental_frequency'] : '',
+                $frequencies,
+                'hourly'
+            ),
+        ];
+
+        // Run state: preserved, and cast so a corrupted row cannot poison it
+        $clean['sync_in_progress']      = !empty($current['sync_in_progress']);
+        $clean['current_offset']        = max(0, (int) (isset($current['current_offset']) ? $current['current_offset'] : 0));
+        $clean['total_products']        = max(0, (int) (isset($current['total_products']) ? $current['total_products'] : 0));
+        $clean['products_updated']      = max(0, (int) (isset($current['products_updated']) ? $current['products_updated'] : 0));
+        $clean['errors_count']          = max(0, (int) (isset($current['errors_count']) ? $current['errors_count'] : 0));
+        $clean['last_products_updated'] = max(0, (int) (isset($current['last_products_updated']) ? $current['last_products_updated'] : 0));
+        $clean['last_errors_count']     = max(0, (int) (isset($current['last_errors_count']) ? $current['last_errors_count'] : 0));
+        $clean['last_batch_time']       = max(0, (int) (isset($current['last_batch_time']) ? $current['last_batch_time'] : 0));
+        $clean['last_sync']             = isset($current['last_sync']) && $current['last_sync']
+            ? max(0, (int) $current['last_sync'])
+            : null;
+
+        return $clean;
+    }
+
+    /**
+     * Sanitize import settings.
+     *
+     * @param mixed $input Raw option value
+     * @return array
+     */
+    public function sanitize_import_settings($input) {
+        $input = is_array($input) ? $input : [];
+
+        return [
+            'default_status' => self::pick(
+                isset($input['default_status']) ? $input['default_status'] : '',
+                ['publish', 'draft', 'pending'],
+                'publish'
+            ),
+        ];
     }
 
     /**
@@ -419,6 +476,7 @@ class Admin_UI {
                     'dsz-sync' => [
                         'label' => __('Dashboard', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-dashboard',
+                        'callback' => 'render_dashboard',
                     ],
                 ],
             ],
@@ -428,6 +486,7 @@ class Admin_UI {
                     'dsz-sync-api' => [
                         'label' => __('API Settings', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-admin-network',
+                        'callback' => 'render_api_settings',
                     ],
                 ],
             ],
@@ -437,14 +496,17 @@ class Admin_UI {
                     'dsz-sync-import' => [
                         'label' => __('Product Import', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-download',
+                        'callback' => 'render_import',
                     ],
                     'dsz-sync-auto-import' => [
                         'label' => __('Auto Import', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-controls-repeat',
+                        'callback' => 'render_auto_import',
                     ],
                     'dsz-sync-mapping' => [
                         'label' => __('Product Mapping', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-admin-links',
+                        'callback' => 'render_mapping',
                     ],
                 ],
             ],
@@ -454,10 +516,12 @@ class Admin_UI {
                     'dsz-sync-price' => [
                         'label' => __('Price Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-money-alt',
+                        'callback' => 'render_price_rules',
                     ],
                     'dsz-sync-stock' => [
                         'label' => __('Stock Rules', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-archive',
+                        'callback' => 'render_stock_rules',
                     ],
                 ],
             ],
@@ -467,10 +531,12 @@ class Admin_UI {
                     'dsz-sync-control' => [
                         'label' => __('Sync Center', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-update',
+                        'callback' => 'render_sync_center',
                     ],
                     'dsz-sync-logs' => [
                         'label' => __('Logs', '3s-soft-price-stock-sync-for-dropshipzone'),
                         'icon'  => 'dashicons-list-view',
+                        'callback' => 'render_logs',
                     ],
                 ],
             ],
@@ -1817,39 +1883,23 @@ class Admin_UI {
                 break;
 
             case 'price_rules':
-                $rules = [
-                    'markup_type' => isset($settings['markup_type']) ? sanitize_text_field($settings['markup_type']) : 'percentage',
-                    'markup_value' => isset($settings['markup_value']) ? floatval($settings['markup_value']) : 30,
-                    'rounding_enabled' => !empty($settings['rounding_enabled']),
-                    'rounding_type' => isset($settings['rounding_type']) ? sanitize_text_field($settings['rounding_type']) : '99',
-                    'gst_enabled' => !empty($settings['gst_enabled']),
-                    'gst_type' => isset($settings['gst_type']) ? sanitize_text_field($settings['gst_type']) : 'include',
-                ];
+                // Same validator the Settings API uses, so both entry points
+                // enforce one definition of what a valid rule set is.
+                $rules = $this->sanitize_price_rules($settings);
                 update_option('dszsync_price_rules', $rules);
                 $this->price_sync->reload_rules();
                 break;
 
             case 'stock_rules':
-                $rules = [
-                    'buffer_enabled' => !empty($settings['buffer_enabled']),
-                    'buffer_amount' => isset($settings['buffer_amount']) ? intval($settings['buffer_amount']) : 0,
-                    'zero_on_unavailable' => !empty($settings['zero_on_unavailable']),
-                    'auto_out_of_stock' => !empty($settings['auto_out_of_stock']),
-                    'deactivate_if_not_found' => !empty($settings['deactivate_if_not_found']),
-                    'republish_on_restock' => !empty($settings['republish_on_restock']),
-                ];
+                $rules = $this->sanitize_stock_rules($settings);
                 update_option('dszsync_stock_rules', $rules);
                 $this->stock_sync->reload_rules();
                 break;
 
             case 'sync_settings':
-                $current = get_option('dszsync_settings', []);
-                $current['frequency'] = isset($settings['frequency']) ? sanitize_text_field($settings['frequency']) : 'hourly';
-                $current['batch_size'] = isset($settings['batch_size']) ? max(10, min(200, intval($settings['batch_size']))) : 100;
-                $current['incremental_enabled'] = !empty($settings['incremental_enabled']);
-                $current['incremental_frequency'] = isset($settings['incremental_frequency'])
-                    ? sanitize_text_field($settings['incremental_frequency'])
-                    : 'hourly';
+                // Carries the sync run state through unchanged; only the
+                // scheduling fields come from the request.
+                $current = $this->sanitize_sync_settings($settings);
                 update_option('dszsync_settings', $current);
 
                 // Reschedule cron
@@ -1863,9 +1913,7 @@ class Admin_UI {
                 break;
 
             case 'import_settings':
-                $import_settings = [
-                    'default_status' => isset($settings['default_status']) ? sanitize_text_field($settings['default_status']) : 'publish',
-                ];
+                $import_settings = $this->sanitize_import_settings($settings);
                 update_option('dszsync_import_settings', $import_settings);
                 break;
 

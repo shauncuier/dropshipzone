@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Admin UI redesign. The token-based visual language introduced earlier is
 kept — the problems it did not solve were structural.
 
+### Security
+- **Every registered setting now has a validator that knows its own shape.**
+  All four options shared one generic recursive `sanitize_text_field()`
+  callback, which guarantees a value is a harmless string but not that it is
+  one the plugin can act on — `markup_type` would accept `"banana"`,
+  `rounding_type` any string at all. Each option now has a dedicated callback
+  that whitelists enums, casts booleans and clamps numerics. Raised in the
+  WordPress.org pre-review of 28 July 2026. The AJAX save path, which is what
+  the settings screens actually use, was validating the same enums with a bare
+  `sanitize_text_field()`; both paths now run through the same validator, so
+  there is one definition of a valid setting.
+- `dszsync_settings` mixes user configuration with the sync's own run state
+  (offset, counters, timestamps). The run state is now carried over from
+  storage rather than read from the request, so submitting the settings form
+  cannot rewind an in-flight sync or fake its results.
+
 ### Added
 - **Setup checklist on the dashboard.** Five steps — connect the account,
   set pricing, set stock rules, link products, run a first sync — each
@@ -33,6 +49,10 @@ kept — the problems it did not solve were structural.
   comments; the rendered bar was a flat list of nine items. Labels now match the
   WordPress submenu exactly, which they previously contradicted
   ("Import Products" vs "Product Import", "Sync Center" vs "Sync Control").
+- **The WordPress submenu and the in-page nav now come from one definition.**
+  They were maintained separately and had drifted into two different orders —
+  the sidebar listed Logs above Product Mapping — and two names for the same
+  screens.
 - **Dark theme removed.** The plugin renders inside the WordPress admin
   content area, which stays light whatever the OS preference, so a
   separate dark palette read as dark cards floating on white chrome. The

@@ -145,10 +145,11 @@ Webhook support is dependent on Dropshipzone offering a webhook API; none exists
 == Changelog ==
 
 = 3.5.0 =
+* SECURITY: Every plugin setting is now validated against its own allowed values instead of one generic text filter, and the sync's run state can no longer be altered by submitting the settings form.
 * ADDED: A setup checklist on the dashboard that walks you through connecting your account, setting rules, linking products and running a first sync. It disappears once you are done.
 * ADDED: Helpful empty states on Product Mapping and Logs, telling you what to do next instead of showing a blank table.
 * ADDED: A dashboard card for Fast Stock Updates showing whether it is on and what it last did.
-* CHANGED: The section navigation is now grouped by what you are doing - Setup, Products, Rules, Operations - and its labels match the WordPress menu.
+* CHANGED: The section navigation is now grouped by what you are doing - Setup, Products, Rules, Operations - and the sidebar menu and in-page navigation always agree on order and naming.
 * CHANGED: Removed the dark theme toggle. The plugin now always matches the WordPress admin, which is what the mismatched look came from.
 * FIXED: Accessibility throughout - screen readers now announce sync progress and notifications, the active section is identified, and dialogs keep keyboard focus.
 
