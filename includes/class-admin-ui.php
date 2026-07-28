@@ -376,21 +376,30 @@ class Admin_UI {
         </div>
 
         <nav class="dsz-nav" aria-label="<?php esc_attr_e('Dropshipzone Sync sections', '3s-soft-price-stock-sync-for-dropshipzone'); ?>">
-            <?php foreach ($nav_groups as $group): ?>
-                <div class="dsz-nav-group">
-                    <span class="dsz-nav-group-label"><?php echo esc_html($group['label']); ?></span>
-                    <div class="dsz-nav-group-items">
-                        <?php foreach ($group['items'] as $page_slug => $item):
-                            $is_active = ($current_page === $page_slug);
-                        ?>
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=' . $page_slug)); ?>"
-                               class="dsz-nav-item <?php echo esc_attr($is_active ? 'dsz-nav-active' : ''); ?>"
-                               <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
-                                <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
-                                <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
+            <?php
+            $is_first_group = true;
+            foreach ($nav_groups as $group):
+                if (!$is_first_group):
+                    ?>
+                    <span class="dsz-nav-sep" aria-hidden="true"></span>
+                    <?php
+                endif;
+                $is_first_group = false;
+                // The stage name is carried on the group rather than printed:
+                // five uppercase labels above nine items cost a whole row and
+                // read as clutter. Screen readers still get the grouping.
+                ?>
+                <div class="dsz-nav-group" role="group" aria-label="<?php echo esc_attr($group['label']); ?>">
+                    <?php foreach ($group['items'] as $page_slug => $item):
+                        $is_active = ($current_page === $page_slug);
+                    ?>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=' . $page_slug)); ?>"
+                           class="dsz-nav-item <?php echo esc_attr($is_active ? 'dsz-nav-active' : ''); ?>"
+                           <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+                            <span class="dashicons <?php echo esc_attr($item['icon']); ?>" aria-hidden="true"></span>
+                            <span class="dsz-nav-label"><?php echo esc_html($item['label']); ?></span>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
             <?php endforeach; ?>
         </nav>

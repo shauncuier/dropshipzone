@@ -200,45 +200,38 @@
     font-size: var(--dsz-text-md);
 }
 
-/* Grouped by stage of work — Overview, Setup, Products, Rules, Operations —
-   so the order of operations is visible rather than implied by position in a
-   flat list. */
+/* One row, contained. Stage grouping — Overview, Setup, Products, Rules,
+   Operations — is shown by separators rather than printed labels: five
+   uppercase captions above nine items cost a whole row of height and read as
+   noise. The stage names live on role="group"/aria-label instead. */
 .dsz-nav {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--dsz-space-2) var(--dsz-space-5);
+    align-items: center;
+    gap: 2px;
     margin: var(--dsz-space-5) 0 0;
-    border-top: 1px solid var(--dsz-border);
-    padding-top: var(--dsz-space-3);
+    padding: var(--dsz-space-1);
+    background: var(--dsz-surface);
+    border: 1px solid var(--dsz-border);
+    border-radius: var(--dsz-radius);
+    box-shadow: var(--dsz-shadow-sm);
 }
 
 .dsz-nav-group {
     display: flex;
-    flex-direction: column;
-    gap: var(--dsz-space-1);
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
     min-width: 0;
 }
 
-.dsz-nav-group + .dsz-nav-group {
-    border-left: 1px solid var(--dsz-border);
-    padding-left: var(--dsz-space-5);
-    margin-left: calc(var(--dsz-space-5) * -1 + var(--dsz-space-2));
-}
-
-.dsz-nav-group-label {
-    font-size: var(--dsz-text-xs);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--dsz-text-faint);
-    padding: 0 var(--dsz-space-3);
-}
-
-.dsz-nav-group-items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--dsz-space-1);
+.dsz-nav-sep {
+    flex: 0 0 auto;
+    width: 1px;
+    align-self: stretch;
+    min-height: 20px;
+    margin: 0 var(--dsz-space-2);
+    background: var(--dsz-border);
 }
 
 .dsz-nav-item {
@@ -273,6 +266,11 @@
 
 .dsz-nav-item.dsz-nav-active {
     background: var(--dsz-primary-soft);
+    color: var(--dsz-primary);
+    font-weight: 600;
+}
+
+.dsz-nav-item.dsz-nav-active .dashicons {
     color: var(--dsz-primary);
 }
 
@@ -1875,19 +1873,11 @@ div.dsz-loading,
 
     .dsz-logs-toolbar { flex-direction: column; align-items: stretch; }
 
-    /* Group dividers assume a single row; once the bar wraps they land in
-       arbitrary places, so stack the groups instead. */
-    .dsz-nav { gap: var(--dsz-space-3); }
+    /* Vertical separators only make sense while the bar is a single row.
+       Once it wraps they land mid-air, so hide them and let the items flow. */
+    .dsz-nav-sep { display: none; }
 
-    .dsz-nav-group { width: 100%; }
-
-    .dsz-nav-group + .dsz-nav-group {
-        border-left: 0;
-        border-top: 1px solid var(--dsz-border);
-        padding-left: 0;
-        padding-top: var(--dsz-space-3);
-        margin-left: 0;
-    }
+    .dsz-nav { gap: var(--dsz-space-1); }
 
     .dsz-checklist { padding: var(--dsz-space-4); }
 }

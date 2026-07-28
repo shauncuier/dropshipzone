@@ -26,8 +26,11 @@ kept — the problems it did not solve were structural.
 
 ### Changed
 - **Navigation is grouped by stage of work** — Overview, Setup, Products,
-  Rules, Operations. The grouping existed only as source comments; the
-  rendered bar was a flat list of nine items. Labels now match the
+  Rules, Operations — shown as one contained row with separators between
+  stages. The stage names are carried on `role="group"`/`aria-label` rather
+  than printed: five uppercase captions above nine items cost a whole row of
+  height and read as clutter. The grouping previously existed only as source
+  comments; the rendered bar was a flat list of nine items. Labels now match the
   WordPress submenu exactly, which they previously contradicted
   ("Import Products" vs "Product Import", "Sync Center" vs "Sync Control").
 - **Dark theme removed.** The plugin renders inside the WordPress admin
