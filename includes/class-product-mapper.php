@@ -462,6 +462,48 @@ class Product_Mapper {
     }
 
     /**
+     * Get syncable mappings for a set of Dropshipzone SKUs.
+     *
+     * Used by the incremental pass to intersect the supplier's change log
+     * with the SKUs this store actually sells.
+     *
+     * @param array $skus Dropshipzone SKUs
+     * @return array Rows of ['wc_product_id' => X, 'dsz_sku' => Y]
+     */
+    public function get_syncable_by_skus($skus) {
+        global $wpdb;
+
+        $skus = array_values(array_unique(array_filter(array_map('strval', (array) $skus))));
+
+        if (empty($skus)) {
+            return [];
+        }
+
+        $results = [];
+
+        // Chunked so a large change window cannot build a query longer than
+        // max_allowed_packet or exhaust the placeholder limit.
+        foreach (array_chunk($skus, 500) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '%s'));
+
+            // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; the placeholder list is generated from a count, and all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT wc_product_id, dsz_sku
+                 FROM %i
+                 WHERE sync_enabled = 1
+                 AND dsz_sku IN ({$placeholders})",
+                array_merge([$this->table_name], $chunk)
+            ), ARRAY_A);
+
+            if (!empty($rows)) {
+                $results = array_merge($results, $rows);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Get total count of syncable mappings
      *
      * @return int Count

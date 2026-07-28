@@ -250,26 +250,9 @@ class API_Client {
     }
 
     /**
-     * Get all products (paginated)
-     *
-     * @param int   $page_no Page number
-     * @param int   $limit   Items per page
-     * @param array $filters Additional filters
-     * @return array|WP_Error Products data or error
-     */
-    public function get_all_products($page_no = 1, $limit = 200, $filters = []) {
-        $params = array_merge([
-            'page_no' => $page_no,
-            'limit' => max(40, min($limit, 200)), // API limit range: 40-200
-        ], $filters);
-
-        return $this->get_products($params);
-    }
-
-    /**
      * Get products by SKUs
      *
-     * @param array $skus Array of SKUs (max 100)
+     * @param array $skus Array of SKUs (max 100 per the API)
      * @return array|WP_Error Products data or error
      */
     public function get_products_by_skus($skus) {
@@ -587,43 +570,6 @@ class API_Client {
         $this->token_expiry = 0;
         delete_option('dszsync_api_token');
         delete_option('dszsync_token_expiry');
-    }
-
-    /**
-     * Get API statistics
-     *
-     * @return array API stats
-     */
-    public function get_stats() {
-        $products = $this->get_products(['limit' => 40, 'page_no' => 1]);
-        
-        if (is_wp_error($products)) {
-            return [
-                'total_products' => 0,
-                'error' => $products->get_error_message(),
-            ];
-        }
-
-        return [
-            'total_products' => isset($products['total']) ? $products['total'] : 0,
-            'total_pages' => isset($products['total_pages']) ? $products['total_pages'] : 0,
-        ];
-    }
-
-    /**
-     * Get rate limit status
-     *
-     * @return array Rate limit status
-     */
-    public function get_rate_limit_status() {
-        return $this->rate_limiter->get_status();
-    }
-
-    /**
-     * Reset rate limit counters (emergency use)
-     */
-    public function reset_rate_limit() {
-        $this->rate_limiter->reset();
     }
 
     /**

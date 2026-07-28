@@ -45,6 +45,8 @@ class Auto_Importer {
         'filter_new_arrival'    => false, // Disabled - was too restrictive
         'filter_in_stock'       => false, // Disabled - causes API issues, PHP filtering handles this
         'filter_free_shipping'  => false,
+        'filter_on_promotion'   => false,
+        'filter_nz_available'   => false,
         'filter_category_ids'   => [],
         'exclude_supplier_ids'  => '', // Comma-separated supplier ids to blacklist (API caps at 50)
         'default_product_status'=> 'publish',
@@ -88,6 +90,8 @@ class Auto_Importer {
             'filter_new_arrival'    => !empty($settings['filter_new_arrival']),
             'filter_in_stock'       => !empty($settings['filter_in_stock']),
             'filter_free_shipping'  => !empty($settings['filter_free_shipping']),
+            'filter_on_promotion'   => !empty($settings['filter_on_promotion']),
+            'filter_nz_available'   => !empty($settings['filter_nz_available']),
             'filter_category_ids'   => isset($settings['filter_category_ids']) ? array_map('intval', (array) $settings['filter_category_ids']) : [],
             'exclude_supplier_ids'  => isset($settings['exclude_supplier_ids']) ? self::sanitize_supplier_ids($settings['exclude_supplier_ids']) : '',
             'default_product_status'=> in_array($settings['default_product_status'], ['publish', 'draft', 'pending']) ? $settings['default_product_status'] : 'publish',
@@ -216,6 +220,14 @@ class Auto_Importer {
 
         if ($settings['filter_free_shipping']) {
             $api_params['au_free_shipping'] = true;
+        }
+
+        if (!empty($settings['filter_on_promotion'])) {
+            $api_params['on_promotion'] = true;
+        }
+
+        if (!empty($settings['filter_nz_available'])) {
+            $api_params['nz_available'] = true;
         }
 
         if (!empty($settings['filter_category_ids'])) {

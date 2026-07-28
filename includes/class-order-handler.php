@@ -397,6 +397,30 @@ class Order_Handler {
     }
 
     /**
+     * Record that a batch of serials was polled, so tracking sync rotates.
+     *
+     * @param array $serials Dropshipzone serial numbers
+     * @return void
+     */
+    private function mark_tracking_checked($serials) {
+        global $wpdb;
+
+        $serials = array_values(array_filter(array_map('strval', (array) $serials)));
+
+        if (empty($serials)) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($serials), '%s'));
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; the placeholder list is generated from a count, and all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
+        $wpdb->query($wpdb->prepare(
+            "UPDATE %i SET last_checked = %s WHERE dsz_serial_number IN ({$placeholders})",
+            array_merge([$this->table_name, current_time('mysql')], $serials)
+        ));
+    }
+
+    /**
      * Poll Dropshipzone for tracking/status updates on submitted orders.
      *
      * The /orders response schema is not documented, so field extraction is
@@ -409,17 +433,32 @@ class Order_Handler {
 
         $results = ['checked' => 0, 'updated' => 0, 'errors' => 0];
 
-        // Serials submitted in the last 14 days that aren't complete yet
+        /**
+         * Filter how far back tracking sync looks for unfinished orders.
+         *
+         * The API's 14-day cap applies to date-range queries; this lookup goes
+         * by order id, which has no such limit. The window was previously 14
+         * days, so an order that took longer than a fortnight to ship never
+         * received its tracking number.
+         *
+         * @param int $days Lookback window in days
+         */
+        $lookback_days = max(1, (int) apply_filters('dszsync_tracking_lookback_days', 90));
+
+        // Least-recently-checked first, so a backlog larger than one batch
+        // rotates through successive runs instead of the same 100 rows being
+        // re-checked forever. Rows never checked sort first (NULL before dates).
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
         $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT wc_order_id, dsz_serial_number FROM %i
                  WHERE dsz_serial_number != ''
                  AND dsz_status NOT IN ('complete', 'cancelled')
-                 AND submitted_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-                 ORDER BY submitted_at ASC
+                 AND submitted_at >= DATE_SUB(NOW(), INTERVAL %d DAY)
+                 ORDER BY last_checked ASC, submitted_at ASC
                  LIMIT 100",
-                $this->table_name
+                $this->table_name,
+                $lookback_days
             ),
             ARRAY_A
         );
@@ -443,6 +482,11 @@ class Order_Handler {
             $results['errors']++;
             return $results;
         }
+
+        // Stamp the whole batch, not just the orders the response matched.
+        // Without this the ordering above never advances and the same rows
+        // are re-checked on every run while older ones are never reached.
+        $this->mark_tracking_checked(array_keys($serial_to_order));
 
         $entries = [];
         if (isset($response['result']) && is_array($response['result'])) {

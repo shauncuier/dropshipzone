@@ -214,6 +214,17 @@ add_filter( 'dszsync_calculated_stock', function ( $stock, $product_id, $supplie
 add_filter( 'dszsync_log_retention_days', function ( $days ) {
     return 90;
 } );
+
+// Cap how many /stock pages one fast-stock-update run reads.
+// 160 change rows per page; the full sync picks up anything left over.
+add_filter( 'dszsync_incremental_max_pages', function ( $pages ) {
+    return 20;
+} );
+
+// How far back tracking sync looks for orders still awaiting tracking (days)
+add_filter( 'dszsync_tracking_lookback_days', function ( $days ) {
+    return 90;
+} );
 ```
 
 ### Actions

@@ -55,9 +55,10 @@ class Cron {
         $this->stock_sync = $stock_sync;
         $this->logger = $logger;
 
-        // Register cron hook
+        // Register cron hooks
         add_action('dszsync_cron_hook', [$this, 'run_scheduled_sync']);
-        
+        add_action('dszsync_incremental_hook', [$this, 'run_incremental_sync']);
+
         // Add custom cron schedules
         add_filter('cron_schedules', [$this, 'add_cron_schedules']);
     }
@@ -119,11 +120,280 @@ class Cron {
     }
 
     /**
+     * Schedule the incremental stock pass
+     *
+     * @param string $frequency Frequency (hourly, twicedaily, daily)
+     */
+    public function schedule_incremental($frequency = 'hourly') {
+        wp_clear_scheduled_hook('dszsync_incremental_hook');
+
+        if (array_key_exists($frequency, $this->frequencies)) {
+            wp_schedule_event(time() + 300, $frequency, 'dszsync_incremental_hook');
+            $this->logger->info('Incremental sync scheduled', ['frequency' => $frequency]);
+        }
+    }
+
+    /**
+     * Unschedule the incremental stock pass
+     */
+    public function unschedule_incremental() {
+        wp_clear_scheduled_hook('dszsync_incremental_hook');
+        $this->logger->info('Incremental sync unscheduled');
+    }
+
+    /**
+     * Get next scheduled incremental run
+     *
+     * @return int|false Next run timestamp or false
+     */
+    public function get_next_incremental_scheduled() {
+        return wp_next_scheduled('dszsync_incremental_hook');
+    }
+
+    /**
      * Run scheduled sync (called by WP-Cron)
      */
     public function run_scheduled_sync() {
         $this->logger->info('Scheduled sync started');
         $this->run_sync(false);
+    }
+
+    /**
+     * Run the incremental stock pass (called by WP-Cron).
+     *
+     * The full sweep re-fetches every mapped SKU, which on a large catalogue
+     * is one `/v2/products` call per 100 products per pass against a 600/hour
+     * limit. This pass asks `/stock` which SKUs actually moved since the last
+     * run and refreshes only those.
+     *
+     * `/stock` reports stock changes only, so it is a fast lane, not a
+     * replacement: a cost change with no stock movement is invisible to it.
+     * The full sweep still runs on its own schedule and remains the mechanism
+     * that keeps prices correct.
+     *
+     * @return array Result summary
+     */
+    public function run_incremental_sync() {
+        $settings = get_option('dszsync_settings', []);
+
+        if (empty($settings['incremental_enabled'])) {
+            return ['status' => 'skipped', 'message' => 'Incremental sync is disabled'];
+        }
+
+        // Never run alongside a full sweep batch — both write the same products
+        if (get_transient('dszsync_batch_lock') || get_transient('dszsync_incremental_lock')) {
+            $this->logger->debug('Incremental sync skipped, another batch holds the lock');
+            return ['status' => 'skipped', 'message' => 'Another sync batch is running'];
+        }
+
+        set_transient('dszsync_incremental_lock', 1, 300);
+
+        try {
+            return $this->process_incremental_sync();
+        } finally {
+            delete_transient('dszsync_incremental_lock');
+        }
+    }
+
+    /**
+     * Poll /stock for changed SKUs and refresh the ones we map.
+     *
+     * @return array Result summary
+     */
+    private function process_incremental_sync() {
+        $plugin = dszsync_sync();
+        if (!$plugin || !$plugin->api_client || !$plugin->product_mapper) {
+            return ['status' => 'error', 'message' => 'Plugin not initialized'];
+        }
+
+        $state = get_option('dszsync_incremental_state', []);
+        $now   = time();
+
+        // Resume from the end of the last successful window so nothing is
+        // skipped when a run fails or the site sleeps. The API rejects ranges
+        // of 10 days or more, so an old cursor is clamped rather than passed
+        // through to a guaranteed error.
+        $start_ts = isset($state['window_end_ts']) ? intval($state['window_end_ts']) : 0;
+        if ($start_ts <= 0) {
+            $start_ts = $now - HOUR_IN_SECONDS;
+        }
+
+        $oldest_allowed = $now - (9 * DAY_IN_SECONDS);
+        if ($start_ts < $oldest_allowed) {
+            $this->logger->warning('Incremental cursor older than the /stock 10-day limit, clamping', [
+                'cursor' => gmdate('Y-m-d H:i:s', $start_ts),
+            ]);
+            $start_ts = $oldest_allowed;
+        }
+
+        if ($start_ts >= $now) {
+            return ['status' => 'complete', 'message' => 'No new window to poll', 'refreshed' => 0];
+        }
+
+        $start_time = gmdate('Y-m-d H:i:s', $start_ts);
+        $end_time   = gmdate('Y-m-d H:i:s', $now);
+
+        /**
+         * Filter the page cap for a single incremental run.
+         *
+         * At 160 rows per page the default covers 3,200 stock changes. A
+         * busier supplier window is truncated rather than allowed to consume
+         * the hourly API budget; the full sweep catches the remainder.
+         *
+         * @param int $max_pages Maximum /stock pages to read in one run
+         */
+        $max_pages = (int) apply_filters('dszsync_incremental_max_pages', 20);
+
+        $changed_skus = [];
+        $page = 1;
+
+        do {
+            $response = $plugin->api_client->get_stock([], $start_time, $end_time, $page, 160);
+
+            if (is_wp_error($response)) {
+                $this->logger->error('Incremental sync failed to read /stock', [
+                    'error' => $response->get_error_message(),
+                    'page'  => $page,
+                ]);
+                // Cursor is not advanced, so the next run retries this window
+                return ['status' => 'error', 'message' => $response->get_error_message()];
+            }
+
+            $rows = [];
+            if (!empty($response['result']) && is_array($response['result'])) {
+                $rows = $response['result'];
+            } elseif (isset($response[0])) {
+                $rows = $response;
+            }
+
+            foreach ($rows as $row) {
+                if (!empty($row['sku'])) {
+                    $changed_skus[$row['sku']] = true;
+                }
+            }
+
+            $total_pages = isset($response['total_pages']) ? intval($response['total_pages']) : 1;
+            $page++;
+
+            if ($page > $max_pages && $page <= $total_pages) {
+                $this->logger->warning('Incremental sync hit the page cap, remaining changes deferred to the full sweep', [
+                    'read_pages'  => $max_pages,
+                    'total_pages' => $total_pages,
+                ]);
+                break;
+            }
+        } while ($page <= $total_pages && !empty($rows));
+
+        $changed_skus = array_keys($changed_skus);
+
+        $this->logger->info('Incremental window polled', [
+            'from'         => $start_time,
+            'to'           => $end_time,
+            'changed_skus' => count($changed_skus),
+        ]);
+
+        $refreshed = 0;
+        $errors    = 0;
+
+        if (!empty($changed_skus)) {
+            // Only SKUs this store actually maps are worth an API call
+            $mapped = $plugin->product_mapper->get_syncable_by_skus($changed_skus);
+
+            $this->logger->info('Incremental changes matched to mapped products', [
+                'matched' => count($mapped),
+            ]);
+
+            if (!empty($mapped)) {
+                $result    = $this->refresh_mapped_products($mapped, $plugin);
+                $refreshed = $result['updated'];
+                $errors    = $result['errors'];
+            }
+        }
+
+        // Advance the cursor only after a clean pass
+        update_option('dszsync_incremental_state', [
+            'window_end_ts' => $now,
+            'last_run'      => $now,
+            'changed_skus'  => count($changed_skus),
+            'refreshed'     => $refreshed,
+        ]);
+
+        return [
+            'status'    => 'complete',
+            'message'   => __('Incremental sync completed', '3s-soft-price-stock-sync-for-dropshipzone'),
+            'refreshed' => $refreshed,
+            'errors'    => $errors,
+        ];
+    }
+
+    /**
+     * Fetch and apply current API data for a set of mappings.
+     *
+     * @param array  $mapped Rows of ['wc_product_id' => int, 'dsz_sku' => string]
+     * @param object $plugin Plugin container
+     * @return array ['updated' => int, 'errors' => int]
+     */
+    private function refresh_mapped_products($mapped, $plugin) {
+        $updated = 0;
+        $errors  = 0;
+
+        $lookup = [];
+        foreach ($mapped as $row) {
+            $lookup[$row['dsz_sku']] = intval($row['wc_product_id']);
+        }
+
+        // /v2/products accepts at most 100 SKUs per call
+        foreach (array_chunk(array_keys($lookup), 100) as $chunk) {
+            $response = $plugin->api_client->get_products_by_skus($chunk);
+
+            if (is_wp_error($response)) {
+                $errors++;
+                $this->logger->error('Incremental refresh failed for a SKU chunk', [
+                    'error' => $response->get_error_message(),
+                    'skus'  => count($chunk),
+                ]);
+                continue;
+            }
+
+            if (empty($response['result'])) {
+                continue;
+            }
+
+            foreach ($response['result'] as $api_data) {
+                if (empty($api_data['sku']) || !isset($lookup[$api_data['sku']])) {
+                    continue;
+                }
+
+                $wc_product_id = $lookup[$api_data['sku']];
+                $wc_product = wc_get_product($wc_product_id);
+
+                if (!$wc_product) {
+                    $errors++;
+                    continue;
+                }
+
+                try {
+                    if ($this->sync_one($wc_product, $api_data)) {
+                        $updated++;
+                    }
+                    $plugin->product_mapper->update_last_synced($wc_product_id);
+                } catch (\Exception $e) {
+                    $errors++;
+                    $this->logger->error('Incremental refresh error', [
+                        'wc_product_id' => $wc_product_id,
+                        'dsz_sku'       => $api_data['sku'],
+                        'error'         => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            if (dszsync_is_memory_near_limit(85)) {
+                $this->logger->warning('Memory limit approaching, stopping incremental refresh early');
+                break;
+            }
+        }
+
+        return ['updated' => $updated, 'errors' => $errors];
     }
 
     /**
@@ -366,24 +636,17 @@ class Cron {
             }
 
             try {
-                // Update PRICE
-                $price_updated = $this->update_product_price($wc_product, $api_data);
-                
-                // Update STOCK
-                $stock_updated = $this->update_product_stock($wc_product, $api_data);
-                
+                $changed = $this->sync_one($wc_product, $api_data);
+
                 // Update last_synced for all checked products (not just updated)
                 $product_mapper->update_last_synced($wc_product_id);
-                
-                if ($price_updated || $stock_updated) {
-                    $wc_product->save();
+
+                if ($changed) {
                     $updated++;
-                    
+
                     $this->logger->info('Product synced successfully', [
                         'wc_product_id' => $wc_product_id,
                         'dsz_sku' => $dsz_sku,
-                        'price_updated' => $price_updated,
-                        'stock_updated' => $stock_updated,
                     ]);
                 } else {
                     $skipped++;
@@ -469,6 +732,80 @@ class Cron {
             'products_updated' => $settings['products_updated'],
             'errors_count' => $settings['errors_count'],
         ];
+    }
+
+    /**
+     * Apply one product's API payload and save if anything changed.
+     *
+     * Single entry point for both the full sweep and the incremental pass.
+     * Keeping one implementation is deliberate: the sale-price handling was
+     * previously written twice and the live copy drifted, so specials never
+     * cleared (fixed in 3.3.5).
+     *
+     * @param \WC_Product $product  WooCommerce product
+     * @param array       $api_data API data from Dropshipzone
+     * @return bool Whether the product was changed and saved
+     */
+    private function sync_one($product, $api_data) {
+        $price_updated   = $this->update_product_price($product, $api_data);
+        $stock_updated   = $this->update_product_stock($product, $api_data);
+        $catalog_updated = $this->update_product_catalog_fields($product, $api_data);
+
+        if ($price_updated || $stock_updated || $catalog_updated) {
+            $product->save();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Map supplier catalogue fields that are not price or stock.
+     *
+     * `updated_at` is stored so a future sync can tell whether the supplier
+     * record moved at all. EAN and brand map to WooCommerce's native fields
+     * where the running version provides them, and are skipped otherwise —
+     * the plugin supports WooCommerce 8.0, GTIN landed in 9.2 and the brands
+     * taxonomy in 9.4.
+     *
+     * @param \WC_Product $product  WooCommerce product
+     * @param array       $api_data API data from Dropshipzone
+     * @return bool Whether anything changed
+     */
+    private function update_product_catalog_fields($product, $api_data) {
+        $changed = false;
+
+        // Written directly rather than through the CRUD object: this is
+        // bookkeeping, and a supplier timestamp moving is not on its own a
+        // reason to save the whole product.
+        if (!empty($api_data['updated_at'])) {
+            $updated_at = (string) $api_data['updated_at'];
+            if ((string) get_post_meta($product->get_id(), '_dszsync_updated_at', true) !== $updated_at) {
+                update_post_meta($product->get_id(), '_dszsync_updated_at', $updated_at);
+            }
+        }
+
+        if (!empty($api_data['eancode']) && method_exists($product, 'set_global_unique_id')) {
+            $ean = preg_replace('/[^0-9]/', '', (string) $api_data['eancode']);
+            if ($ean !== '' && (string) $product->get_global_unique_id() !== $ean) {
+                $product->set_global_unique_id($ean);
+                $changed = true;
+            }
+        }
+
+        if (!empty($api_data['brand']) && taxonomy_exists('product_brand')) {
+            $brand = sanitize_text_field((string) $api_data['brand']);
+            $current = wp_get_object_terms($product->get_id(), 'product_brand', ['fields' => 'names']);
+
+            if (!is_wp_error($current) && !in_array($brand, $current, true)) {
+                $result = wp_set_object_terms($product->get_id(), $brand, 'product_brand', false);
+                if (!is_wp_error($result)) {
+                    $changed = true;
+                }
+            }
+        }
+
+        return $changed;
     }
 
     /**
@@ -743,6 +1080,7 @@ class Cron {
     public function get_sync_status() {
         $settings = get_option('dszsync_settings', []);
         $next_scheduled = $this->get_next_scheduled();
+        $incremental = get_option('dszsync_incremental_state', []);
 
         return [
             'in_progress' => !empty($settings['sync_in_progress']),
@@ -756,6 +1094,11 @@ class Cron {
             'last_errors_count' => isset($settings['last_errors_count']) ? $settings['last_errors_count'] : 0,
             'frequency' => isset($settings['frequency']) ? $settings['frequency'] : 'hourly',
             'batch_size' => isset($settings['batch_size']) ? $settings['batch_size'] : 100,
+            'incremental_enabled' => !empty($settings['incremental_enabled']),
+            'incremental_frequency' => isset($settings['incremental_frequency']) ? $settings['incremental_frequency'] : 'hourly',
+            'incremental_next_scheduled' => $this->get_next_incremental_scheduled(),
+            'incremental_last_run' => isset($incremental['last_run']) ? intval($incremental['last_run']) : 0,
+            'incremental_refreshed' => isset($incremental['refreshed']) ? intval($incremental['refreshed']) : 0,
         ];
     }
 

@@ -89,7 +89,7 @@ the planned RRP work in Phase 2 has data to build on.
 
 ---
 
-## Phase 2 — After WordPress.org approval
+## Phase 2 — **DONE, shipped in 3.4.0 (2026-07-28)**
 
 ### 2.1 Incremental sync
 

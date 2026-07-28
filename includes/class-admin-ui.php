@@ -1246,6 +1246,50 @@ class Admin_UI {
                                 <div id="dsz-schedule-message" class="dsz-message hidden"></div>
                             </div>
                         </div>
+
+                        <div class="dsz-form-section">
+                            <div class="dsz-section-header">
+                                <h2><?php esc_html_e('Fast Stock Updates', '3s-soft-price-stock-sync-for-dropshipzone'); ?></h2>
+                                <p class="description">
+                                    <?php esc_html_e('Asks Dropshipzone which SKUs changed stock since the last check and refreshes only those, instead of re-reading your whole catalogue. Useful on large catalogues where a full sweep takes several passes.', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                                </p>
+                            </div>
+
+                            <div class="dsz-inline-settings">
+                                <div class="dsz-form-group">
+                                    <label class="dsz-toggle">
+                                        <input type="checkbox" id="incremental_enabled" name="incremental_enabled" value="1" <?php checked(!empty($sync_status['incremental_enabled'])); ?> />
+                                        <span><?php esc_html_e('Enable fast stock updates', '3s-soft-price-stock-sync-for-dropshipzone'); ?></span>
+                                    </label>
+                                </div>
+
+                                <div class="dsz-form-group">
+                                    <label for="incremental_frequency"><?php esc_html_e('Check Interval', '3s-soft-price-stock-sync-for-dropshipzone'); ?></label>
+                                    <select id="incremental_frequency" name="incremental_frequency" class="dsz-select">
+                                        <?php foreach ($frequencies as $value => $label): ?>
+                                            <option value="<?php echo esc_attr($value); ?>" <?php selected(isset($sync_status['incremental_frequency']) ? $sync_status['incremental_frequency'] : 'hourly', $value); ?>>
+                                                <?php echo esc_html($label); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <p class="description">
+                                <?php esc_html_e('This covers stock only. Price changes are picked up by the full sync above, which keeps running on its own schedule.', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                                <?php if (!empty($sync_status['incremental_last_run'])): ?>
+                                    <br />
+                                    <?php
+                                    printf(
+                                        /* translators: 1: human-readable time since the last check, 2: number of SKUs refreshed */
+                                        esc_html__('Last check: %1$s ago, %2$d products refreshed.', '3s-soft-price-stock-sync-for-dropshipzone'),
+                                        esc_html(human_time_diff($sync_status['incremental_last_run'], time())),
+                                        intval($sync_status['incremental_refreshed'])
+                                    );
+                                    ?>
+                                <?php endif; ?>
+                            </p>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -1533,10 +1577,20 @@ class Admin_UI {
                 $current = get_option('dszsync_settings', []);
                 $current['frequency'] = isset($settings['frequency']) ? sanitize_text_field($settings['frequency']) : 'hourly';
                 $current['batch_size'] = isset($settings['batch_size']) ? max(10, min(200, intval($settings['batch_size']))) : 100;
+                $current['incremental_enabled'] = !empty($settings['incremental_enabled']);
+                $current['incremental_frequency'] = isset($settings['incremental_frequency'])
+                    ? sanitize_text_field($settings['incremental_frequency'])
+                    : 'hourly';
                 update_option('dszsync_settings', $current);
-                
+
                 // Reschedule cron
                 $this->cron->schedule_sync($current['frequency']);
+
+                if ($current['incremental_enabled']) {
+                    $this->cron->schedule_incremental($current['incremental_frequency']);
+                } else {
+                    $this->cron->unschedule_incremental();
+                }
                 break;
 
             case 'import_settings':
@@ -2311,6 +2365,7 @@ class Admin_UI {
 
         // Add filters
         if ($category_id > 0) $api_params['category_id'] = $category_id;
+        if ($in_stock) $api_params['in_stock'] = true;
         if ($free_shipping) $api_params['au_free_shipping'] = true;
         if ($on_promotion) $api_params['on_promotion'] = true;
         if ($new_arrival) $api_params['new_arrival'] = true;
@@ -2363,8 +2418,11 @@ class Admin_UI {
             }
         }
 
-        // PHP-side filter: Remove products with 0 stock (API filter may not be reliable)
-        if (!empty($products)) {
+        // Belt-and-braces for the In Stock filter: the API result is trimmed
+        // here as well. This used to run unconditionally, which both hid
+        // out-of-stock products from anyone browsing without the filter and
+        // masked the fact that in_stock was never being sent to the API.
+        if ($in_stock && !empty($products)) {
             $products = array_filter($products, function($product) {
                 $stock_qty = isset($product['stock_qty']) ? intval($product['stock_qty']) : 0;
                 return $stock_qty > 0;
@@ -3694,6 +3752,24 @@ class Admin_UI {
                                 </td>
                             </tr>
                             <tr>
+                                <th scope="row"><?php esc_html_e('On Sale Only', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="filter_on_promotion" value="1" <?php checked(!empty($settings['filter_on_promotion']), true); ?> />
+                                        <?php esc_html_e('Only import products the supplier currently has on promotion', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><?php esc_html_e('New Zealand Available', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
+                                <td>
+                                    <label>
+                                        <input type="checkbox" name="filter_nz_available" value="1" <?php checked(!empty($settings['filter_nz_available']), true); ?> />
+                                        <?php esc_html_e('Only import products the supplier can ship to New Zealand', '3s-soft-price-stock-sync-for-dropshipzone'); ?>
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
                                 <th scope="row"><?php esc_html_e('Supplier Blacklist', '3s-soft-price-stock-sync-for-dropshipzone'); ?></th>
                                 <td>
                                     <input type="text" name="exclude_supplier_ids" class="regular-text" value="<?php echo esc_attr(isset($settings['exclude_supplier_ids']) ? $settings['exclude_supplier_ids'] : ''); ?>" placeholder="<?php esc_attr_e('e.g. 201,305,412', '3s-soft-price-stock-sync-for-dropshipzone'); ?>" />
@@ -3780,6 +3856,8 @@ class Admin_UI {
             'filter_new_arrival'    => !empty($_POST['filter_new_arrival']),
             'filter_in_stock'       => !empty($_POST['filter_in_stock']),
             'filter_free_shipping'  => !empty($_POST['filter_free_shipping']),
+            'filter_on_promotion'   => !empty($_POST['filter_on_promotion']),
+            'filter_nz_available'   => !empty($_POST['filter_nz_available']),
             'exclude_supplier_ids'  => isset($_POST['exclude_supplier_ids']) ? sanitize_text_field(wp_unslash($_POST['exclude_supplier_ids'])) : '',
         ];
 

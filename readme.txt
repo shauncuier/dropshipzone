@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.3.5
+Stable tag: 3.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,6 +22,7 @@ This plugin is an independent integration and is not affiliated with, endorsed b
 
 * **Price Sync** - Automatically update regular and sale prices
 * **Stock Sync** - Keep stock quantities accurate in real-time
+* **Fast Stock Updates** - Refresh only the SKUs the supplier reports as changed (NEW)
 * **Auto Product Import** - Schedule automatic imports with customizable filters (NEW)
 * **Import Metrics** - Track import runs with 7-day, 30-day stats and history (NEW)
 * **Minimum Stock Filter** - Only import products above a stock threshold you set (NEW)
@@ -142,6 +143,15 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.4.0 =
+* ADDED: Fast stock updates - an optional pass that asks Dropshipzone which SKUs changed stock since the last check and refreshes only those, instead of re-reading your whole catalogue. Enable it under Sync Control. The full sync keeps running and remains what keeps prices correct.
+* ADDED: Supplier EAN and brand now map to WooCommerce's built-in GTIN field and brands taxonomy where your WooCommerce version provides them.
+* ADDED: Auto Import can now filter to on-sale products and to products available for New Zealand.
+* FIXED: The In Stock filter in catalogue search was never sent to the API, and the stock filter behind it ran whether or not you selected it, hiding out-of-stock products from every search.
+* FIXED: Tracking sync only looked back 14 days and always re-checked the same 100 orders, so slower orders never received tracking. The window is now 90 days and orders rotate.
+* CHANGED: The full sync and the fast pass now share one code path, so the two cannot drift apart again.
+* REMOVED: Around 570 lines of unreachable duplicate sync code.
 
 = 3.3.5 =
 * FIXED: Sale prices never started, changed or ended. The scheduled sync returned early when the supplier cost was unchanged, so specials were never applied - and never removed once expired. Sale handling now runs every pass, honours the supplier promotion dates, and clears the sale price when a special ends.

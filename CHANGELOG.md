@@ -5,6 +5,27 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-07-28
+
+### Added
+- **Fast stock updates.** An optional pass that asks Dropshipzone's `/stock` change log which SKUs moved since the last check and refreshes only those, instead of re-reading the whole catalogue. On a 10,000-SKU store the full sweep costs roughly 100 API calls per pass against a 600/hour limit; a typical incremental pass costs one call plus one per 100 changed products. Off by default; enable it under **Sync Control → Fast Stock Updates**. `/stock` reports stock movement only, so the full sync keeps running on its own schedule and remains what keeps prices correct.
+- **Supplier EAN and brand are mapped** to WooCommerce's native GTIN field (WooCommerce 9.2+) and brands taxonomy (9.4+). Both are skipped on older WooCommerce versions rather than stored in private meta.
+- **Auto Import gained On Sale Only and New Zealand Available filters.** The API has supported `on_promotion` and `nz_available` all along; neither was reachable from the settings screen.
+- Two new filters: `dszsync_incremental_max_pages` and `dszsync_tracking_lookback_days`.
+
+### Fixed
+- **The In Stock filter in catalogue search did nothing.** The selection was read from the request and then never added to the API query. Worse, the PHP-side stock filter behind it ran unconditionally, so out-of-stock products were hidden from everyone whether or not they asked — which is also what hid the missing parameter. The filter is now sent to the API, and the local filter only applies when the user selects it.
+- **Tracking sync could never catch up.** It looked back 14 days and always took the 100 oldest submitted orders, so an order that took longer than a fortnight to ship never received a tracking number, and with more than 100 open orders the same rows were re-checked forever. The window is now 90 days and orders rotate least-recently-checked first. The 14-day cap it was modelled on applies to date-range queries; this lookup goes by order id and has no such limit.
+
+### Changed
+- **The full sweep and the incremental pass now share one per-product code path.** Two divergent copies of the sync logic is what let the sale-price bug fixed in 3.3.5 survive.
+- Supplier `updated_at` is recorded per product as `_dszsync_updated_at`.
+
+### Removed
+- Roughly 570 lines of unreachable code: the entire duplicate batch-sync implementation in `Price_Sync` and `Stock_Sync` (`sync_batch()`, `sync_product_price()`, `sync_product_stock()`, `sync_single_sku()`, `deactivate_product_by_sku()`, `sync_variations()`, `preview_price()`, `preview_stock()`, `update_out_of_stock_status()`), plus four `API_Client` methods with no callers (`get_all_products()`, `get_stats()`, `get_rate_limit_status()`, `reset_rate_limit()`). None were reachable from any UI, cron path or hook. Variation stock support will be rebuilt against the shared path.
+
+---
+
 ## [3.3.5] - 2026-07-28
 
 ### Fixed
@@ -674,6 +695,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[3.4.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.0
 [3.3.5]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.5
 [3.3.4]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.4
 [3.3.3]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.3

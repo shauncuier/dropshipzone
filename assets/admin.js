@@ -2030,6 +2030,8 @@
                     filter_new_arrival: $form.find('input[name="filter_new_arrival"]').is(':checked') ? 1 : 0,
                     filter_in_stock: $form.find('input[name="filter_in_stock"]').is(':checked') ? 1 : 0,
                     filter_free_shipping: $form.find('input[name="filter_free_shipping"]').is(':checked') ? 1 : 0,
+                    filter_on_promotion: $form.find('input[name="filter_on_promotion"]').is(':checked') ? 1 : 0,
+                    filter_nz_available: $form.find('input[name="filter_nz_available"]').is(':checked') ? 1 : 0,
                     exclude_supplier_ids: $form.find('input[name="exclude_supplier_ids"]').val() || ''
                 },
                 success: function (response) {
