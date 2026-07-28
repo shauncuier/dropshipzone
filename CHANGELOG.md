@@ -5,26 +5,41 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.5.0] - 2026-07-28
-
-Admin UI redesign. The token-based visual language introduced earlier is
-kept — the problems it did not solve were structural.
+## [3.5.1] - 2026-07-28
 
 ### Security
 - **Every registered setting now has a validator that knows its own shape.**
   All four options shared one generic recursive `sanitize_text_field()`
   callback, which guarantees a value is a harmless string but not that it is
   one the plugin can act on — `markup_type` would accept `"banana"`,
-  `rounding_type` any string at all. Each option now has a dedicated callback
-  that whitelists enums, casts booleans and clamps numerics. Raised in the
-  WordPress.org pre-review of 28 July 2026. The AJAX save path, which is what
-  the settings screens actually use, was validating the same enums with a bare
-  `sanitize_text_field()`; both paths now run through the same validator, so
-  there is one definition of a valid setting.
+  `rounding_type` any string at all, and both were fed straight into the
+  pricing engine. Each option now has a dedicated callback that whitelists
+  enums, casts booleans and clamps numerics. Raised in the WordPress.org
+  pre-review of 28 July 2026.
+- The AJAX save path — what the settings screens actually use — validated the
+  same enums with a bare `sanitize_text_field()` before calling
+  `update_option()`. Both paths now run through the same validator, so there
+  is one definition of a valid setting.
 - `dszsync_settings` mixes user configuration with the sync's own run state
-  (offset, counters, timestamps). The run state is now carried over from
-  storage rather than read from the request, so submitting the settings form
-  cannot rewind an in-flight sync or fake its results.
+  (offset, counters, timestamps). That state is now carried over from storage
+  rather than read from the request, so submitting the settings form cannot
+  rewind an in-flight sync or fake its results.
+
+### Fixed
+- **The WordPress submenu and the in-page nav are generated from one
+  definition.** They were maintained separately and had drifted into two
+  different orders — the sidebar listed Logs above Product Mapping while the
+  nav bar was in workflow order.
+- The section nav is a single contained row. The first cut printed the five
+  stage names as uppercase captions, which cost a whole row of height and read
+  as clutter once rendered; the names moved onto `role="group"`/`aria-label`.
+
+---
+
+## [3.5.0] - 2026-07-28
+
+Admin UI redesign. The token-based visual language introduced earlier is
+kept — the problems it did not solve were structural.
 
 ### Added
 - **Setup checklist on the dashboard.** Five steps — connect the account,
@@ -49,10 +64,6 @@ kept — the problems it did not solve were structural.
   comments; the rendered bar was a flat list of nine items. Labels now match the
   WordPress submenu exactly, which they previously contradicted
   ("Import Products" vs "Product Import", "Sync Center" vs "Sync Control").
-- **The WordPress submenu and the in-page nav now come from one definition.**
-  They were maintained separately and had drifted into two different orders —
-  the sidebar listed Logs above Product Mapping — and two names for the same
-  screens.
 - **Dark theme removed.** The plugin renders inside the WordPress admin
   content area, which stays light whatever the OS preference, so a
   separate dark palette read as dark cards floating on white chrome. The
@@ -779,6 +790,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[3.5.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.5.1
 [3.5.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.5.0
 [3.4.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.1
 [3.4.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.0

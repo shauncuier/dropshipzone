@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.5.0
+Stable tag: 3.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -144,8 +144,11 @@ Webhook support is dependent on Dropshipzone offering a webhook API; none exists
 
 == Changelog ==
 
-= 3.5.0 =
+= 3.5.1 =
 * SECURITY: Every plugin setting is now validated against its own allowed values instead of one generic text filter, and the sync's run state can no longer be altered by submitting the settings form.
+* FIXED: The sidebar menu and the in-page navigation now always list the screens in the same order, and the navigation fits on one row.
+
+= 3.5.0 =
 * ADDED: A setup checklist on the dashboard that walks you through connecting your account, setting rules, linking products and running a first sync. It disappears once you are done.
 * ADDED: Helpful empty states on Product Mapping and Logs, telling you what to do next instead of showing a blank table.
 * ADDED: A dashboard card for Fast Stock Updates showing whether it is on and what it last did.
