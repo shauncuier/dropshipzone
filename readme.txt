@@ -6,7 +6,7 @@ Tested up to: 7.0
 Requires PHP: 7.4
 WC requires at least: 8.0
 WC tested up to: 10.9
-Stable tag: 3.4.0
+Stable tag: 3.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -143,6 +143,12 @@ Here's what's planned:
 Webhook support is dependent on Dropshipzone offering a webhook API; none exists at present.
 
 == Changelog ==
+
+= 3.4.1 =
+* FIXED: On hosts where PHP memory is unlimited (the common case), the sync advanced only one product per run and could never finish a large catalogue. The memory check misread an unlimited limit as "almost full".
+* FIXED: Fast stock updates read only the first page of each window, so most stock changes were missed.
+* FIXED: Supplier EAN codes are now validated before being written to WooCommerce's GTIN field - most of the catalogue reports "N/A", and some values are not valid GTINs.
+* FIXED: Products whose supplier brand is filler such as "Does not apply" are no longer filed under that as a brand.
 
 = 3.4.0 =
 * ADDED: Fast stock updates - an optional pass that asks Dropshipzone which SKUs changed stock since the last check and refreshes only those, instead of re-reading your whole catalogue. Enable it under Sync Control. The full sync keeps running and remains what keeps prices correct.

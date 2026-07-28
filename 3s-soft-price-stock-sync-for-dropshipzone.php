@@ -3,7 +3,7 @@
  * Plugin Name: 3S Soft Price & Stock Sync for Dropshipzone
  * Plugin URI: https://3s-soft.com/plugins/3s-soft-price-stock-sync-for-dropshipzone
  * Description: Sync product prices, stock levels and shipping rates from the Dropshipzone supplier API into WooCommerce, import catalogue products, and submit orders for fulfilment.
- * Version: 3.4.0
+ * Version: 3.4.1
  * Author: 3s-Soft
  * Author URI: https://3s-soft.com
  * License: GPL v2 or later
@@ -24,7 +24,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('DSZSYNC_VERSION', '3.4.0');
+define('DSZSYNC_VERSION', '3.4.1');
 define('DSZSYNC_PLUGIN_FILE', __FILE__);
 define('DSZSYNC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('DSZSYNC_PLUGIN_URL', plugin_dir_url(__FILE__));

@@ -189,27 +189,19 @@ function dszsync_time_ago($datetime) {
  * @return bool True if near memory limit
  */
 function dszsync_is_memory_near_limit($threshold_percent = 80) {
-    $memory_limit = ini_get('memory_limit');
-    
-    // Convert to bytes
-    if (preg_match('/^(\d+)(.)$/', $memory_limit, $matches)) {
-        $memory_limit = $matches[1];
-        switch (strtoupper($matches[2])) {
-            case 'G':
-                $memory_limit *= 1024;
-                // fall through
-            case 'M':
-                $memory_limit *= 1024;
-                // fall through
-            case 'K':
-                $memory_limit *= 1024;
-        }
+    $memory_limit = wp_convert_hr_to_bytes((string) ini_get('memory_limit'));
+
+    // `memory_limit = -1` means no limit, which is the default under WP-CLI
+    // and common on managed hosts. The previous implementation parsed that
+    // with a regex expecting a trailing unit, left the value as -1, and
+    // compared usage against a negative threshold — so it reported "near the
+    // limit" on every call. Batch loops break on that signal, which meant the
+    // sync advanced one product per run and never finished a large catalogue.
+    if ($memory_limit <= 0) {
+        return false;
     }
-    
-    $current_usage = memory_get_usage(true);
-    $threshold = ($memory_limit * $threshold_percent) / 100;
-    
-    return $current_usage >= $threshold;
+
+    return memory_get_usage(true) >= ($memory_limit * $threshold_percent) / 100;
 }
 
 /**

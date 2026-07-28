@@ -272,7 +272,18 @@ class Cron {
                 }
             }
 
-            $total_pages = isset($response['total_pages']) ? intval($response['total_pages']) : 1;
+            // /stock does not return total_pages the way the product and zone
+            // endpoints do — it echoes total, page_no and limit. Verified
+            // against the live endpoint: assuming total_pages meant reading
+            // only the first page and silently dropping the rest of the window.
+            if (isset($response['total_pages'])) {
+                $total_pages = max(1, intval($response['total_pages']));
+            } else {
+                $total = isset($response['total']) ? intval($response['total']) : 0;
+                $per_page = isset($response['limit']) ? max(1, intval($response['limit'])) : 160;
+                $total_pages = max(1, (int) ceil($total / $per_page));
+            }
+
             $page++;
 
             if ($page > $max_pages && $page <= $total_pages) {
@@ -787,7 +798,13 @@ class Cron {
 
         if (!empty($api_data['eancode']) && method_exists($product, 'set_global_unique_id')) {
             $ean = preg_replace('/[^0-9]/', '', (string) $api_data['eancode']);
-            if ($ean !== '' && (string) $product->get_global_unique_id() !== $ean) {
+
+            // Most of the catalogue carries the literal string "N/A" here, and
+            // some records hold digit strings that are not GTINs at all. Only
+            // the four valid GTIN lengths are accepted — this field feeds
+            // product feeds, so a wrong value is worse than none.
+            if (in_array(strlen($ean), [8, 12, 13, 14], true)
+                && (string) $product->get_global_unique_id() !== $ean) {
                 $product->set_global_unique_id($ean);
                 $changed = true;
             }
@@ -795,17 +812,62 @@ class Cron {
 
         if (!empty($api_data['brand']) && taxonomy_exists('product_brand')) {
             $brand = sanitize_text_field((string) $api_data['brand']);
-            $current = wp_get_object_terms($product->get_id(), 'product_brand', ['fields' => 'names']);
 
-            if (!is_wp_error($current) && !in_array($brand, $current, true)) {
-                $result = wp_set_object_terms($product->get_id(), $brand, 'product_brand', false);
-                if (!is_wp_error($result)) {
-                    $changed = true;
+            if (self::is_real_brand($brand)) {
+                $current = wp_get_object_terms($product->get_id(), 'product_brand', ['fields' => 'names']);
+
+                if (!is_wp_error($current) && !in_array($brand, $current, true)) {
+                    $result = wp_set_object_terms($product->get_id(), $brand, 'product_brand', false);
+                    if (!is_wp_error($result)) {
+                        $changed = true;
+                    }
                 }
             }
         }
 
         return $changed;
+    }
+
+    /**
+     * Is this supplier brand value an actual brand?
+     *
+     * Roughly three quarters of the catalogue carries a marketplace filler
+     * value such as "Does not apply" rather than a brand. Creating a
+     * `product_brand` term for those would put most of the catalogue under a
+     * meaningless brand and surface it in storefront filters.
+     *
+     * @param string $brand Raw brand value from the API
+     * @return bool
+     */
+    private static function is_real_brand($brand) {
+        $brand = trim($brand);
+
+        if ($brand === '') {
+            return false;
+        }
+
+        $placeholders = [
+            'does not apply',
+            'doesnotapply',
+            'n/a',
+            'na',
+            'none',
+            'null',
+            'unbranded',
+            'no brand',
+            'unknown',
+            '-',
+            '--',
+        ];
+
+        /**
+         * Filter the supplier brand values treated as "no brand".
+         *
+         * @param array $placeholders Lower-case values to reject
+         */
+        $placeholders = (array) apply_filters('dszsync_brand_placeholders', $placeholders);
+
+        return !in_array(strtolower($brand), array_map('strtolower', $placeholders), true);
     }
 
     /**

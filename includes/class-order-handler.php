@@ -411,13 +411,14 @@ class Order_Handler {
             return;
         }
 
+        // One %s per serial. Built from a count, never from input, and every
+        // value is still passed through prepare() below.
         $placeholders = implode(',', array_fill(0, count($serials), '%s'));
 
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is built from $wpdb->prefix and is not user input; the placeholder list is generated from a count, and all values are passed through prepare(). These are plugin-owned tables, so no core caching API applies.
-        $wpdb->query($wpdb->prepare(
-            "UPDATE %i SET last_checked = %s WHERE dsz_serial_number IN ({$placeholders})",
-            array_merge([$this->table_name, current_time('mysql')], $serials)
-        ));
+        $sql = "UPDATE %i SET last_checked = %s WHERE dsz_serial_number IN ({$placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $placeholders is a generated list of %s, not data.
+
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.SlowDBQuery.slow_db_query_meta_key, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name comes from $wpdb->prefix, not user input; the replacement count is dynamic by design and matches $placeholders. These are plugin-owned tables, so no core caching API applies.
+        $wpdb->query($wpdb->prepare($sql, array_merge([$this->table_name, current_time('mysql')], $serials)));
     }
 
     /**

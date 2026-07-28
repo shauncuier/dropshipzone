@@ -5,6 +5,23 @@ All notable changes to the DropshipZone Sync plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.1] - 2026-07-28
+
+Everything here was found by running 3.4.0 against a live store and the real
+Dropshipzone API. None of it was visible to static review or to mocked tests.
+
+### Fixed
+- **Sync advanced one product per run on any host with `memory_limit = -1`.** The batch loops break when `dszsync_is_memory_near_limit()` reports pressure. That helper parsed the limit with a regex expecting a trailing unit, so `-1` — which means *no limit*, and is the default under WP-CLI and common on managed hosts — was left as `-1`, giving a negative threshold that every possible usage exceeded. It returned `true` on every call. A 10,000-product catalogue would have needed 10,000 cron runs for one pass. An empty `memory_limit` additionally raised a fatal `TypeError`. Unlimited and unparseable limits are now treated as no limit.
+- **The incremental pass read only the first page of each window.** It looked for `total_pages`, which `/v2/products` returns but `/stock` does not — the stock endpoint returns `total`, `page_no` and `limit`. Every run therefore processed at most 160 of the window's changes and silently dropped the rest; a one-hour window on the live catalogue carries around 440. The page count is now derived from `total`/`limit`.
+- **Supplier EAN is validated before it reaches WooCommerce's GTIN field.** 74 of 100 live products return the literal string `"N/A"`, and some return 16-digit values that are not GTINs. 3.4.0 wrote the stripped digits unconditionally, which put five invalid GTINs on this store's ten mapped products. Only the four legal GTIN lengths (8, 12, 13, 14) are accepted.
+- **Marketplace filler is no longer imported as a brand.** The same 74 of 100 products report a brand of `"Does not apply"`. 3.4.0 created a `product_brand` term for it, filing three quarters of a catalogue under a brand that is not one. Filler values are now rejected, and the list is filterable via `dszsync_brand_placeholders`.
+- Three `phpcs:ignore` annotations added in 3.4.0 sat above the `$wpdb` call rather than the line Plugin Check reports, so they had no effect — the same trap as 3.3.2. Plugin Check is clean again.
+
+### Added
+- `dszsync_brand_placeholders` filter.
+
+---
+
 ## [3.4.0] - 2026-07-28
 
 ### Added
@@ -695,6 +712,7 @@ We use [Semantic Versioning](https://semver.org/):
 7. Create GitHub release with changelog
 8. Build and deploy to WordPress.org (if applicable)
 
+[3.4.1]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.1
 [3.4.0]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.4.0
 [3.3.5]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.5
 [3.3.4]: https://github.com/shauncuier/dropshipzone/releases/tag/v3.3.4
