@@ -6,10 +6,7 @@ Re-reading `API-NOTES.md` against the current code surfaced a set of gaps
 between what the Dropshipzone API offers and what the plugin actually
 uses — plus four real defects, one of them revenue-affecting.
 
-The plugin is currently **awaiting first review** on WordPress.org
-(v3.3.3 submitted 26 July 2026). New versions can be uploaded on the
-submission page **until a reviewer starts**, so Phase 1 lands now and gets
-re-uploaded. Phase 2 is deferred until after approval.
+The plugin was **approved** on WordPress.org on 30 July 2026.
 
 ---
 

@@ -186,15 +186,12 @@ Output: `build/3s-soft-price-stock-sync-for-dropshipzone-v<version>.zip`
 
 ## WordPress.org
 
-The plugin is submitted to the WordPress.org directory
-(`3s-soft-price-stock-sync-for-dropshipzone`) and **awaiting first
-review**. A GitHub release does **not** publish there.
+The plugin is hosted on the WordPress.org directory (`3s-soft-price-stock-sync-for-dropshipzone`).
+- SVN Repository: `https://plugins.svn.wordpress.org/3s-soft-price-stock-sync-for-dropshipzone`
+- Public Page: `https://wordpress.org/plugins/3s-soft-price-stock-sync-for-dropshipzone`
 
-While awaiting review, new versions can be uploaded on the submission page
-until a reviewer starts. After approval, releases go out through SVN
-instead. Do not submit a second plugin while one is queued.
-
-See `doc/wordpress-org-submission-email.md` for current status.
+To publish releases to WordPress.org, deploy code to SVN `trunk/` and tag the version under `tags/X.Y.Z/`. Assets (banners, icons, screenshots) go into the SVN `/assets` directory.
+A GitHub release does **not** automatically publish to SVN unless an SVN sync workflow is configured.
 
 ## Rollback
 
