@@ -2,6 +2,7 @@
 
 <div align="center">
 
+[![WordPress Plugin Directory](https://img.shields.io/badge/WordPress.org-Plugin%20Directory-21759B.svg?logo=wordpress&logoColor=white)](https://wordpress.org/plugins/3s-soft-price-stock-sync-for-dropshipzone/)
 [![GitHub Release](https://img.shields.io/github/v/release/shauncuier/dropshipzone?label=version&color=blue)](https://github.com/shauncuier/dropshipzone/releases/latest)
 [![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-21759B.svg?logo=wordpress)](https://wordpress.org/)
 [![WooCommerce](https://img.shields.io/badge/WooCommerce-8.0%2B-96588A.svg?logo=woocommerce)](https://woocommerce.com/)
@@ -15,7 +16,7 @@
 
 Sync prices, stock and shipping rates from the Dropshipzone supplier API, import catalogue products, and submit orders for fulfilment.
 
-[📦 Download Latest Release](https://github.com/shauncuier/dropshipzone/releases/latest) · [🐛 Report Bug](https://github.com/shauncuier/dropshipzone/issues) · [✨ Request Feature](https://github.com/shauncuier/dropshipzone/discussions)
+[🌐 Official WordPress Plugin](https://wordpress.org/plugins/3s-soft-price-stock-sync-for-dropshipzone/) · [📦 Download Latest Release](https://github.com/shauncuier/dropshipzone/releases/latest) · [🐛 Report Bug](https://github.com/shauncuier/dropshipzone/issues) · [✨ Request Feature](https://github.com/shauncuier/dropshipzone/discussions)
 
 </div>
 
