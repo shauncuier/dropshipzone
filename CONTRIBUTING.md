@@ -36,7 +36,13 @@ Build a distributable zip with:
 ```
 
 The zip lands in `build/` with the correct root folder and excludes
-development files. `doc/`, `*.md`, and the build scripts never ship.
+development files. `doc/`, `tests/`, `*.md`, and the build scripts never
+ship.
+
+**`build/` is disposable.** `build.ps1` deletes the whole directory on every
+run. Never keep anything there you cannot regenerate — in particular the
+WordPress.org SVN working copy, which lives *outside* the repository at
+`../dropshipzone-svn`.
 
 ---
 
@@ -59,10 +65,22 @@ warnings** — keep it that way. If you must suppress a sniff, use a
 `phpcs:ignore` with a specific justification, and name the sniff exactly.
 A misspelled sniff name silently does nothing.
 
-**3. Exercise what you changed**
+**3. Run the regression suites**
 
-There is no automated test suite yet. Drive the actual flow in the admin:
-run a sync, import a product, place a test order, load the checkout with a
+```
+php tests/run.php
+```
+
+85 assertions across three suites, no WordPress install and no network
+required — see [tests/README.md](tests/README.md). They load the real
+classes from `includes/` against stubs, so they fail when the shipped code
+regresses, not when a copy drifts. Run them before every release.
+
+**4. Exercise what you changed**
+
+The suites cover pricing, the incremental window and the memory guard —
+nothing else. For everything else, drive the actual flow in the admin: run
+a sync, import a product, place a test order, load the checkout with a
 mapped product in the cart. Static checks do not catch a broken query.
 
 ---

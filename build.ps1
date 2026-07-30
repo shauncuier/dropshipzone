@@ -54,6 +54,7 @@ $Excludes = @(
     "*.log",
     "*.md",
     "doc",
+    "tests",
     ".agent*"
 )
 

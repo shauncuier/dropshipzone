@@ -35,8 +35,7 @@ composer.lock
 *.min.css.map
 *.min.js.map
 
-# Testing
-tests/
+# Testing (tests/ is tracked — the regression harnesses live there)
 phpunit.xml
 phpcs.xml
 .phpunit.result.cache
